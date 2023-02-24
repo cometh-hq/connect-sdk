@@ -1,0 +1,16 @@
+{
+  "roots": ["<rootDir>/"],
+  "testMatch": ["**/?(*.)+(spec|test).+(ts|tsx|js)"],
+  "transform": {
+    "\\.(ts)$": "ts-jest"
+  },
+  "globals": {
+    "ts-jest": {
+      "isolatedModules": true
+    }
+  },
+  "modulePathIgnorePatterns": ["<rootDir>/build"],
+  "moduleNameMapper": {
+    "@/(.*)": "<rootDir>/src/$1"
+  }
+}
