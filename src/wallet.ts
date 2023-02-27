@@ -1,5 +1,5 @@
 export class Wallet {
-  static connect(): string {
+  public hello(): string {
     return 'hello world'
   }
 }
