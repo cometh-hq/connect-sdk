@@ -3,7 +3,6 @@
   "compilerOptions": {
     "lib": ["es2020"],
     "noImplicitAny": false,
-    "allowSyntheticDefaultImports": true,
     "downlevelIteration": true,
     "skipLibCheck": true,
     "moduleResolution": "node",
@@ -12,7 +11,13 @@
     "typeRoots": ["./node_modules/@types"],
     "declaration": true,
     "useUnknownInCatchVariables": false,
-    "outDir": "dist"
+    "outDir": "dist",
+    "baseUrl": ".",
+    "allowSyntheticDefaultImports": true,
+    "paths": {
+      "@Adapters": ["src/adapters"],
+      "@Services": ["src/services"]
+    }
   },
   "include": ["src/**/*.ts", "src/**/*.d.ts"],
   "exclude": ["node_modules"]
