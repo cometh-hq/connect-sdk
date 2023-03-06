@@ -1,8 +1,8 @@
-import { EOAAdapter } from '../../adapters'
+import { EOAConstructor } from '../../adapters'
 
 export declare class AlembicWallet {
   #private
-  constructor(eoaAdapter: EOAAdapter, chainId?: number, rpcTarget?: string)
+  constructor(eoaAdapter: EOAConstructor, chainId?: number, rpcTarget?: string)
   connect(): Promise<void>
   getIsConnected(): boolean
   logout(): Promise<void>

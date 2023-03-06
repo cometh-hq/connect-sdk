@@ -1,6 +1,6 @@
 import { ethers } from 'ethers'
 
-import { OwnerAddress } from '../types'
+import { Constructor, OwnerAddress } from '../types'
 
 export interface EOAAdapter {
   init(chainId: number, rpcTarget: string): Promise<void>
@@ -9,3 +9,5 @@ export interface EOAAdapter {
   getAccount(): Promise<OwnerAddress | null>
   getSigner(): ethers.Signer | null
 }
+
+export type EOAConstructor = Constructor<EOAAdapter>
