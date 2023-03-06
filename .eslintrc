@@ -23,7 +23,7 @@
     "no-loops/no-loops": 0,
     "jest/expect-expect": 0,
     "import/no-named-as-default-member": 0,
-    // "prettier/prettier": 2,
+    "prettier/prettier": 2,
     "simple-import-sort/imports": "error",
     "simple-import-sort/exports": "error",
     "import/no-unresolved": "error",
