@@ -20,15 +20,10 @@ class API {
         var _a;
         return __awaiter(this, void 0, void 0, function* () {
             const url = `${constants_1.API_URL}/wallets/connection-nonce/${account}`;
-            try {
-                const response = yield axios_1.default.get(url);
-                const userNonce = (_a = response === null || response === void 0 ? void 0 : response.data) === null || _a === void 0 ? void 0 : _a.userNonce;
-                if (userNonce) {
-                    return userNonce;
-                }
-            }
-            catch (e) {
-                throw new Error('Error getting nonce');
+            const response = yield axios_1.default.get(url);
+            const userNonce = (_a = response === null || response === void 0 ? void 0 : response.data) === null || _a === void 0 ? void 0 : _a.userNonce;
+            if (userNonce) {
+                return userNonce;
             }
             return null;
         });
@@ -41,15 +36,10 @@ class API {
                 signature,
                 ownerAddress
             };
-            try {
-                const response = yield axios_1.default.post(url, body);
-                const data = response === null || response === void 0 ? void 0 : response.data;
-                if (data) {
-                    return data;
-                }
-            }
-            catch (e) {
-                throw new Error('Error connecting to Alembic Wallet');
+            const response = yield axios_1.default.post(url, body);
+            const data = response === null || response === void 0 ? void 0 : response.data;
+            if (data) {
+                return data;
             }
             return null;
         });

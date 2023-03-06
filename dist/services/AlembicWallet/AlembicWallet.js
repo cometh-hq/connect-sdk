@@ -22,9 +22,9 @@ var __classPrivateFieldGet = (this && this.__classPrivateFieldGet) || function (
 var _AlembicWallet_eoaAdapter, _AlembicWallet_chainId, _AlembicWallet_rpcTarget, _AlembicWallet_isConnected;
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.AlembicWallet = void 0;
+const siwe_1 = require("siwe");
 const adapters_1 = require("../../adapters");
 const API_1 = require("../API/API");
-const siwe_1 = require("siwe");
 class AlembicWallet {
     constructor(eoaAdapter, chainId = adapters_1.DEFAULT_CHAIN_ID, rpcTarget = adapters_1.DEFAULT_RPC_TARGET) {
         _AlembicWallet_eoaAdapter.set(this, void 0);
@@ -46,6 +46,7 @@ class AlembicWallet {
                 throw new Error('No rpcUrl set');
             // Initialize EOA adapter
             yield __classPrivateFieldGet(this, _AlembicWallet_eoaAdapter, "f").init(__classPrivateFieldGet(this, _AlembicWallet_chainId, "f"), __classPrivateFieldGet(this, _AlembicWallet_rpcTarget, "f"));
+            yield __classPrivateFieldGet(this, _AlembicWallet_eoaAdapter, "f").connect();
             // We get the user account
             const account = yield __classPrivateFieldGet(this, _AlembicWallet_eoaAdapter, "f").getAccount();
             if (!account)
@@ -57,7 +58,7 @@ class AlembicWallet {
             // We prepare and sign a message, using siwe, in order to prove the user identity
             const message = this.createMessage(account, nonce);
             const messageToSign = message.prepareMessage();
-            const signer = yield __classPrivateFieldGet(this, _AlembicWallet_eoaAdapter, "f").getSigner();
+            const signer = __classPrivateFieldGet(this, _AlembicWallet_eoaAdapter, "f").getSigner();
             if (!signer)
                 throw new Error('No signer found');
             const signature = yield signer.signMessage(messageToSign);

@@ -1,1 +1,1 @@
-export * from './Web3AuthAdapter'
+export * from './Web3AuthAdapter';

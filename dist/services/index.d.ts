@@ -1,1 +1,1 @@
-export * from './AlembicWallet'
+export * from './AlembicWallet';

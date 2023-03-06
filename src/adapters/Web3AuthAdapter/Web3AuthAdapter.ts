@@ -16,7 +16,7 @@ export class Web3AuthAdapter implements EOAAdapter {
 
     const web3auth = new Web3Auth({
       clientId: WEB3AUTH_CLIENT_ID,
-      web3AuthNetwork: 'testnet',
+      web3AuthNetwork: 'mainnet',
       chainConfig: {
         chainId: ethers.utils.hexlify(chainId),
         chainNamespace: CHAIN_NAMESPACES.EIP155,
@@ -28,14 +28,14 @@ export class Web3AuthAdapter implements EOAAdapter {
     await web3auth.initModal()
 
     this.#web3auth = web3auth
-    this.#ethProvider = new ethers.providers.Web3Provider(
-      web3auth?.provider as any
-    )
   }
 
   async connect(): Promise<void> {
     if (!this.#web3auth) throw new Error('No Web3Auth instance found')
     await this.#web3auth.connect()
+    this.#ethProvider = new ethers.providers.Web3Provider(
+      this.#web3auth?.provider as any
+    )
   }
 
   async logout(): Promise<void> {
@@ -44,7 +44,7 @@ export class Web3AuthAdapter implements EOAAdapter {
   }
 
   async getAccount(): Promise<OwnerAddress | null> {
-    const signer = await this.getSigner()
+    const signer = this.getSigner()
     if (!signer) throw new Error('No signer found')
     const account = (await signer.getAddress()) as OwnerAddress
     return account ?? null

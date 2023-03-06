@@ -1,7 +1,10 @@
-import { DEFAULT_CHAIN_ID } from '@Adapters'
 import { SiweMessage } from 'siwe'
 
-import { DEFAULT_RPC_TARGET, EOAAdapter } from '../../adapters'
+import {
+  DEFAULT_CHAIN_ID,
+  DEFAULT_RPC_TARGET,
+  EOAAdapter
+} from '../../adapters'
 import { OwnerAddress, UserNonceType } from '../../types'
 import { API } from '../API/API'
 
@@ -10,7 +13,6 @@ export class AlembicWallet {
   #chainId: number
   #rpcTarget: string
   #isConnected = false
-  test = DEFAULT_CHAIN_ID
 
   constructor(
     eoaAdapter: EOAAdapter,
@@ -20,7 +22,6 @@ export class AlembicWallet {
     this.#chainId = chainId
     this.#rpcTarget = rpcTarget
     this.#eoaAdapter = new (eoaAdapter as any)()
-    console.log(this.test)
   }
 
   public async connect(): Promise<void> {

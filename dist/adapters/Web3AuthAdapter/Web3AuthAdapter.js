@@ -19,17 +19,16 @@ var __classPrivateFieldGet = (this && this.__classPrivateFieldGet) || function (
     if (typeof state === "function" ? receiver !== state || !f : !state.has(receiver)) throw new TypeError("Cannot read private member from an object whose class did not declare it");
     return kind === "m" ? f : kind === "a" ? f.call(receiver) : f ? f.value : state.get(receiver);
 };
-var _Web3AuthAdapter_web3auth, _Web3AuthAdapter_provider, _Web3AuthAdapter_ethProvider;
+var _Web3AuthAdapter_web3auth, _Web3AuthAdapter_ethProvider;
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.Web3AuthAdapter = void 0;
-const modal_1 = require("@web3auth/modal");
 const base_1 = require("@web3auth/base");
-const constants_1 = require("../../constants");
+const modal_1 = require("@web3auth/modal");
 const ethers_1 = require("ethers");
+const constants_1 = require("../../constants");
 class Web3AuthAdapter {
     constructor() {
         _Web3AuthAdapter_web3auth.set(this, null);
-        _Web3AuthAdapter_provider.set(this, null);
         _Web3AuthAdapter_ethProvider.set(this, null);
     }
     init(chainId, rpcTarget) {
@@ -50,10 +49,16 @@ class Web3AuthAdapter {
             if (!web3auth)
                 throw new Error('No Web3Auth created');
             yield web3auth.initModal();
-            yield web3auth.connect();
             __classPrivateFieldSet(this, _Web3AuthAdapter_web3auth, web3auth, "f");
-            __classPrivateFieldSet(this, _Web3AuthAdapter_provider, web3auth === null || web3auth === void 0 ? void 0 : web3auth.provider, "f");
-            __classPrivateFieldSet(this, _Web3AuthAdapter_ethProvider, new ethers_1.ethers.providers.Web3Provider(web3auth === null || web3auth === void 0 ? void 0 : web3auth.provider), "f");
+        });
+    }
+    connect() {
+        var _a;
+        return __awaiter(this, void 0, void 0, function* () {
+            if (!__classPrivateFieldGet(this, _Web3AuthAdapter_web3auth, "f"))
+                throw new Error('No Web3Auth instance found');
+            yield __classPrivateFieldGet(this, _Web3AuthAdapter_web3auth, "f").connect();
+            __classPrivateFieldSet(this, _Web3AuthAdapter_ethProvider, new ethers_1.ethers.providers.Web3Provider((_a = __classPrivateFieldGet(this, _Web3AuthAdapter_web3auth, "f")) === null || _a === void 0 ? void 0 : _a.provider), "f");
         });
     }
     logout() {
@@ -65,20 +70,19 @@ class Web3AuthAdapter {
     }
     getAccount() {
         return __awaiter(this, void 0, void 0, function* () {
-            if (!__classPrivateFieldGet(this, _Web3AuthAdapter_ethProvider, "f"))
-                throw new Error('No Web3Auth provider found');
-            const account = (yield __classPrivateFieldGet(this, _Web3AuthAdapter_ethProvider, "f").listAccounts())[0];
+            const signer = this.getSigner();
+            if (!signer)
+                throw new Error('No signer found');
+            const account = (yield signer.getAddress());
             return account !== null && account !== void 0 ? account : null;
         });
     }
     getSigner() {
-        return __awaiter(this, void 0, void 0, function* () {
-            if (!__classPrivateFieldGet(this, _Web3AuthAdapter_ethProvider, "f"))
-                throw new Error('No Web3Auth provider found');
-            const signer = __classPrivateFieldGet(this, _Web3AuthAdapter_ethProvider, "f").getSigner();
-            return signer !== null && signer !== void 0 ? signer : null;
-        });
+        if (!__classPrivateFieldGet(this, _Web3AuthAdapter_ethProvider, "f"))
+            throw new Error('No Web3Auth provider found');
+        const signer = __classPrivateFieldGet(this, _Web3AuthAdapter_ethProvider, "f").getSigner();
+        return signer !== null && signer !== void 0 ? signer : null;
     }
 }
 exports.Web3AuthAdapter = Web3AuthAdapter;
-_Web3AuthAdapter_web3auth = new WeakMap(), _Web3AuthAdapter_provider = new WeakMap(), _Web3AuthAdapter_ethProvider = new WeakMap();
+_Web3AuthAdapter_web3auth = new WeakMap(), _Web3AuthAdapter_ethProvider = new WeakMap();
