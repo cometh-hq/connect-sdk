@@ -4,5 +4,8 @@
   "singleQuote": true,
   "tabWidth": 2,
   "printWidth": 80,
-  "useTabs": false
+  "useTabs": false,
+  "importOrder": ["^[./]"],
+  "importOrderSeparation": true,
+  "importOrderSortSpecifiers": true
 }

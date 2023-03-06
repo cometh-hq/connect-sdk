@@ -34,7 +34,12 @@
         "checkForEach": true
       }
     ],
-    "@typescript-eslint/explicit-function-return-type": "error"
+    "@typescript-eslint/explicit-function-return-type": "error",
+    "sort-imports": ["error", {
+      "ignoreCase": true,
+      "ignoreDeclarationSort": true,
+      "ignoreMemberSort": true
+    }]
   },
   "settings": {
     "import/parsers": {
