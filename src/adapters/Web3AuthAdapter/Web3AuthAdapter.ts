@@ -7,8 +7,8 @@ import { OwnerAddress } from '../../types'
 import { EOAAdapter } from '../types'
 
 export class Web3AuthAdapter implements EOAAdapter {
-  #web3auth: Web3Auth | null = null
-  #ethProvider: ethers.providers.Web3Provider | null = null
+  private web3auth: Web3Auth | null = null
+  private ethProvider: ethers.providers.Web3Provider | null = null
 
   async init(chainId, rpcTarget): Promise<void> {
     if (!chainId) throw new Error('Missing chainId parameter')
@@ -27,20 +27,20 @@ export class Web3AuthAdapter implements EOAAdapter {
     if (!web3auth) throw new Error('No Web3Auth created')
     await web3auth.initModal()
 
-    this.#web3auth = web3auth
+    this.web3auth = web3auth
   }
 
   async connect(): Promise<void> {
-    if (!this.#web3auth) throw new Error('No Web3Auth instance found')
-    await this.#web3auth.connect()
-    this.#ethProvider = new ethers.providers.Web3Provider(
-      this.#web3auth?.provider as any
+    if (!this.web3auth) throw new Error('No Web3Auth instance found')
+    await this.web3auth.connect()
+    this.ethProvider = new ethers.providers.Web3Provider(
+      this.web3auth?.provider as any
     )
   }
 
   async logout(): Promise<void> {
-    if (!this.#web3auth) throw new Error('No Web3Auth instance found')
-    await this.#web3auth.logout()
+    if (!this.web3auth) throw new Error('No Web3Auth instance found')
+    await this.web3auth.logout()
   }
 
   async getAccount(): Promise<OwnerAddress | null> {
@@ -51,8 +51,8 @@ export class Web3AuthAdapter implements EOAAdapter {
   }
 
   getSigner(): ethers.Signer | null {
-    if (!this.#ethProvider) throw new Error('No Web3Auth provider found')
-    const signer = this.#ethProvider.getSigner()
+    if (!this.ethProvider) throw new Error('No Web3Auth provider found')
+    const signer = this.ethProvider.getSigner()
     return signer ?? null
   }
 }

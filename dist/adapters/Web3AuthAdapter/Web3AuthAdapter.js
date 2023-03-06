@@ -8,18 +8,6 @@ var __awaiter = (this && this.__awaiter) || function (thisArg, _arguments, P, ge
         step((generator = generator.apply(thisArg, _arguments || [])).next());
     });
 };
-var __classPrivateFieldSet = (this && this.__classPrivateFieldSet) || function (receiver, state, value, kind, f) {
-    if (kind === "m") throw new TypeError("Private method is not writable");
-    if (kind === "a" && !f) throw new TypeError("Private accessor was defined without a setter");
-    if (typeof state === "function" ? receiver !== state || !f : !state.has(receiver)) throw new TypeError("Cannot write private member to an object whose class did not declare it");
-    return (kind === "a" ? f.call(receiver, value) : f ? f.value = value : state.set(receiver, value)), value;
-};
-var __classPrivateFieldGet = (this && this.__classPrivateFieldGet) || function (receiver, state, kind, f) {
-    if (kind === "a" && !f) throw new TypeError("Private accessor was defined without a getter");
-    if (typeof state === "function" ? receiver !== state || !f : !state.has(receiver)) throw new TypeError("Cannot read private member from an object whose class did not declare it");
-    return kind === "m" ? f : kind === "a" ? f.call(receiver) : f ? f.value : state.get(receiver);
-};
-var _Web3AuthAdapter_web3auth, _Web3AuthAdapter_ethProvider;
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.Web3AuthAdapter = void 0;
 const base_1 = require("@web3auth/base");
@@ -28,8 +16,8 @@ const ethers_1 = require("ethers");
 const constants_1 = require("../../constants");
 class Web3AuthAdapter {
     constructor() {
-        _Web3AuthAdapter_web3auth.set(this, null);
-        _Web3AuthAdapter_ethProvider.set(this, null);
+        this.web3auth = null;
+        this.ethProvider = null;
     }
     init(chainId, rpcTarget) {
         return __awaiter(this, void 0, void 0, function* () {
@@ -49,23 +37,23 @@ class Web3AuthAdapter {
             if (!web3auth)
                 throw new Error('No Web3Auth created');
             yield web3auth.initModal();
-            __classPrivateFieldSet(this, _Web3AuthAdapter_web3auth, web3auth, "f");
+            this.web3auth = web3auth;
         });
     }
     connect() {
         var _a;
         return __awaiter(this, void 0, void 0, function* () {
-            if (!__classPrivateFieldGet(this, _Web3AuthAdapter_web3auth, "f"))
+            if (!this.web3auth)
                 throw new Error('No Web3Auth instance found');
-            yield __classPrivateFieldGet(this, _Web3AuthAdapter_web3auth, "f").connect();
-            __classPrivateFieldSet(this, _Web3AuthAdapter_ethProvider, new ethers_1.ethers.providers.Web3Provider((_a = __classPrivateFieldGet(this, _Web3AuthAdapter_web3auth, "f")) === null || _a === void 0 ? void 0 : _a.provider), "f");
+            yield this.web3auth.connect();
+            this.ethProvider = new ethers_1.ethers.providers.Web3Provider((_a = this.web3auth) === null || _a === void 0 ? void 0 : _a.provider);
         });
     }
     logout() {
         return __awaiter(this, void 0, void 0, function* () {
-            if (!__classPrivateFieldGet(this, _Web3AuthAdapter_web3auth, "f"))
+            if (!this.web3auth)
                 throw new Error('No Web3Auth instance found');
-            yield __classPrivateFieldGet(this, _Web3AuthAdapter_web3auth, "f").logout();
+            yield this.web3auth.logout();
         });
     }
     getAccount() {
@@ -78,11 +66,10 @@ class Web3AuthAdapter {
         });
     }
     getSigner() {
-        if (!__classPrivateFieldGet(this, _Web3AuthAdapter_ethProvider, "f"))
+        if (!this.ethProvider)
             throw new Error('No Web3Auth provider found');
-        const signer = __classPrivateFieldGet(this, _Web3AuthAdapter_ethProvider, "f").getSigner();
+        const signer = this.ethProvider.getSigner();
         return signer !== null && signer !== void 0 ? signer : null;
     }
 }
 exports.Web3AuthAdapter = Web3AuthAdapter;
-_Web3AuthAdapter_web3auth = new WeakMap(), _Web3AuthAdapter_ethProvider = new WeakMap();

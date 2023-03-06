@@ -10,36 +10,36 @@ import { OwnerAddress, UserNonceType } from '../../types'
 import { API } from '../API/API'
 
 export class AlembicWallet {
-  #eoaAdapter: EOAAdapter
-  #chainId: number
-  #rpcTarget: string
-  #isConnected = false
+  private eoaAdapter: EOAAdapter
+  private chainId: number
+  private rpcTarget: string
+  private isConnected = false
 
   constructor(
     eoaAdapter: EOAConstructor,
     chainId: number = DEFAULT_CHAIN_ID,
     rpcTarget: string = DEFAULT_RPC_TARGET
   ) {
-    this.#chainId = chainId
-    this.#rpcTarget = rpcTarget
-    this.#eoaAdapter = new eoaAdapter()
+    this.chainId = chainId
+    this.rpcTarget = rpcTarget
+    this.eoaAdapter = new eoaAdapter()
   }
 
   public async connect(): Promise<void> {
     // Return if does not match requirements
 
-    if (!this.#eoaAdapter) throw new Error('No EOA adapter found')
-    if (!this.#chainId) throw new Error('No chainId set')
-    if (!this.#rpcTarget) throw new Error('No rpcUrl set')
+    if (!this.eoaAdapter) throw new Error('No EOA adapter found')
+    if (!this.chainId) throw new Error('No chainId set')
+    if (!this.rpcTarget) throw new Error('No rpcUrl set')
 
     // Initialize EOA adapter
 
-    await this.#eoaAdapter.init(this.#chainId, this.#rpcTarget)
-    await this.#eoaAdapter.connect()
+    await this.eoaAdapter.init(this.chainId, this.rpcTarget)
+    await this.eoaAdapter.connect()
 
     // We get the user account
 
-    const account = await this.#eoaAdapter.getAccount()
+    const account = await this.eoaAdapter.getAccount()
     if (!account) throw new Error('No account found')
 
     // We get the user nonce by calling AlembicAPI
@@ -51,7 +51,7 @@ export class AlembicWallet {
 
     const message: SiweMessage = this.createMessage(account, nonce)
     const messageToSign = message.prepareMessage()
-    const signer = this.#eoaAdapter.getSigner()
+    const signer = this.eoaAdapter.getSigner()
     if (!signer) throw new Error('No signer found')
 
     const signature = await signer.signMessage(messageToSign)
@@ -63,21 +63,21 @@ export class AlembicWallet {
       signature,
       ownerAddress: account
     })
-    if (!walletAddress) throw new Error('No wallet address found')
+    if (!walletAddress) throw new Error('Failed to connect to Alembic')
 
     if (walletAddress) {
-      this.#isConnected = true
+      this.isConnected = true
     }
   }
 
   public getIsConnected(): boolean {
-    return this.#isConnected
+    return this.isConnected
   }
 
   public async logout(): Promise<void> {
-    if (!this.#eoaAdapter) throw new Error('No EOA adapter found')
-    await this.#eoaAdapter.logout()
-    this.#isConnected = false
+    if (!this.eoaAdapter) throw new Error('No EOA adapter found')
+    await this.eoaAdapter.logout()
+    this.isConnected = false
   }
 
   private createMessage(
@@ -93,7 +93,7 @@ export class AlembicWallet {
       statement,
       uri: origin,
       version: '1',
-      chainId: this.#chainId,
+      chainId: this.chainId,
       nonce: nonce?.connectionNonce
     })
 
