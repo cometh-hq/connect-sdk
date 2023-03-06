@@ -7,5 +7,5 @@ export interface EOAAdapter {
   logout(): Promise<void>
   connect(): Promise<void>
   getAccount(): Promise<OwnerAddress | null>
-  getSigner(): Promise<ethers.Signer | null>
+  getSigner(): ethers.Signer | null
 }

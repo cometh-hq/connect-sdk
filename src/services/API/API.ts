@@ -7,17 +7,11 @@ import { OwnerAddress, UserNonceType, WalletAddress } from '../../types'
 export class API {
   static async getNonce(account: string): Promise<UserNonceType | null> {
     const url = `${API_URL}/wallets/connection-nonce/${account}`
-
-    try {
-      const response = await axios.get(url)
-      const userNonce = response?.data?.userNonce
-      if (userNonce) {
-        return userNonce
-      }
-    } catch (e) {
-      throw new Error('Error getting nonce')
+    const response = await axios.get(url)
+    const userNonce = response?.data?.userNonce
+    if (userNonce) {
+      return userNonce
     }
-
     return null
   }
 
@@ -36,16 +30,12 @@ export class API {
       signature,
       ownerAddress
     }
-    try {
-      const response = await axios.post(url, body)
-      const data = response?.data
-      if (data) {
-        return data
-      }
-    } catch (e) {
-      throw new Error('Error connecting to Alembic Wallet')
-    }
 
+    const response = await axios.post(url, body)
+    const data = response?.data
+    if (data) {
+      return data
+    }
     return null
   }
 }

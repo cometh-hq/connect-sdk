@@ -1,10 +1,7 @@
+import { DEFAULT_CHAIN_ID } from '@Adapters'
 import { SiweMessage } from 'siwe'
 
-import {
-  DEFAULT_CHAIN_ID,
-  DEFAULT_RPC_TARGET,
-  EOAAdapter
-} from '../../adapters'
+import { DEFAULT_RPC_TARGET, EOAAdapter } from '../../adapters'
 import { OwnerAddress, UserNonceType } from '../../types'
 import { API } from '../API/API'
 
@@ -13,6 +10,7 @@ export class AlembicWallet {
   #chainId: number
   #rpcTarget: string
   #isConnected = false
+  test = DEFAULT_CHAIN_ID
 
   constructor(
     eoaAdapter: EOAAdapter,
@@ -22,6 +20,7 @@ export class AlembicWallet {
     this.#chainId = chainId
     this.#rpcTarget = rpcTarget
     this.#eoaAdapter = new (eoaAdapter as any)()
+    console.log(this.test)
   }
 
   public async connect(): Promise<void> {
@@ -50,7 +49,7 @@ export class AlembicWallet {
 
     const message: SiweMessage = this.createMessage(account, nonce)
     const messageToSign = message.prepareMessage()
-    const signer = await this.#eoaAdapter.getSigner()
+    const signer = this.#eoaAdapter.getSigner()
     if (!signer) throw new Error('No signer found')
 
     const signature = await signer.signMessage(messageToSign)
