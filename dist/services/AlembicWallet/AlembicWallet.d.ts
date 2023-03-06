@@ -5,7 +5,7 @@ export declare class AlembicWallet {
   private chainId
   private rpcTarget
   private isConnected
-  constructor(eoaAdapter: EOAConstructor, chainId?: number, rpcTarget?: string)
+  constructor(eoaAdapter?: EOAConstructor, chainId?: number, rpcTarget?: string)
   connect(): Promise<void>
   getIsConnected(): boolean
   logout(): Promise<void>

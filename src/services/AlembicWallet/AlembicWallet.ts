@@ -4,7 +4,8 @@ import {
   DEFAULT_CHAIN_ID,
   DEFAULT_RPC_TARGET,
   EOAAdapter,
-  EOAConstructor
+  EOAConstructor,
+  Web3AuthAdapter
 } from '../../adapters'
 import { OwnerAddress, UserNonceType } from '../../types'
 import { API } from '../API/API'
@@ -16,7 +17,7 @@ export class AlembicWallet {
   private isConnected = false
 
   constructor(
-    eoaAdapter: EOAConstructor,
+    eoaAdapter: EOAConstructor = Web3AuthAdapter,
     chainId: number = DEFAULT_CHAIN_ID,
     rpcTarget: string = DEFAULT_RPC_TARGET
   ) {

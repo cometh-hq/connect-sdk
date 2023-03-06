@@ -14,7 +14,7 @@ const siwe_1 = require("siwe");
 const adapters_1 = require("../../adapters");
 const API_1 = require("../API/API");
 class AlembicWallet {
-    constructor(eoaAdapter, chainId = adapters_1.DEFAULT_CHAIN_ID, rpcTarget = adapters_1.DEFAULT_RPC_TARGET) {
+    constructor(eoaAdapter = adapters_1.Web3AuthAdapter, chainId = adapters_1.DEFAULT_CHAIN_ID, rpcTarget = adapters_1.DEFAULT_RPC_TARGET) {
         this.isConnected = false;
         this.chainId = chainId;
         this.rpcTarget = rpcTarget;
