@@ -81,7 +81,7 @@ export class AlembicWallet {
   private createMessage(
     address: OwnerAddress,
     nonce: UserNonceType
-  ): SiweMessagey {
+  ): SiweMessage {
     const domain = window.location.host
     const origin = window.location.origin
     const statement = `Sign in with Ethereum to Alembic`
