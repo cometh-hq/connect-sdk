@@ -34,6 +34,7 @@ export class AlembicWallet {
     // Initialize EOA adapter
 
     await this.#eoaAdapter.init(this.#chainId, this.#rpcTarget)
+    await this.#eoaAdapter.connect()
 
     // We get the user account
 

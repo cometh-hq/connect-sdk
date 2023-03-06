@@ -8,7 +8,6 @@ import { EOAAdapter } from '../types'
 
 export class Web3AuthAdapter implements EOAAdapter {
   #web3auth: Web3Auth | null = null
-  #provider: SafeEventEmitterProvider | null = null
   #ethProvider: ethers.providers.Web3Provider | null = null
 
   public async init(chainId, rpcTarget): Promise<void> {
@@ -27,13 +26,16 @@ export class Web3AuthAdapter implements EOAAdapter {
 
     if (!web3auth) throw new Error('No Web3Auth created')
     await web3auth.initModal()
-    await web3auth.connect()
 
     this.#web3auth = web3auth
-    this.#provider = web3auth?.provider
     this.#ethProvider = new ethers.providers.Web3Provider(
       web3auth?.provider as any
     )
+  }
+
+  public async connect(): Promise<void> {
+    if (!this.#web3auth) throw new Error('No Web3Auth instance found')
+    await this.#web3auth.connect()
   }
 
   public async logout(): Promise<void> {
