@@ -33,9 +33,7 @@ export class Web3AuthAdapter implements EOAAdapter {
   async connect(): Promise<void> {
     if (!this.web3auth) throw new Error('No Web3Auth instance found')
     await this.web3auth.connect()
-    this.ethProvider = new ethers.providers.Web3Provider(
-      this.web3auth?.provider as any
-    )
+    this._setEthProvider()
   }
 
   async logout(): Promise<void> {
@@ -54,5 +52,15 @@ export class Web3AuthAdapter implements EOAAdapter {
     if (!this.ethProvider) throw new Error('No Web3Auth provider found')
     const signer = this.ethProvider.getSigner()
     return signer ?? null
+  }
+
+  private _setEthProvider(): void {
+    this.ethProvider = new ethers.providers.Web3Provider(
+      this.web3auth?.provider as any
+    )
+  }
+
+  getEthProvider(): ethers.providers.Web3Provider | null {
+    return this.ethProvider ?? null
   }
 }

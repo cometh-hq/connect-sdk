@@ -8,6 +8,7 @@ export interface EOAAdapter {
   connect(): Promise<void>
   getAccount(): Promise<OwnerAddress | null>
   getSigner(): ethers.Signer | null
+  getEthProvider(): ethers.providers.Web3Provider | null
 }
 
 export type EOAConstructor = Constructor<EOAAdapter>

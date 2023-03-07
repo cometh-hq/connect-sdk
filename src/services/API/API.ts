@@ -2,7 +2,7 @@ import axios from 'axios'
 import { SiweMessage } from 'siwe'
 
 import { API_URL } from '../../constants'
-import { OwnerAddress, UserNonceType, WalletAddress } from '../../types'
+import { OwnerAddress, SmartWalletAddress, UserNonceType } from '../../types'
 
 export class API {
   static async getNonce(account: string): Promise<UserNonceType | null> {
@@ -23,7 +23,7 @@ export class API {
     message: SiweMessage
     signature: string
     ownerAddress: OwnerAddress
-  }): Promise<WalletAddress | null> {
+  }): Promise<SmartWalletAddress | null> {
     const url = `${API_URL}/wallets/connect`
     const body = {
       message,

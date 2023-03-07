@@ -7,14 +7,24 @@ import {
   EOAConstructor,
   Web3AuthAdapter
 } from '../../adapters'
-import { OwnerAddress, UserNonceType } from '../../types'
+import {
+  EthProvider,
+  OwnerAddress,
+  SmartWalletAddress,
+  UserNonceType
+} from '../../types'
 import { API } from '../API/API'
+import { SmartWallet } from '../SmartWallet'
+import { SmartWallet as SmartWalletType } from '../types'
 
 export class AlembicWallet {
   private eoaAdapter: EOAAdapter
   private chainId: number
   private rpcTarget: string
   private isConnected = false
+  private smartWalletAddress: SmartWalletAddress | null = null
+  private ethProvider: EthProvider | null = null
+  private smartWallet: SmartWalletType | null = null
 
   constructor(
     eoaAdapter: EOAConstructor = Web3AuthAdapter,
@@ -59,15 +69,23 @@ export class AlembicWallet {
 
     if (!signature) throw new Error('No signature found')
 
-    const walletAddress = await API.connectToAlembicWallet({
+    const smartWalletAddress = await API.connectToAlembicWallet({
       message,
       signature,
       ownerAddress: account
     })
-    if (!walletAddress) throw new Error('Failed to connect to Alembic')
+    if (!smartWalletAddress) throw new Error('Failed to connect to Alembic')
 
-    if (walletAddress) {
-      this.isConnected = true
+    if (smartWalletAddress) {
+      this.smartWalletAddress = smartWalletAddress
+      this.ethProvider = this.eoaAdapter.getEthProvider()
+    }
+
+    if (this.ethProvider && this.smartWalletAddress) {
+      this.smartWallet = new SmartWallet({
+        smartWalletAddress: this.smartWalletAddress,
+        ethProvider: this.ethProvider
+      })
     }
   }
 
