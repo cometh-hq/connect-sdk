@@ -1,9 +1,11 @@
 import Safe from '@safe-global/safe-core-sdk'
 import { SafeTransactionDataPartial } from '@safe-global/safe-core-sdk-types'
 import EthersAdapter from '@safe-global/safe-ethers-lib'
-import ethers from 'ethers'
+import { ethers } from 'ethers'
 
+import { ZERO_X_ZERO } from '../../constants'
 import { EthProvider, SmartWalletAddress } from '../../types'
+import { API } from '../API/API'
 import { SmartWallet as SmartWalletType } from '../types'
 
 export class SmartWallet implements SmartWalletType {
@@ -42,20 +44,30 @@ export class SmartWallet implements SmartWalletType {
     }
   }
 
-  async sendTransaction({
-    to,
-    value,
-    data
-  }: SafeTransactionDataPartial): Promise<void> {
+  async sendTransaction(safeTxData: SafeTransactionDataPartial): Promise<void> {
     if (!this.safeSdk) throw new Error('No Safe SDK found')
 
-    const safeTransaction = await this.safeSdk?.createTransaction({
-      safeTransactionData: {
-        to,
-        value,
-        data
-      }
+    const safeTxDataTyped = {
+      to: safeTxData.to,
+      value: safeTxData.value,
+      data: safeTxData.data,
+      operation: safeTxData.operation ?? 0,
+      safeTxGas: safeTxData.safeTxGas ?? 0,
+      baseGas: safeTxData.baseGas ?? 0,
+      gasPrice: safeTxData.gasPrice ?? 0,
+      gasToken: safeTxData.gasToken ?? ZERO_X_ZERO,
+      refundReceiver: safeTxData.refundReceiver ?? ZERO_X_ZERO
+    }
+
+    const safeTransaction = await this.safeSdk.createTransaction({
+      safeTransactionData: safeTxDataTyped
     })
     const signature = await this.safeSdk.signTypedData(safeTransaction)
+
+    const relayId = await API.relayTransaction({
+      safeTxData: safeTxDataTyped,
+      signatures: signature.data,
+      smartWalletAddress: this.smartWalletAddress
+    })
   }
 }

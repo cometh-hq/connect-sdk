@@ -2,7 +2,12 @@ import axios from 'axios'
 import { SiweMessage } from 'siwe'
 
 import { API_URL } from '../../constants'
-import { OwnerAddress, SmartWalletAddress, UserNonceType } from '../../types'
+import {
+  OwnerAddress,
+  RelayTransactionType,
+  SmartWalletAddress,
+  UserNonceType
+} from '../../types'
 
 export class API {
   static async getNonce(account: string): Promise<UserNonceType | null> {
@@ -35,6 +40,26 @@ export class API {
     const data = response?.data
     if (data) {
       return data
+    }
+    return null
+  }
+
+  static async relayTransaction({
+    smartWalletAddress,
+    safeTxData,
+    signatures
+  }: RelayTransactionType): Promise<string | null> {
+    const url = `${API_URL}/wallets/${smartWalletAddress}/relay`
+    const body = {
+      ...safeTxData,
+      baseGas: safeTxData?.baseGas?.toString(),
+      gasPrice: safeTxData?.gasPrice?.toString(),
+      safeTxGas: safeTxData?.safeTxGas?.toString(),
+      signatures
+    }
+    const response = await axios.post(url, body)
+    if (response?.data?.relayId) {
+      return response?.data?.relayId
     }
     return null
   }

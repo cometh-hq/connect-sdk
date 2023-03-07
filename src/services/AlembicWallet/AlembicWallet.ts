@@ -1,3 +1,4 @@
+import { SafeTransactionDataPartial } from '@safe-global/safe-core-sdk-types'
 import { SiweMessage } from 'siwe'
 
 import {
@@ -76,16 +77,22 @@ export class AlembicWallet {
     })
     if (!smartWalletAddress) throw new Error('Failed to connect to Alembic')
 
+    // We set the connection status to true and store the ethProvider
+
     if (smartWalletAddress) {
       this.smartWalletAddress = smartWalletAddress
       this.ethProvider = this.eoaAdapter.getEthProvider()
     }
 
+    // We initialize the smart wallet
+
     if (this.ethProvider && this.smartWalletAddress) {
-      this.smartWallet = new SmartWallet({
+      const smartWallet = new SmartWallet({
         smartWalletAddress: this.smartWalletAddress,
         ethProvider: this.ethProvider
       })
+      await smartWallet.init()
+      this.smartWallet = smartWallet
     }
   }
 
@@ -117,5 +124,12 @@ export class AlembicWallet {
     })
 
     return message
+  }
+
+  public async sendTransaction(
+    safeTxData: SafeTransactionDataPartial
+  ): Promise<void> {
+    if (!this.smartWallet) throw new Error('No smart wallet found')
+    await this.smartWallet.sendTransaction(safeTxData)
   }
 }
