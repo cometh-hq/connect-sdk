@@ -3,7 +3,6 @@ import { Web3Auth } from '@web3auth/modal'
 import { ethers } from 'ethers'
 
 import { WEB3AUTH_CLIENT_ID } from '../../constants'
-import { OwnerAddress } from '../../types'
 import { EOAAdapter } from '../types'
 
 export class Web3AuthAdapter implements EOAAdapter {
@@ -33,7 +32,9 @@ export class Web3AuthAdapter implements EOAAdapter {
   async connect(): Promise<void> {
     if (!this.web3auth) throw new Error('No Web3Auth instance found')
     await this.web3auth.connect()
-    this._setEthProvider()
+    this.ethProvider = new ethers.providers.Web3Provider(
+      this.web3auth?.provider as any
+    )
   }
 
   async logout(): Promise<void> {
@@ -41,10 +42,10 @@ export class Web3AuthAdapter implements EOAAdapter {
     await this.web3auth.logout()
   }
 
-  async getAccount(): Promise<OwnerAddress | null> {
+  async getAccount(): Promise<string | null> {
     const signer = this.getSigner()
     if (!signer) throw new Error('No signer found')
-    const account = (await signer.getAddress()) as OwnerAddress
+    const account = await signer.getAddress()
     return account ?? null
   }
 
@@ -52,12 +53,6 @@ export class Web3AuthAdapter implements EOAAdapter {
     if (!this.ethProvider) throw new Error('No Web3Auth provider found')
     const signer = this.ethProvider.getSigner()
     return signer ?? null
-  }
-
-  private _setEthProvider(): void {
-    this.ethProvider = new ethers.providers.Web3Provider(
-      this.web3auth?.provider as any
-    )
   }
 
   getEthProvider(): ethers.providers.Web3Provider | null {

@@ -1,4 +1,5 @@
 import { SafeTransactionDataPartial } from '@safe-global/safe-core-sdk-types'
+import { ethers } from 'ethers'
 import { SiweMessage } from 'siwe'
 
 import {
@@ -8,24 +9,18 @@ import {
   EOAConstructor,
   Web3AuthAdapter
 } from '../../adapters'
-import {
-  EthProvider,
-  OwnerAddress,
-  SmartWalletAddress,
-  UserNonceType
-} from '../../types'
+import { UserNonceType } from '../../types'
 import { API } from '../API/API'
 import { SmartWallet } from '../SmartWallet'
-import { SmartWallet as SmartWalletType } from '../types'
 
 export class AlembicWallet {
   private eoaAdapter: EOAAdapter
   private chainId: number
   private rpcTarget: string
   private isConnected = false
-  private smartWalletAddress: SmartWalletAddress | null = null
-  private ethProvider: EthProvider | null = null
-  private smartWallet: SmartWalletType | null = null
+  private smartWalletAddress: string | null = null
+  private ethProvider: ethers.providers.Web3Provider | null = null
+  private smartWallet: SmartWallet | null = null
 
   constructor(
     eoaAdapter: EOAConstructor = Web3AuthAdapter,
@@ -106,10 +101,7 @@ export class AlembicWallet {
     this.isConnected = false
   }
 
-  private createMessage(
-    address: OwnerAddress,
-    nonce: UserNonceType
-  ): SiweMessage {
+  private createMessage(address: string, nonce: UserNonceType): SiweMessage {
     const domain = window.location.host
     const origin = window.location.origin
     const statement = `Sign in with Ethereum to Alembic`

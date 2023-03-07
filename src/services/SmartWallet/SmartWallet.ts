@@ -4,13 +4,11 @@ import EthersAdapter from '@safe-global/safe-ethers-lib'
 import { ethers } from 'ethers'
 
 import { ZERO_X_ZERO } from '../../constants'
-import { EthProvider, SmartWalletAddress } from '../../types'
 import { API } from '../API/API'
-import { SmartWallet as SmartWalletType } from '../types'
 
-export class SmartWallet implements SmartWalletType {
-  private smartWalletAddress: SmartWalletAddress
-  private ethProvider: EthProvider
+export class SmartWallet {
+  private smartWalletAddress: string
+  private ethProvider: ethers.providers.Web3Provider
   private ethAdapter: EthersAdapter
   private safeSdk: Safe | null = null
 
@@ -18,8 +16,8 @@ export class SmartWallet implements SmartWalletType {
     smartWalletAddress,
     ethProvider
   }: {
-    smartWalletAddress: SmartWalletAddress
-    ethProvider: EthProvider
+    smartWalletAddress: string
+    ethProvider: ethers.providers.Web3Provider
   }) {
     this.smartWalletAddress = smartWalletAddress
     this.ethProvider = ethProvider
