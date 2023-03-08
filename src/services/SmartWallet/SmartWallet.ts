@@ -3,7 +3,6 @@ import { SafeTransactionDataPartial } from '@safe-global/safe-core-sdk-types'
 import EthersAdapter from '@safe-global/safe-ethers-lib'
 import { ethers } from 'ethers'
 
-import { ZERO_X_ZERO } from '../../constants'
 import { API } from '../API/API'
 
 export class SmartWallet {
@@ -53,8 +52,8 @@ export class SmartWallet {
       safeTxGas: safeTxData.safeTxGas ?? 0,
       baseGas: safeTxData.baseGas ?? 0,
       gasPrice: safeTxData.gasPrice ?? 0,
-      gasToken: safeTxData.gasToken ?? ZERO_X_ZERO,
-      refundReceiver: safeTxData.refundReceiver ?? ZERO_X_ZERO
+      gasToken: safeTxData.gasToken ?? ethers.constants.AddressZero,
+      refundReceiver: safeTxData.refundReceiver ?? ethers.constants.AddressZero
     }
 
     const safeTransaction = await this.safeSdk.createTransaction({
