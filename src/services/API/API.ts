@@ -31,8 +31,8 @@ export class API {
 
     const response = await api.post(`/wallets/connect`, body)
     const data = response?.data
-    if (data) {
-      return data
+    if (data?.walletAddress) {
+      return data.walletAddress
     }
     return null
   }
