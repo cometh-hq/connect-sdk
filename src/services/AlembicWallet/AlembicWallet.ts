@@ -1,3 +1,5 @@
+import { SafeTransactionDataPartial } from '@safe-global/safe-core-sdk-types'
+import { ethers } from 'ethers'
 import { SiweMessage } from 'siwe'
 
 import {
@@ -7,14 +9,18 @@ import {
   EOAConstructor,
   Web3AuthAdapter
 } from '../../adapters'
-import { OwnerAddress, UserNonceType } from '../../types'
+import { UserNonceType } from '../../types'
 import { API } from '../API/API'
+import { SmartWallet } from '../SmartWallet'
 
 export class AlembicWallet {
   private eoaAdapter: EOAAdapter
   private chainId: number
   private rpcTarget: string
   private isConnected = false
+  private smartWalletAddress: string | null = null
+  private ethProvider: ethers.providers.Web3Provider | null = null
+  private smartWallet: SmartWallet | null = null
 
   constructor(
     eoaAdapter: EOAConstructor = Web3AuthAdapter,
@@ -59,15 +65,29 @@ export class AlembicWallet {
 
     if (!signature) throw new Error('No signature found')
 
-    const walletAddress = await API.connectToAlembicWallet({
+    const smartWalletAddress = await API.connectToAlembicWallet({
       message,
       signature,
       ownerAddress: account
     })
-    if (!walletAddress) throw new Error('Failed to connect to Alembic')
+    if (!smartWalletAddress) throw new Error('Failed to connect to Alembic')
 
-    if (walletAddress) {
-      this.isConnected = true
+    // We set the connection status to true and store the ethProvider
+
+    if (smartWalletAddress) {
+      this.smartWalletAddress = smartWalletAddress
+      this.ethProvider = this.eoaAdapter.getEthProvider()
+    }
+
+    // We initialize the smart wallet
+
+    if (this.ethProvider && this.smartWalletAddress) {
+      const smartWallet = new SmartWallet({
+        smartWalletAddress: this.smartWalletAddress,
+        ethProvider: this.ethProvider
+      })
+      await smartWallet.init()
+      this.smartWallet = smartWallet
     }
   }
 
@@ -81,10 +101,7 @@ export class AlembicWallet {
     this.isConnected = false
   }
 
-  private createMessage(
-    address: OwnerAddress,
-    nonce: UserNonceType
-  ): SiweMessage {
+  private createMessage(address: string, nonce: UserNonceType): SiweMessage {
     const domain = window.location.host
     const origin = window.location.origin
     const statement = `Sign in with Ethereum to Alembic`
@@ -99,5 +116,12 @@ export class AlembicWallet {
     })
 
     return message
+  }
+
+  public async sendTransaction(
+    safeTxData: SafeTransactionDataPartial
+  ): Promise<void> {
+    if (!this.smartWallet) throw new Error('No smart wallet found')
+    await this.smartWallet.sendTransaction(safeTxData)
   }
 }
