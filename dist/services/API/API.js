@@ -32,8 +32,8 @@ class API {
             };
             const response = yield config_1.api.post(`/wallets/connect`, body);
             const data = response === null || response === void 0 ? void 0 : response.data;
-            if (data) {
-                return data;
+            if (data === null || data === void 0 ? void 0 : data.walletAddress) {
+                return data.walletAddress;
             }
             return null;
         });
