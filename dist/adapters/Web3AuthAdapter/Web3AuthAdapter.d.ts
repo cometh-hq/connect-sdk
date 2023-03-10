@@ -1,3 +1,4 @@
+import { UserInfo } from '@web3auth/base'
 import { ethers } from 'ethers'
 
 import { EOAAdapter } from '../types'
@@ -11,4 +12,5 @@ export declare class Web3AuthAdapter implements EOAAdapter {
   getAccount(): Promise<string | null>
   getSigner(): ethers.Signer | null
   getEthProvider(): ethers.providers.Web3Provider | null
+  getUserInfos(): Promise<Partial<UserInfo>>
 }

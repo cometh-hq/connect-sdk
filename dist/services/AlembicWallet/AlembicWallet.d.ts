@@ -10,10 +10,16 @@ export declare class AlembicWallet {
   private smartWalletAddress
   private ethProvider
   private smartWallet
+  private ownerAddress
   constructor(eoaAdapter?: EOAConstructor, chainId?: number, rpcTarget?: string)
   connect(): Promise<void>
   getIsConnected(): boolean
   logout(): Promise<void>
   private createMessage
   sendTransaction(safeTxData: SafeTransactionDataPartial): Promise<void>
+  getUserInfos(): Promise<{
+    email: string | undefined
+    ownerAddress: string
+    smartWalletAddress: string
+  }>
 }

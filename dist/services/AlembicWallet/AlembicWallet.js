@@ -20,6 +20,7 @@ class AlembicWallet {
         this.smartWalletAddress = null;
         this.ethProvider = null;
         this.smartWallet = null;
+        this.ownerAddress = null;
         this.chainId = chainId;
         this.rpcTarget = rpcTarget;
         this.eoaAdapter = new eoaAdapter();
@@ -36,16 +37,17 @@ class AlembicWallet {
             // Initialize EOA adapter
             yield this.eoaAdapter.init(this.chainId, this.rpcTarget);
             yield this.eoaAdapter.connect();
-            // We get the user account
-            const account = yield this.eoaAdapter.getAccount();
-            if (!account)
+            // We get the owner address
+            const ownerAddress = yield this.eoaAdapter.getAccount();
+            if (!ownerAddress)
                 throw new Error('No account found');
+            this.ownerAddress = ownerAddress;
             // We get the user nonce by calling AlembicAPI
-            const nonce = yield API_1.API.getNonce(account);
+            const nonce = yield API_1.API.getNonce(ownerAddress);
             if (!nonce)
                 throw new Error('No nonce found');
             // We prepare and sign a message, using siwe, in order to prove the user identity
-            const message = this.createMessage(account, nonce);
+            const message = this.createMessage(ownerAddress, nonce);
             const messageToSign = message.prepareMessage();
             const signer = this.eoaAdapter.getSigner();
             if (!signer)
@@ -56,7 +58,7 @@ class AlembicWallet {
             const smartWalletAddress = yield API_1.API.connectToAlembicWallet({
                 message,
                 signature,
-                ownerAddress: account
+                ownerAddress: ownerAddress
             });
             if (!smartWalletAddress)
                 throw new Error('Failed to connect to Alembic');
@@ -107,6 +109,19 @@ class AlembicWallet {
             if (!this.smartWallet)
                 throw new Error('No smart wallet found');
             yield this.smartWallet.sendTransaction(safeTxData);
+        });
+    }
+    getUserInfos() {
+        var _a;
+        return __awaiter(this, void 0, void 0, function* () {
+            if (!this.eoaAdapter || !this.ownerAddress || !this.smartWalletAddress)
+                throw new Error('Cannot provide user infos');
+            const email = (_a = (yield this.eoaAdapter.getUserInfos())) === null || _a === void 0 ? void 0 : _a.email;
+            return {
+                email,
+                ownerAddress: this.ownerAddress,
+                smartWalletAddress: this.smartWalletAddress
+            };
         });
     }
 }
