@@ -3,7 +3,7 @@ import { SafeTransactionDataPartial } from '@safe-global/safe-core-sdk-types'
 import EthersAdapter from '@safe-global/safe-ethers-lib'
 import { ethers } from 'ethers'
 
-import { API } from '../API/API'
+import { API } from '../../services/API/API'
 
 export class SmartWallet {
   private smartWalletAddress: string

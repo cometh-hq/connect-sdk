@@ -9,8 +9,8 @@ import {
   EOAConstructor,
   Web3AuthAdapter
 } from '../../adapters'
+import { API } from '../../services/API/API'
 import { TransactionStatus, UserInfos, UserNonceType } from '../../types'
-import { API } from '../API/API'
 import { SmartWallet } from '../SmartWallet'
 
 export class AlembicWallet {
@@ -139,11 +139,19 @@ export class AlembicWallet {
   public async getUserInfos(): Promise<UserInfos> {
     if (!this.eoaAdapter || !this.ownerAddress || !this.smartWalletAddress)
       throw new Error('Cannot provide user infos')
-    const email = (await this.eoaAdapter.getUserInfos())?.email
+    const userInfos = await this.eoaAdapter.getUserInfos()
     return {
-      email,
+      ...userInfos,
       ownerAddress: this.ownerAddress,
       smartWalletAddress: this.smartWalletAddress
     }
+  }
+
+  public getOwnerAddress(): string | null {
+    return this.ownerAddress
+  }
+
+  public getSmartWalletAddress(): string | null {
+    return this.smartWalletAddress
   }
 }

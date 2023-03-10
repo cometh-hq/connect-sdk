@@ -1,6 +1,5 @@
 import { SafeTransactionDataPartial } from '@safe-global/safe-core-sdk-types'
 import { UserInfo } from '@web3auth/base'
-import { ethers } from 'ethers'
 
 export type UserNonceType = {
   userAddress: string

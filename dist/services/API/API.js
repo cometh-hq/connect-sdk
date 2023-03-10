@@ -8,14 +8,21 @@ var __awaiter = (this && this.__awaiter) || function (thisArg, _arguments, P, ge
         step((generator = generator.apply(thisArg, _arguments || [])).next());
     });
 };
+var __importDefault = (this && this.__importDefault) || function (mod) {
+    return (mod && mod.__esModule) ? mod : { "default": mod };
+};
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.API = void 0;
-const config_1 = require("../../config");
+exports.API = exports.api = void 0;
+const axios_1 = __importDefault(require("axios"));
+const constants_1 = require("../../constants");
+exports.api = axios_1.default.create({
+    baseURL: constants_1.API_URL
+});
 class API {
     static getNonce(account) {
         var _a;
         return __awaiter(this, void 0, void 0, function* () {
-            const response = yield config_1.api.get(`/wallets/connection-nonce/${account}`);
+            const response = yield exports.api.get(`/wallets/connection-nonce/${account}`);
             const userNonce = (_a = response === null || response === void 0 ? void 0 : response.data) === null || _a === void 0 ? void 0 : _a.userNonce;
             if (userNonce) {
                 return userNonce;
@@ -30,7 +37,7 @@ class API {
                 signature,
                 ownerAddress
             };
-            const response = yield config_1.api.post(`/wallets/connect`, body);
+            const response = yield exports.api.post(`/wallets/connect`, body);
             const data = response === null || response === void 0 ? void 0 : response.data;
             if (data === null || data === void 0 ? void 0 : data.walletAddress) {
                 return data.walletAddress;
@@ -42,7 +49,7 @@ class API {
         var _a, _b, _c, _d, _e;
         return __awaiter(this, void 0, void 0, function* () {
             const body = Object.assign(Object.assign({}, safeTxData), { baseGas: (_a = safeTxData === null || safeTxData === void 0 ? void 0 : safeTxData.baseGas) === null || _a === void 0 ? void 0 : _a.toString(), gasPrice: (_b = safeTxData === null || safeTxData === void 0 ? void 0 : safeTxData.gasPrice) === null || _b === void 0 ? void 0 : _b.toString(), safeTxGas: (_c = safeTxData === null || safeTxData === void 0 ? void 0 : safeTxData.safeTxGas) === null || _c === void 0 ? void 0 : _c.toString(), signatures });
-            const response = yield config_1.api.post(`/wallets/${smartWalletAddress}/relay`, body);
+            const response = yield exports.api.post(`/wallets/${smartWalletAddress}/relay`, body);
             if ((_d = response === null || response === void 0 ? void 0 : response.data) === null || _d === void 0 ? void 0 : _d.relayId) {
                 return (_e = response === null || response === void 0 ? void 0 : response.data) === null || _e === void 0 ? void 0 : _e.relayId;
             }
@@ -51,7 +58,7 @@ class API {
     }
     static getRelayTxStatus(relayId) {
         return __awaiter(this, void 0, void 0, function* () {
-            const response = yield config_1.api.get(`/wallets/relay/${relayId}`);
+            const response = yield exports.api.get(`/wallets/relay/${relayId}`);
             if (response === null || response === void 0 ? void 0 : response.data) {
                 return response === null || response === void 0 ? void 0 : response.data;
             }

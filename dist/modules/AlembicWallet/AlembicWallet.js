@@ -12,7 +12,7 @@ Object.defineProperty(exports, "__esModule", { value: true });
 exports.AlembicWallet = void 0;
 const siwe_1 = require("siwe");
 const adapters_1 = require("../../adapters");
-const API_1 = require("../API/API");
+const API_1 = require("../../services/API/API");
 const SmartWallet_1 = require("../SmartWallet");
 class AlembicWallet {
     constructor(eoaAdapter = adapters_1.Web3AuthAdapter, chainId = adapters_1.DEFAULT_CHAIN_ID, rpcTarget = adapters_1.DEFAULT_RPC_TARGET) {
@@ -120,17 +120,18 @@ class AlembicWallet {
         });
     }
     getUserInfos() {
-        var _a;
         return __awaiter(this, void 0, void 0, function* () {
             if (!this.eoaAdapter || !this.ownerAddress || !this.smartWalletAddress)
                 throw new Error('Cannot provide user infos');
-            const email = (_a = (yield this.eoaAdapter.getUserInfos())) === null || _a === void 0 ? void 0 : _a.email;
-            return {
-                email,
-                ownerAddress: this.ownerAddress,
-                smartWalletAddress: this.smartWalletAddress
-            };
+            const userInfos = yield this.eoaAdapter.getUserInfos();
+            return Object.assign(Object.assign({}, userInfos), { ownerAddress: this.ownerAddress, smartWalletAddress: this.smartWalletAddress });
         });
+    }
+    getOwnerAddress() {
+        return this.ownerAddress;
+    }
+    getSmartWalletAddress() {
+        return this.smartWalletAddress;
     }
 }
 exports.AlembicWallet = AlembicWallet;

@@ -6,6 +6,7 @@ import {
   UserNonceType
 } from '../../types'
 
+export declare const api: import('axios').AxiosInstance
 export declare class API {
   static getNonce(account: string): Promise<UserNonceType | null>
   static connectToAlembicWallet({

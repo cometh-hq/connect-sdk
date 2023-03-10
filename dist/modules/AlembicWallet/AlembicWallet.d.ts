@@ -22,4 +22,6 @@ export declare class AlembicWallet {
   ): Promise<string | null>
   getRelayTxStatus(relayId: string): Promise<TransactionStatus | null>
   getUserInfos(): Promise<UserInfos>
+  getOwnerAddress(): string | null
+  getSmartWalletAddress(): string | null
 }
