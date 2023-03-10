@@ -9,7 +9,7 @@ import {
   EOAConstructor,
   Web3AuthAdapter
 } from '../../adapters'
-import { UserNonceType } from '../../types'
+import { UserInfos, UserNonceType } from '../../types'
 import { API } from '../API/API'
 import { SmartWallet } from '../SmartWallet'
 
@@ -21,6 +21,7 @@ export class AlembicWallet {
   private smartWalletAddress: string | null = null
   private ethProvider: ethers.providers.Web3Provider | null = null
   private smartWallet: SmartWallet | null = null
+  private ownerAddress: string | null = null
 
   constructor(
     eoaAdapter: EOAConstructor = Web3AuthAdapter,
@@ -44,19 +45,21 @@ export class AlembicWallet {
     await this.eoaAdapter.init(this.chainId, this.rpcTarget)
     await this.eoaAdapter.connect()
 
-    // We get the user account
+    // We get the owner address
 
-    const account = await this.eoaAdapter.getAccount()
-    if (!account) throw new Error('No account found')
+    const ownerAddress = await this.eoaAdapter.getAccount()
+    if (!ownerAddress) throw new Error('No account found')
+
+    this.ownerAddress = ownerAddress
 
     // We get the user nonce by calling AlembicAPI
 
-    const nonce = await API.getNonce(account)
+    const nonce = await API.getNonce(ownerAddress)
     if (!nonce) throw new Error('No nonce found')
 
     // We prepare and sign a message, using siwe, in order to prove the user identity
 
-    const message: SiweMessage = this.createMessage(account, nonce)
+    const message: SiweMessage = this.createMessage(ownerAddress, nonce)
     const messageToSign = message.prepareMessage()
     const signer = this.eoaAdapter.getSigner()
     if (!signer) throw new Error('No signer found')
@@ -68,7 +71,7 @@ export class AlembicWallet {
     const smartWalletAddress = await API.connectToAlembicWallet({
       message,
       signature,
-      ownerAddress: account
+      ownerAddress: ownerAddress
     })
     if (!smartWalletAddress) throw new Error('Failed to connect to Alembic')
 
@@ -123,5 +126,16 @@ export class AlembicWallet {
   ): Promise<void> {
     if (!this.smartWallet) throw new Error('No smart wallet found')
     await this.smartWallet.sendTransaction(safeTxData)
+  }
+
+  public async getUserInfos(): Promise<UserInfos> {
+    if (!this.eoaAdapter || !this.ownerAddress || !this.smartWalletAddress)
+      throw new Error('Cannot provide user infos')
+    const email = (await this.eoaAdapter.getUserInfos())?.email
+    return {
+      email,
+      ownerAddress: this.ownerAddress,
+      smartWalletAddress: this.smartWalletAddress
+    }
   }
 }

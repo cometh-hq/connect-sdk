@@ -1,4 +1,4 @@
-import { CHAIN_NAMESPACES } from '@web3auth/base'
+import { CHAIN_NAMESPACES, UserInfo } from '@web3auth/base'
 import { Web3Auth } from '@web3auth/modal'
 import { ethers } from 'ethers'
 
@@ -57,5 +57,11 @@ export class Web3AuthAdapter implements EOAAdapter {
 
   getEthProvider(): ethers.providers.Web3Provider | null {
     return this.ethProvider ?? null
+  }
+
+  async getUserInfos(): Promise<Partial<UserInfo>> {
+    if (!this.web3auth) throw new Error('No Web3Auth instance found')
+    const userInfos = await this.web3auth.getUserInfo()
+    return userInfos ?? {}
   }
 }

@@ -1,4 +1,3 @@
-import axios from 'axios'
 import { SiweMessage } from 'siwe'
 
 import { api } from '../../config'
