@@ -1,7 +1,11 @@
 import { SiweMessage } from 'siwe'
 
 import { api } from '../../config'
-import { RelayTransactionType, UserNonceType } from '../../types'
+import {
+  RelayTransactionType,
+  TransactionStatus,
+  UserNonceType
+} from '../../types'
 
 export class API {
   static async getNonce(account: string): Promise<UserNonceType | null> {
@@ -54,6 +58,16 @@ export class API {
     )
     if (response?.data?.relayId) {
       return response?.data?.relayId
+    }
+    return null
+  }
+
+  static async getRelayTxStatus(
+    relayId: string
+  ): Promise<TransactionStatus | null> {
+    const response = await api.get(`/wallets/relay/${relayId}`)
+    if (response?.data) {
+      return response?.data
     }
     return null
   }

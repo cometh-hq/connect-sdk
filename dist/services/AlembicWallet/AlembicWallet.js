@@ -108,7 +108,15 @@ class AlembicWallet {
         return __awaiter(this, void 0, void 0, function* () {
             if (!this.smartWallet)
                 throw new Error('No smart wallet found');
-            yield this.smartWallet.sendTransaction(safeTxData);
+            const relayId = yield this.smartWallet.sendTransaction(safeTxData);
+            return relayId;
+        });
+    }
+    getRelayTxStatus(relayId) {
+        return __awaiter(this, void 0, void 0, function* () {
+            if (!this.smartWallet)
+                throw new Error('No smart wallet found');
+            return yield API_1.API.getRelayTxStatus(relayId);
         });
     }
     getUserInfos() {

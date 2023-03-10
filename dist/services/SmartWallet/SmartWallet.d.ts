@@ -14,5 +14,7 @@ export declare class SmartWallet {
     ethProvider: ethers.providers.Web3Provider
   })
   init(): Promise<void>
-  sendTransaction(safeTxData: SafeTransactionDataPartial): Promise<void>
+  sendTransaction(
+    safeTxData: SafeTransactionDataPartial
+  ): Promise<string | null>
 }

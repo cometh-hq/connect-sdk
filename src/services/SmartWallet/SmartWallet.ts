@@ -41,7 +41,9 @@ export class SmartWallet {
     }
   }
 
-  async sendTransaction(safeTxData: SafeTransactionDataPartial): Promise<void> {
+  async sendTransaction(
+    safeTxData: SafeTransactionDataPartial
+  ): Promise<string | null> {
     if (!this.safeSdk) throw new Error('No Safe SDK found')
 
     const safeTxDataTyped = {
@@ -66,5 +68,7 @@ export class SmartWallet {
       signatures: signature.data,
       smartWalletAddress: this.smartWalletAddress
     })
+
+    return relayId
   }
 }

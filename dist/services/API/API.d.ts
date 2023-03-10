@@ -1,6 +1,10 @@
 import { SiweMessage } from 'siwe'
 
-import { RelayTransactionType, UserNonceType } from '../../types'
+import {
+  RelayTransactionType,
+  TransactionStatus,
+  UserNonceType
+} from '../../types'
 
 export declare class API {
   static getNonce(account: string): Promise<UserNonceType | null>
@@ -18,4 +22,5 @@ export declare class API {
     safeTxData,
     signatures
   }: RelayTransactionType): Promise<string | null>
+  static getRelayTxStatus(relayId: string): Promise<TransactionStatus | null>
 }

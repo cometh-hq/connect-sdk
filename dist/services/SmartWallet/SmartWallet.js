@@ -69,6 +69,7 @@ class SmartWallet {
                 signatures: signature.data,
                 smartWalletAddress: this.smartWalletAddress
             });
+            return relayId;
         });
     }
 }

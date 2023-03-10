@@ -49,5 +49,14 @@ class API {
             return null;
         });
     }
+    static getRelayTxStatus(relayId) {
+        return __awaiter(this, void 0, void 0, function* () {
+            const response = yield config_1.api.get(`/wallets/relay/${relayId}`);
+            if (response === null || response === void 0 ? void 0 : response.data) {
+                return response === null || response === void 0 ? void 0 : response.data;
+            }
+            return null;
+        });
+    }
 }
 exports.API = API;
