@@ -9,8 +9,8 @@ import {
   EOAConstructor,
   Web3AuthAdapter
 } from '../../adapters'
-import { UserInfos, UserNonceType } from '../../types'
-import { API } from '../API/API'
+import { API } from '../../services/API/API'
+import { TransactionStatus, UserInfos, UserNonceType } from '../../types'
 import { SmartWallet } from '../SmartWallet'
 
 export class AlembicWallet {
@@ -123,19 +123,35 @@ export class AlembicWallet {
 
   public async sendTransaction(
     safeTxData: SafeTransactionDataPartial
-  ): Promise<void> {
+  ): Promise<string | null> {
     if (!this.smartWallet) throw new Error('No smart wallet found')
-    await this.smartWallet.sendTransaction(safeTxData)
+    const relayId = await this.smartWallet.sendTransaction(safeTxData)
+    return relayId
+  }
+
+  public async getRelayTxStatus(
+    relayId: string
+  ): Promise<TransactionStatus | null> {
+    if (!this.smartWallet) throw new Error('No smart wallet found')
+    return await API.getRelayTxStatus(relayId)
   }
 
   public async getUserInfos(): Promise<UserInfos> {
     if (!this.eoaAdapter || !this.ownerAddress || !this.smartWalletAddress)
       throw new Error('Cannot provide user infos')
-    const email = (await this.eoaAdapter.getUserInfos())?.email
+    const userInfos = await this.eoaAdapter.getUserInfos()
     return {
-      email,
+      ...userInfos,
       ownerAddress: this.ownerAddress,
       smartWalletAddress: this.smartWalletAddress
     }
+  }
+
+  public getOwnerAddress(): string | null {
+    return this.ownerAddress
+  }
+
+  public getSmartWalletAddress(): string | null {
+    return this.smartWalletAddress
   }
 }

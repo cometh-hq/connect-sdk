@@ -1,7 +1,16 @@
+import axios from 'axios'
 import { SiweMessage } from 'siwe'
 
-import { api } from '../../config'
-import { RelayTransactionType, UserNonceType } from '../../types'
+import { API_URL } from '../../constants'
+import {
+  RelayTransactionType,
+  TransactionStatus,
+  UserNonceType
+} from '../../types'
+
+export const api = axios.create({
+  baseURL: API_URL
+})
 
 export class API {
   static async getNonce(account: string): Promise<UserNonceType | null> {
@@ -54,6 +63,16 @@ export class API {
     )
     if (response?.data?.relayId) {
       return response?.data?.relayId
+    }
+    return null
+  }
+
+  static async getRelayTxStatus(
+    relayId: string
+  ): Promise<TransactionStatus | null> {
+    const response = await api.get(`/wallets/relay/${relayId}`)
+    if (response?.data) {
+      return response?.data
     }
     return null
   }

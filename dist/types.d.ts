@@ -15,3 +15,7 @@ export type UserInfos = Partial<UserInfo> & {
   ownerAddress: string
   smartWalletAddress: string
 }
+export type TransactionStatus = {
+  hash: string
+  status: string
+}

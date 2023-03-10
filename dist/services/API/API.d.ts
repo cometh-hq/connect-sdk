@@ -1,7 +1,12 @@
 import { SiweMessage } from 'siwe'
 
-import { RelayTransactionType, UserNonceType } from '../../types'
+import {
+  RelayTransactionType,
+  TransactionStatus,
+  UserNonceType
+} from '../../types'
 
+export declare const api: import('axios').AxiosInstance
 export declare class API {
   static getNonce(account: string): Promise<UserNonceType | null>
   static connectToAlembicWallet({
@@ -18,4 +23,5 @@ export declare class API {
     safeTxData,
     signatures
   }: RelayTransactionType): Promise<string | null>
+  static getRelayTxStatus(relayId: string): Promise<TransactionStatus | null>
 }

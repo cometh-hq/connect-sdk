@@ -16,7 +16,7 @@ exports.SmartWallet = void 0;
 const safe_core_sdk_1 = __importDefault(require("@safe-global/safe-core-sdk"));
 const safe_ethers_lib_1 = __importDefault(require("@safe-global/safe-ethers-lib"));
 const ethers_1 = require("ethers");
-const API_1 = require("../API/API");
+const API_1 = require("../../services/API/API");
 class SmartWallet {
     constructor({ smartWalletAddress, ethProvider }) {
         this.safeSdk = null;
@@ -69,6 +69,7 @@ class SmartWallet {
                 signatures: signature.data,
                 smartWalletAddress: this.smartWalletAddress
             });
+            return relayId;
         });
     }
 }
