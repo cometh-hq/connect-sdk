@@ -75,5 +75,13 @@ class Web3AuthAdapter {
         var _a;
         return (_a = this.ethProvider) !== null && _a !== void 0 ? _a : null;
     }
+    getUserInfos() {
+        return __awaiter(this, void 0, void 0, function* () {
+            if (!this.web3auth)
+                throw new Error('No Web3Auth instance found');
+            const userInfos = yield this.web3auth.getUserInfo();
+            return userInfos !== null && userInfos !== void 0 ? userInfos : {};
+        });
+    }
 }
 exports.Web3AuthAdapter = Web3AuthAdapter;
