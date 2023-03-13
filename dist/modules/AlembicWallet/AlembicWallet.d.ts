@@ -2,7 +2,7 @@ import { SafeTransactionDataPartial } from '@safe-global/safe-core-sdk-types'
 import { SiweMessage } from 'siwe'
 
 import { EOAConstructor } from '../../adapters'
-import { TransactionStatus, UserInfos, UserNonceType } from '../../types'
+import { TransactionStatus, UserInfos } from '../../types'
 
 export declare class AlembicWallet {
   private eoaAdapter
@@ -13,15 +13,12 @@ export declare class AlembicWallet {
   private ethProvider
   private smartWallet
   private ownerAddress
+  private nonce
   constructor(eoaAdapter?: EOAConstructor, chainId?: number, rpcTarget?: string)
   connect(): Promise<void>
   getIsConnected(): boolean
   logout(): Promise<void>
-  createMessage(
-    address: string,
-    nonce: UserNonceType,
-    statement?: string
-  ): SiweMessage
+  createMessage(statement?: string): SiweMessage
   sendTransaction(
     safeTxData: SafeTransactionDataPartial
   ): Promise<string | null>

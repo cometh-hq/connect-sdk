@@ -21,6 +21,7 @@ class AlembicWallet {
         this.ethProvider = null;
         this.smartWallet = null;
         this.ownerAddress = null;
+        this.nonce = null;
         this.chainId = chainId;
         this.rpcTarget = rpcTarget;
         this.eoaAdapter = new eoaAdapter();
@@ -46,8 +47,9 @@ class AlembicWallet {
             const nonce = yield API_1.API.getNonce(ownerAddress);
             if (!nonce)
                 throw new Error('No nonce found');
+            this.nonce = nonce;
             // We prepare and sign a message, using siwe, in order to prove the user identity
-            const message = this.createMessage(ownerAddress, nonce);
+            const message = this.createMessage();
             const signature = yield this.signMessage(message);
             if (!signature)
                 throw new Error('No signature found');
@@ -85,17 +87,20 @@ class AlembicWallet {
             this.isConnected = false;
         });
     }
-    createMessage(address, nonce, statement = `Sign in with Ethereum to Alembic`) {
+    createMessage(statement = `Sign in with Ethereum to Alembic`) {
+        var _a;
+        if (!this.nonce || !this.ownerAddress)
+            throw new Error('No nonce or ownerAddress found');
         const domain = window.location.host;
         const origin = window.location.origin;
         const message = new siwe_1.SiweMessage({
             domain,
-            address,
+            address: this.ownerAddress,
             statement,
             uri: origin,
             version: '1',
             chainId: this.chainId,
-            nonce: nonce === null || nonce === void 0 ? void 0 : nonce.connectionNonce
+            nonce: (_a = this.nonce) === null || _a === void 0 ? void 0 : _a.connectionNonce
         });
         return message;
     }
