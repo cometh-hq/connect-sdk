@@ -60,11 +60,7 @@ export class AlembicWallet {
     // We prepare and sign a message, using siwe, in order to prove the user identity
 
     const message: SiweMessage = this.createMessage(ownerAddress, nonce)
-    const messageToSign = message.prepareMessage()
-    const signer = this.eoaAdapter.getSigner()
-    if (!signer) throw new Error('No signer found')
-
-    const signature = await signer.signMessage(messageToSign)
+    const signature = await this.signMessage(message)
 
     if (!signature) throw new Error('No signature found')
 
@@ -104,10 +100,13 @@ export class AlembicWallet {
     this.isConnected = false
   }
 
-  private createMessage(address: string, nonce: UserNonceType): SiweMessage {
+  public createMessage(
+    address: string,
+    nonce: UserNonceType,
+    statement = `Sign in with Ethereum to Alembic`
+  ): SiweMessage {
     const domain = window.location.host
     const origin = window.location.origin
-    const statement = `Sign in with Ethereum to Alembic`
     const message = new SiweMessage({
       domain,
       address,
@@ -153,5 +152,13 @@ export class AlembicWallet {
 
   public getSmartWalletAddress(): string | null {
     return this.smartWalletAddress
+  }
+
+  public async signMessage(message: SiweMessage): Promise<string | undefined> {
+    if (!this.eoaAdapter) throw new Error('No EOA adapter found')
+    const messageToSign = message.prepareMessage()
+    const signer = this.eoaAdapter.getSigner()
+    const signature = await signer?.signMessage(messageToSign)
+    return signature
   }
 }

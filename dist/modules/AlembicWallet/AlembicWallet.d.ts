@@ -1,7 +1,8 @@
 import { SafeTransactionDataPartial } from '@safe-global/safe-core-sdk-types'
+import { SiweMessage } from 'siwe'
 
 import { EOAConstructor } from '../../adapters'
-import { TransactionStatus, UserInfos } from '../../types'
+import { TransactionStatus, UserInfos, UserNonceType } from '../../types'
 
 export declare class AlembicWallet {
   private eoaAdapter
@@ -16,7 +17,11 @@ export declare class AlembicWallet {
   connect(): Promise<void>
   getIsConnected(): boolean
   logout(): Promise<void>
-  private createMessage
+  createMessage(
+    address: string,
+    nonce: UserNonceType,
+    statement?: string
+  ): SiweMessage
   sendTransaction(
     safeTxData: SafeTransactionDataPartial
   ): Promise<string | null>
@@ -24,4 +29,5 @@ export declare class AlembicWallet {
   getUserInfos(): Promise<UserInfos>
   getOwnerAddress(): string | null
   getSmartWalletAddress(): string | null
+  signMessage(message: SiweMessage): Promise<string | undefined>
 }
