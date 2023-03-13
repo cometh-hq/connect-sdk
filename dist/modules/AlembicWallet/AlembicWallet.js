@@ -49,10 +49,7 @@ class AlembicWallet {
             // We prepare and sign a message, using siwe, in order to prove the user identity
             const message = this.createMessage(ownerAddress, nonce);
             const messageToSign = message.prepareMessage();
-            const signer = this.eoaAdapter.getSigner();
-            if (!signer)
-                throw new Error('No signer found');
-            const signature = yield signer.signMessage(messageToSign);
+            const signature = yield this.signMessage(messageToSign);
             if (!signature)
                 throw new Error('No signature found');
             const smartWalletAddress = yield API_1.API.connectToAlembicWallet({
@@ -132,6 +129,15 @@ class AlembicWallet {
     }
     getSmartWalletAddress() {
         return this.smartWalletAddress;
+    }
+    signMessage(messageToSign) {
+        return __awaiter(this, void 0, void 0, function* () {
+            if (!this.eoaAdapter)
+                throw new Error('No EOA adapter found');
+            const signer = this.eoaAdapter.getSigner();
+            const signature = yield (signer === null || signer === void 0 ? void 0 : signer.signMessage(messageToSign));
+            return signature;
+        });
     }
 }
 exports.AlembicWallet = AlembicWallet;

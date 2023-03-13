@@ -24,4 +24,5 @@ export declare class AlembicWallet {
   getUserInfos(): Promise<UserInfos>
   getOwnerAddress(): string | null
   getSmartWalletAddress(): string | null
+  signMessage(messageToSign: string): Promise<string | undefined>
 }
