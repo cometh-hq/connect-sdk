@@ -101,13 +101,10 @@ export class AlembicWallet {
     this.isConnected = false
   }
 
-  public createMessage(
-    address,
-    nonce,
-    statement = `Sign in with Ethereum to Alembic`
-  ): SiweMessage {
+  private createMessage(address, nonce): SiweMessage {
     const domain = window.location.host
     const origin = window.location.origin
+    const statement = `Sign in with Ethereum to Alembic`
     const message = new SiweMessage({
       domain,
       address,

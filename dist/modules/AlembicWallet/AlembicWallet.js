@@ -86,9 +86,10 @@ class AlembicWallet {
             this.isConnected = false;
         });
     }
-    createMessage(address, nonce, statement = `Sign in with Ethereum to Alembic`) {
+    createMessage(address, nonce) {
         const domain = window.location.host;
         const origin = window.location.origin;
+        const statement = `Sign in with Ethereum to Alembic`;
         const message = new siwe_1.SiweMessage({
             domain,
             address,

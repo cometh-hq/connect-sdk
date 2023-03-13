@@ -1,5 +1,4 @@
 import { SafeTransactionDataPartial } from '@safe-global/safe-core-sdk-types'
-import { SiweMessage } from 'siwe'
 
 import { EOAConstructor } from '../../adapters'
 import { TransactionStatus, UserInfos } from '../../types'
@@ -17,7 +16,7 @@ export declare class AlembicWallet {
   connect(): Promise<void>
   getIsConnected(): boolean
   logout(): Promise<void>
-  createMessage(address: any, nonce: any, statement?: string): SiweMessage
+  private createMessage
   sendTransaction(
     safeTxData: SafeTransactionDataPartial
   ): Promise<string | null>
