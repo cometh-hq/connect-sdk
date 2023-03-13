@@ -13,12 +13,11 @@ export declare class AlembicWallet {
   private ethProvider
   private smartWallet
   private ownerAddress
-  private nonce
   constructor(eoaAdapter?: EOAConstructor, chainId?: number, rpcTarget?: string)
   connect(): Promise<void>
   getIsConnected(): boolean
   logout(): Promise<void>
-  createMessage(statement?: string): SiweMessage
+  createMessage(address: any, nonce: any, statement?: string): SiweMessage
   sendTransaction(
     safeTxData: SafeTransactionDataPartial
   ): Promise<string | null>
@@ -26,5 +25,5 @@ export declare class AlembicWallet {
   getUserInfos(): Promise<UserInfos>
   getOwnerAddress(): string | null
   getSmartWalletAddress(): string | null
-  signMessage(message: SiweMessage): Promise<string | undefined>
+  signMessage(messageToSign: string): Promise<string | undefined>
 }

@@ -22,7 +22,6 @@ export class AlembicWallet {
   private ethProvider: ethers.providers.Web3Provider | null = null
   private smartWallet: SmartWallet | null = null
   private ownerAddress: string | null = null
-  private nonce: UserNonceType | null = null
 
   constructor(
     eoaAdapter: EOAConstructor = Web3AuthAdapter,
@@ -57,12 +56,12 @@ export class AlembicWallet {
 
     const nonce = await API.getNonce(ownerAddress)
     if (!nonce) throw new Error('No nonce found')
-    this.nonce = nonce
 
     // We prepare and sign a message, using siwe, in order to prove the user identity
 
-    const message: SiweMessage = this.createMessage()
-    const signature = await this.signMessage(message)
+    const message: SiweMessage = this.createMessage(ownerAddress, nonce)
+    const messageToSign = message.prepareMessage()
+    const signature = await this.signMessage(messageToSign)
 
     if (!signature) throw new Error('No signature found')
 
@@ -103,21 +102,20 @@ export class AlembicWallet {
   }
 
   public createMessage(
+    address,
+    nonce,
     statement = `Sign in with Ethereum to Alembic`
   ): SiweMessage {
-    if (!this.nonce || !this.ownerAddress)
-      throw new Error('No nonce or ownerAddress found')
-
     const domain = window.location.host
     const origin = window.location.origin
     const message = new SiweMessage({
       domain,
-      address: this.ownerAddress,
+      address,
       statement,
       uri: origin,
       version: '1',
       chainId: this.chainId,
-      nonce: this.nonce?.connectionNonce
+      nonce: nonce?.connectionNonce
     })
 
     return message
@@ -157,9 +155,8 @@ export class AlembicWallet {
     return this.smartWalletAddress
   }
 
-  public async signMessage(message: SiweMessage): Promise<string | undefined> {
+  public async signMessage(messageToSign: string): Promise<string | undefined> {
     if (!this.eoaAdapter) throw new Error('No EOA adapter found')
-    const messageToSign = message.prepareMessage()
     const signer = this.eoaAdapter.getSigner()
     const signature = await signer?.signMessage(messageToSign)
     return signature

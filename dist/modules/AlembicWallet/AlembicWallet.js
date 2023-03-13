@@ -21,7 +21,6 @@ class AlembicWallet {
         this.ethProvider = null;
         this.smartWallet = null;
         this.ownerAddress = null;
-        this.nonce = null;
         this.chainId = chainId;
         this.rpcTarget = rpcTarget;
         this.eoaAdapter = new eoaAdapter();
@@ -47,10 +46,10 @@ class AlembicWallet {
             const nonce = yield API_1.API.getNonce(ownerAddress);
             if (!nonce)
                 throw new Error('No nonce found');
-            this.nonce = nonce;
             // We prepare and sign a message, using siwe, in order to prove the user identity
-            const message = this.createMessage();
-            const signature = yield this.signMessage(message);
+            const message = this.createMessage(ownerAddress, nonce);
+            const messageToSign = message.prepareMessage();
+            const signature = yield this.signMessage(messageToSign);
             if (!signature)
                 throw new Error('No signature found');
             const smartWalletAddress = yield API_1.API.connectToAlembicWallet({
@@ -87,20 +86,17 @@ class AlembicWallet {
             this.isConnected = false;
         });
     }
-    createMessage(statement = `Sign in with Ethereum to Alembic`) {
-        var _a;
-        if (!this.nonce || !this.ownerAddress)
-            throw new Error('No nonce or ownerAddress found');
+    createMessage(address, nonce, statement = `Sign in with Ethereum to Alembic`) {
         const domain = window.location.host;
         const origin = window.location.origin;
         const message = new siwe_1.SiweMessage({
             domain,
-            address: this.ownerAddress,
+            address,
             statement,
             uri: origin,
             version: '1',
             chainId: this.chainId,
-            nonce: (_a = this.nonce) === null || _a === void 0 ? void 0 : _a.connectionNonce
+            nonce: nonce === null || nonce === void 0 ? void 0 : nonce.connectionNonce
         });
         return message;
     }
@@ -133,11 +129,10 @@ class AlembicWallet {
     getSmartWalletAddress() {
         return this.smartWalletAddress;
     }
-    signMessage(message) {
+    signMessage(messageToSign) {
         return __awaiter(this, void 0, void 0, function* () {
             if (!this.eoaAdapter)
                 throw new Error('No EOA adapter found');
-            const messageToSign = message.prepareMessage();
             const signer = this.eoaAdapter.getSigner();
             const signature = yield (signer === null || signer === void 0 ? void 0 : signer.signMessage(messageToSign));
             return signature;
