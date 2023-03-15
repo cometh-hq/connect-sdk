@@ -27,7 +27,7 @@ class Web3AuthAdapter {
                 throw new Error('Missing rpcUrl parameter');
             const web3auth = new modal_1.Web3Auth({
                 clientId: constants_1.WEB3AUTH_CLIENT_ID,
-                web3AuthNetwork: 'mainnet',
+                web3AuthNetwork: 'testnet',
                 chainConfig: {
                     chainId: ethers_1.ethers.utils.hexlify(chainId),
                     chainNamespace: base_1.CHAIN_NAMESPACES.EIP155,

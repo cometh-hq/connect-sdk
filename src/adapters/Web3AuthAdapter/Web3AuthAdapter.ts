@@ -15,7 +15,7 @@ export class Web3AuthAdapter implements EOAAdapter {
 
     const web3auth = new Web3Auth({
       clientId: WEB3AUTH_CLIENT_ID,
-      web3AuthNetwork: 'mainnet',
+      web3AuthNetwork: 'testnet',
       chainConfig: {
         chainId: ethers.utils.hexlify(chainId),
         chainNamespace: CHAIN_NAMESPACES.EIP155,
