@@ -7,14 +7,14 @@ export declare class AlembicWallet {
   private eoaAdapter
   private chainId
   private rpcTarget
-  private isConnected
+  private connected
   private smartWalletAddress
   private ethProvider
   private smartWallet
   private ownerAddress
   constructor(eoaAdapter?: EOAConstructor, chainId?: number, rpcTarget?: string)
   connect(): Promise<void>
-  getIsConnected(): boolean
+  getConnected(): boolean
   logout(): Promise<void>
   private createMessage
   sendTransaction(

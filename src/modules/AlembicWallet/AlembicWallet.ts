@@ -10,14 +10,14 @@ import {
   Web3AuthAdapter
 } from '../../adapters'
 import { API } from '../../services/API/API'
-import { TransactionStatus, UserInfos, UserNonceType } from '../../types'
+import { TransactionStatus, UserInfos } from '../../types'
 import { SmartWallet } from '../SmartWallet'
 
 export class AlembicWallet {
   private eoaAdapter: EOAAdapter
   private chainId: number
   private rpcTarget: string
-  private isConnected = false
+  private connected = false
   private smartWalletAddress: string | null = null
   private ethProvider: ethers.providers.Web3Provider | null = null
   private smartWallet: SmartWallet | null = null
@@ -88,17 +88,18 @@ export class AlembicWallet {
       })
       await smartWallet.init()
       this.smartWallet = smartWallet
+      this.connected = true
     }
   }
 
-  public getIsConnected(): boolean {
-    return this.isConnected
+  public getConnected(): boolean {
+    return this.connected
   }
 
   public async logout(): Promise<void> {
     if (!this.eoaAdapter) throw new Error('No EOA adapter found')
     await this.eoaAdapter.logout()
-    this.isConnected = false
+    this.connected = false
   }
 
   private createMessage(address, nonce): SiweMessage {

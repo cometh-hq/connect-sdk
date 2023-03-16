@@ -16,7 +16,7 @@ const API_1 = require("../../services/API/API");
 const SmartWallet_1 = require("../SmartWallet");
 class AlembicWallet {
     constructor(eoaAdapter = adapters_1.Web3AuthAdapter, chainId = adapters_1.DEFAULT_CHAIN_ID, rpcTarget = adapters_1.DEFAULT_RPC_TARGET) {
-        this.isConnected = false;
+        this.connected = false;
         this.smartWalletAddress = null;
         this.ethProvider = null;
         this.smartWallet = null;
@@ -72,18 +72,19 @@ class AlembicWallet {
                 });
                 yield smartWallet.init();
                 this.smartWallet = smartWallet;
+                this.connected = true;
             }
         });
     }
-    getIsConnected() {
-        return this.isConnected;
+    getConnected() {
+        return this.connected;
     }
     logout() {
         return __awaiter(this, void 0, void 0, function* () {
             if (!this.eoaAdapter)
                 throw new Error('No EOA adapter found');
             yield this.eoaAdapter.logout();
-            this.isConnected = false;
+            this.connected = false;
         });
     }
     createMessage(address, nonce) {
