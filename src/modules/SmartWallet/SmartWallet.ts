@@ -42,7 +42,8 @@ export class SmartWallet {
   }
 
   async sendTransaction(
-    safeTxData: SafeTransactionDataPartial
+    safeTxData: SafeTransactionDataPartial,
+    API: API
   ): Promise<string | null> {
     if (!this.safeSdk) throw new Error('No Safe SDK found')
 

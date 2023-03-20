@@ -3,6 +3,12 @@ import { SafeTransactionDataPartial } from '@safe-global/safe-core-sdk-types'
 import { EOAConstructor } from '../../adapters'
 import { TransactionStatus, UserInfos } from '../../types'
 
+export interface IAlembicWalletConstructor {
+  eoaAdapter?: EOAConstructor
+  chainId?: number
+  rpcTarget?: string
+  apiKey: string
+}
 export declare class AlembicWallet {
   private eoaAdapter
   private chainId
@@ -12,7 +18,13 @@ export declare class AlembicWallet {
   private ethProvider
   private smartWallet
   private ownerAddress
-  constructor(eoaAdapter?: EOAConstructor, chainId?: number, rpcTarget?: string)
+  private API
+  constructor({
+    eoaAdapter,
+    chainId,
+    rpcTarget,
+    apiKey
+  }: IAlembicWalletConstructor)
   connect(): Promise<void>
   getConnected(): boolean
   logout(): Promise<void>
@@ -20,7 +32,9 @@ export declare class AlembicWallet {
   sendTransaction(
     safeTxData: SafeTransactionDataPartial
   ): Promise<string | null>
-  getRelayTxStatus(relayId: string): Promise<TransactionStatus | null>
+  getRelayTxStatus(
+    relayId: string
+  ): Promise<TransactionStatus | null | undefined>
   getUserInfos(): Promise<UserInfos>
   getOwnerAddress(): string | null
   getSmartWalletAddress(): string | null

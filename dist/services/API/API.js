@@ -19,7 +19,10 @@ exports.api = axios_1.default.create({
     baseURL: constants_1.API_URL
 });
 class API {
-    static getNonce(account) {
+    constructor(apiKey) {
+        exports.api.defaults.headers.common['apikey'] = apiKey;
+    }
+    getNonce(account) {
         var _a;
         return __awaiter(this, void 0, void 0, function* () {
             const response = yield exports.api.get(`/wallets/connection-nonce/${account}`);
@@ -30,7 +33,7 @@ class API {
             return null;
         });
     }
-    static connectToAlembicWallet({ message, signature, ownerAddress }) {
+    connectToAlembicWallet({ message, signature, ownerAddress }) {
         return __awaiter(this, void 0, void 0, function* () {
             const body = {
                 message,
@@ -45,7 +48,7 @@ class API {
             return null;
         });
     }
-    static relayTransaction({ smartWalletAddress, safeTxData, signatures }) {
+    relayTransaction({ smartWalletAddress, safeTxData, signatures }) {
         var _a, _b, _c, _d, _e;
         return __awaiter(this, void 0, void 0, function* () {
             const body = Object.assign(Object.assign({}, safeTxData), { baseGas: (_a = safeTxData === null || safeTxData === void 0 ? void 0 : safeTxData.baseGas) === null || _a === void 0 ? void 0 : _a.toString(), gasPrice: (_b = safeTxData === null || safeTxData === void 0 ? void 0 : safeTxData.gasPrice) === null || _b === void 0 ? void 0 : _b.toString(), safeTxGas: (_c = safeTxData === null || safeTxData === void 0 ? void 0 : safeTxData.safeTxGas) === null || _c === void 0 ? void 0 : _c.toString(), signatures });
@@ -56,7 +59,7 @@ class API {
             return null;
         });
     }
-    static getRelayTxStatus(relayId) {
+    getRelayTxStatus(relayId) {
         return __awaiter(this, void 0, void 0, function* () {
             const response = yield exports.api.get(`/wallets/relay/${relayId}`);
             if (response === null || response === void 0 ? void 0 : response.data) {
