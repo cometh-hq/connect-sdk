@@ -2,9 +2,8 @@ import Safe from '@safe-global/safe-core-sdk'
 import { SafeTransactionDataPartial } from '@safe-global/safe-core-sdk-types'
 import EthersAdapter from '@safe-global/safe-ethers-lib'
 import { ethers } from 'ethers'
-import { ErrorFragment } from 'ethers/lib/utils'
 
-import { API, api } from '../../services/API/API'
+import { API } from '../../services/API/API'
 
 export interface SmartWalletConfig {
   smartWalletAddress: string

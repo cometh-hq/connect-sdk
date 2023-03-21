@@ -9,7 +9,7 @@ import {
   EOAConstructor,
   Web3AuthAdapter
 } from '../../adapters'
-import { API, api } from '../../services/API/API'
+import { API } from '../../services/API/API'
 import { TransactionStatus, UserInfos } from '../../types'
 import { SmartWallet } from '../SmartWallet'
 
