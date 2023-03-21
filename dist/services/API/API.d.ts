@@ -8,8 +8,9 @@ import {
 
 export declare const api: import('axios').AxiosInstance
 export declare class API {
-  static getNonce(account: string): Promise<UserNonceType | null>
-  static connectToAlembicWallet({
+  constructor(apiKey: string)
+  getNonce(account: string): Promise<UserNonceType | null>
+  connectToAlembicWallet({
     message,
     signature,
     ownerAddress
@@ -18,10 +19,10 @@ export declare class API {
     signature: string
     ownerAddress: string
   }): Promise<string | null>
-  static relayTransaction({
+  relayTransaction({
     smartWalletAddress,
     safeTxData,
     signatures
   }: RelayTransactionType): Promise<string | null>
-  static getRelayTxStatus(relayId: string): Promise<TransactionStatus | null>
+  getRelayTxStatus(relayId: string): Promise<TransactionStatus | null>
 }

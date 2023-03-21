@@ -13,7 +13,11 @@ export const api = axios.create({
 })
 
 export class API {
-  static async getNonce(account: string): Promise<UserNonceType | null> {
+  constructor(apiKey: string) {
+    api.defaults.headers.common['apikey'] = apiKey
+  }
+
+  async getNonce(account: string): Promise<UserNonceType | null> {
     const response = await api.get(`/wallets/connection-nonce/${account}`)
     const userNonce = response?.data?.userNonce
     if (userNonce) {
@@ -22,7 +26,7 @@ export class API {
     return null
   }
 
-  static async connectToAlembicWallet({
+  async connectToAlembicWallet({
     message,
     signature,
     ownerAddress
@@ -45,7 +49,7 @@ export class API {
     return null
   }
 
-  static async relayTransaction({
+  async relayTransaction({
     smartWalletAddress,
     safeTxData,
     signatures
@@ -67,9 +71,7 @@ export class API {
     return null
   }
 
-  static async getRelayTxStatus(
-    relayId: string
-  ): Promise<TransactionStatus | null> {
+  async getRelayTxStatus(relayId: string): Promise<TransactionStatus | null> {
     const response = await api.get(`/wallets/relay/${relayId}`)
     if (response?.data) {
       return response?.data

@@ -15,17 +15,24 @@ const adapters_1 = require("../../adapters");
 const API_1 = require("../../services/API/API");
 const SmartWallet_1 = require("../SmartWallet");
 class AlembicWallet {
-    constructor(eoaAdapter = adapters_1.Web3AuthAdapter, chainId = adapters_1.DEFAULT_CHAIN_ID, rpcTarget = adapters_1.DEFAULT_RPC_TARGET) {
+    constructor({ eoaAdapter = adapters_1.Web3AuthAdapter, chainId = adapters_1.DEFAULT_CHAIN_ID, rpcTarget = adapters_1.DEFAULT_RPC_TARGET, apiKey }) {
         this.connected = false;
         this.smartWalletAddress = null;
         this.ethProvider = null;
         this.smartWallet = null;
         this.ownerAddress = null;
+        this.apiKey = null;
+        this.API = null;
+        if (!apiKey)
+            throw new Error('No API key provided');
         this.chainId = chainId;
         this.rpcTarget = rpcTarget;
         this.eoaAdapter = new eoaAdapter();
+        this.API = new API_1.API(apiKey);
+        this.apiKey = apiKey;
     }
     connect() {
+        var _a, _b;
         return __awaiter(this, void 0, void 0, function* () {
             // Return if does not match requirements
             if (!this.eoaAdapter)
@@ -34,6 +41,8 @@ class AlembicWallet {
                 throw new Error('No chainId set');
             if (!this.rpcTarget)
                 throw new Error('No rpcUrl set');
+            if (!this.apiKey)
+                throw new Error('No apiKey set');
             // Initialize EOA adapter
             yield this.eoaAdapter.init(this.chainId, this.rpcTarget);
             yield this.eoaAdapter.connect();
@@ -43,7 +52,7 @@ class AlembicWallet {
                 throw new Error('No account found');
             this.ownerAddress = ownerAddress;
             // We get the user nonce by calling AlembicAPI
-            const nonce = yield API_1.API.getNonce(ownerAddress);
+            const nonce = yield ((_a = this.API) === null || _a === void 0 ? void 0 : _a.getNonce(ownerAddress));
             if (!nonce)
                 throw new Error('No nonce found');
             // We prepare and sign a message, using siwe, in order to prove the user identity
@@ -52,11 +61,11 @@ class AlembicWallet {
             const signature = yield this.signMessage(messageToSign);
             if (!signature)
                 throw new Error('No signature found');
-            const smartWalletAddress = yield API_1.API.connectToAlembicWallet({
+            const smartWalletAddress = yield ((_b = this.API) === null || _b === void 0 ? void 0 : _b.connectToAlembicWallet({
                 message,
                 signature,
                 ownerAddress: ownerAddress
-            });
+            }));
             if (!smartWalletAddress)
                 throw new Error('Failed to connect to Alembic');
             // We set the connection status to true and store the ethProvider
@@ -68,7 +77,8 @@ class AlembicWallet {
             if (this.ethProvider && this.smartWalletAddress) {
                 const smartWallet = new SmartWallet_1.SmartWallet({
                     smartWalletAddress: this.smartWalletAddress,
-                    ethProvider: this.ethProvider
+                    ethProvider: this.ethProvider,
+                    apiKey: this.apiKey
                 });
                 yield smartWallet.init();
                 this.smartWallet = smartWallet;
@@ -106,15 +116,18 @@ class AlembicWallet {
         return __awaiter(this, void 0, void 0, function* () {
             if (!this.smartWallet)
                 throw new Error('No smart wallet found');
+            if (!this.API)
+                throw new Error('No API found');
             const relayId = yield this.smartWallet.sendTransaction(safeTxData);
             return relayId;
         });
     }
     getRelayTxStatus(relayId) {
+        var _a;
         return __awaiter(this, void 0, void 0, function* () {
             if (!this.smartWallet)
                 throw new Error('No smart wallet found');
-            return yield API_1.API.getRelayTxStatus(relayId);
+            return yield ((_a = this.API) === null || _a === void 0 ? void 0 : _a.getRelayTxStatus(relayId));
         });
     }
     getUserInfos() {

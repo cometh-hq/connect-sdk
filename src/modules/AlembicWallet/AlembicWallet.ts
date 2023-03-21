@@ -13,6 +13,12 @@ import { API } from '../../services/API/API'
 import { TransactionStatus, UserInfos } from '../../types'
 import { SmartWallet } from '../SmartWallet'
 
+export interface AlembicWalletConfig {
+  eoaAdapter?: EOAConstructor
+  chainId?: number
+  rpcTarget?: string
+  apiKey: string
+}
 export class AlembicWallet {
   private eoaAdapter: EOAAdapter
   private chainId: number
@@ -22,15 +28,22 @@ export class AlembicWallet {
   private ethProvider: ethers.providers.Web3Provider | null = null
   private smartWallet: SmartWallet | null = null
   private ownerAddress: string | null = null
+  private apiKey: string | null = null
+  private API: API | null = null
 
-  constructor(
-    eoaAdapter: EOAConstructor = Web3AuthAdapter,
-    chainId: number = DEFAULT_CHAIN_ID,
-    rpcTarget: string = DEFAULT_RPC_TARGET
-  ) {
+  constructor({
+    eoaAdapter = Web3AuthAdapter,
+    chainId = DEFAULT_CHAIN_ID,
+    rpcTarget = DEFAULT_RPC_TARGET,
+    apiKey
+  }: AlembicWalletConfig) {
+    if (!apiKey) throw new Error('No API key provided')
+
     this.chainId = chainId
     this.rpcTarget = rpcTarget
     this.eoaAdapter = new eoaAdapter()
+    this.API = new API(apiKey)
+    this.apiKey = apiKey
   }
 
   public async connect(): Promise<void> {
@@ -39,6 +52,7 @@ export class AlembicWallet {
     if (!this.eoaAdapter) throw new Error('No EOA adapter found')
     if (!this.chainId) throw new Error('No chainId set')
     if (!this.rpcTarget) throw new Error('No rpcUrl set')
+    if (!this.apiKey) throw new Error('No apiKey set')
 
     // Initialize EOA adapter
 
@@ -54,7 +68,7 @@ export class AlembicWallet {
 
     // We get the user nonce by calling AlembicAPI
 
-    const nonce = await API.getNonce(ownerAddress)
+    const nonce = await this.API?.getNonce(ownerAddress)
     if (!nonce) throw new Error('No nonce found')
 
     // We prepare and sign a message, using siwe, in order to prove the user identity
@@ -65,7 +79,7 @@ export class AlembicWallet {
 
     if (!signature) throw new Error('No signature found')
 
-    const smartWalletAddress = await API.connectToAlembicWallet({
+    const smartWalletAddress = await this.API?.connectToAlembicWallet({
       message,
       signature,
       ownerAddress: ownerAddress
@@ -84,7 +98,8 @@ export class AlembicWallet {
     if (this.ethProvider && this.smartWalletAddress) {
       const smartWallet = new SmartWallet({
         smartWalletAddress: this.smartWalletAddress,
-        ethProvider: this.ethProvider
+        ethProvider: this.ethProvider,
+        apiKey: this.apiKey
       })
       await smartWallet.init()
       this.smartWallet = smartWallet
@@ -123,15 +138,16 @@ export class AlembicWallet {
     safeTxData: SafeTransactionDataPartial
   ): Promise<string | null> {
     if (!this.smartWallet) throw new Error('No smart wallet found')
+    if (!this.API) throw new Error('No API found')
     const relayId = await this.smartWallet.sendTransaction(safeTxData)
     return relayId
   }
 
   public async getRelayTxStatus(
     relayId: string
-  ): Promise<TransactionStatus | null> {
+  ): Promise<TransactionStatus | null | undefined> {
     if (!this.smartWallet) throw new Error('No smart wallet found')
-    return await API.getRelayTxStatus(relayId)
+    return await this.API?.getRelayTxStatus(relayId)
   }
 
   public async getUserInfos(): Promise<UserInfos> {
