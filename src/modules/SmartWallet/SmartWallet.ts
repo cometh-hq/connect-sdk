@@ -2,28 +2,32 @@ import Safe from '@safe-global/safe-core-sdk'
 import { SafeTransactionDataPartial } from '@safe-global/safe-core-sdk-types'
 import EthersAdapter from '@safe-global/safe-ethers-lib'
 import { ethers } from 'ethers'
+import { ErrorFragment } from 'ethers/lib/utils'
 
-import { API } from '../../services/API/API'
+import { API, api } from '../../services/API/API'
+
+export interface SmartWalletConfig {
+  smartWalletAddress: string
+  ethProvider: ethers.providers.Web3Provider
+  apiKey: string
+}
 
 export class SmartWallet {
   private smartWalletAddress: string
   private ethProvider: ethers.providers.Web3Provider
   private ethAdapter: EthersAdapter
   private safeSdk: Safe | null = null
+  private API: API | null = null
 
-  constructor({
-    smartWalletAddress,
-    ethProvider
-  }: {
-    smartWalletAddress: string
-    ethProvider: ethers.providers.Web3Provider
-  }) {
+  constructor({ smartWalletAddress, ethProvider, apiKey }: SmartWalletConfig) {
+    if (!apiKey) throw new Error('no apiKey provided')
     this.smartWalletAddress = smartWalletAddress
     this.ethProvider = ethProvider
     this.ethAdapter = new EthersAdapter({
       ethers,
       signerOrProvider: this.ethProvider.getSigner()
     })
+    this.API = new API(apiKey)
   }
 
   async init(): Promise<void> {
@@ -42,10 +46,10 @@ export class SmartWallet {
   }
 
   async sendTransaction(
-    safeTxData: SafeTransactionDataPartial,
-    API: API
+    safeTxData: SafeTransactionDataPartial
   ): Promise<string | null> {
     if (!this.safeSdk) throw new Error('No Safe SDK found')
+    if (!this.API) throw new Error('No API found')
 
     const safeTxDataTyped = {
       to: safeTxData.to,
@@ -64,7 +68,7 @@ export class SmartWallet {
     })
     const signature = await this.safeSdk.signTypedData(safeTransaction)
 
-    const relayId = await API.relayTransaction({
+    const relayId = await this.API.relayTransaction({
       safeTxData: safeTxDataTyped,
       signatures: signature.data,
       smartWalletAddress: this.smartWalletAddress

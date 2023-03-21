@@ -1,23 +1,20 @@
 import { SafeTransactionDataPartial } from '@safe-global/safe-core-sdk-types'
 import { ethers } from 'ethers'
 
-import { API } from '../../services/API/API'
-
+export interface SmartWalletConfig {
+  smartWalletAddress: string
+  ethProvider: ethers.providers.Web3Provider
+  apiKey: string
+}
 export declare class SmartWallet {
   private smartWalletAddress
   private ethProvider
   private ethAdapter
   private safeSdk
-  constructor({
-    smartWalletAddress,
-    ethProvider
-  }: {
-    smartWalletAddress: string
-    ethProvider: ethers.providers.Web3Provider
-  })
+  private API
+  constructor({ smartWalletAddress, ethProvider, apiKey }: SmartWalletConfig)
   init(): Promise<void>
   sendTransaction(
-    safeTxData: SafeTransactionDataPartial,
-    API: API
+    safeTxData: SafeTransactionDataPartial
   ): Promise<string | null>
 }

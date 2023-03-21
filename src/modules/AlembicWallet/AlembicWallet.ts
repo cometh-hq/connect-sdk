@@ -9,11 +9,11 @@ import {
   EOAConstructor,
   Web3AuthAdapter
 } from '../../adapters'
-import { API } from '../../services/API/API'
+import { API, api } from '../../services/API/API'
 import { TransactionStatus, UserInfos } from '../../types'
 import { SmartWallet } from '../SmartWallet'
 
-export interface IAlembicWalletConstructor {
+export interface AlembicWalletConfig {
   eoaAdapter?: EOAConstructor
   chainId?: number
   rpcTarget?: string
@@ -28,6 +28,7 @@ export class AlembicWallet {
   private ethProvider: ethers.providers.Web3Provider | null = null
   private smartWallet: SmartWallet | null = null
   private ownerAddress: string | null = null
+  private apiKey: string | null = null
   private API: API | null = null
 
   constructor({
@@ -35,13 +36,14 @@ export class AlembicWallet {
     chainId = DEFAULT_CHAIN_ID,
     rpcTarget = DEFAULT_RPC_TARGET,
     apiKey
-  }: IAlembicWalletConstructor) {
+  }: AlembicWalletConfig) {
     if (!apiKey) throw new Error('No API key provided')
 
     this.chainId = chainId
     this.rpcTarget = rpcTarget
     this.eoaAdapter = new eoaAdapter()
     this.API = new API(apiKey)
+    this.apiKey = apiKey
   }
 
   public async connect(): Promise<void> {
@@ -50,6 +52,7 @@ export class AlembicWallet {
     if (!this.eoaAdapter) throw new Error('No EOA adapter found')
     if (!this.chainId) throw new Error('No chainId set')
     if (!this.rpcTarget) throw new Error('No rpcUrl set')
+    if (!this.apiKey) throw new Error('No apiKey set')
 
     // Initialize EOA adapter
 
@@ -95,7 +98,8 @@ export class AlembicWallet {
     if (this.ethProvider && this.smartWalletAddress) {
       const smartWallet = new SmartWallet({
         smartWalletAddress: this.smartWalletAddress,
-        ethProvider: this.ethProvider
+        ethProvider: this.ethProvider,
+        apiKey: this.apiKey
       })
       await smartWallet.init()
       this.smartWallet = smartWallet
@@ -135,7 +139,7 @@ export class AlembicWallet {
   ): Promise<string | null> {
     if (!this.smartWallet) throw new Error('No smart wallet found')
     if (!this.API) throw new Error('No API found')
-    const relayId = await this.smartWallet.sendTransaction(safeTxData, this.API)
+    const relayId = await this.smartWallet.sendTransaction(safeTxData)
     return relayId
   }
 

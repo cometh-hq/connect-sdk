@@ -21,6 +21,7 @@ class AlembicWallet {
         this.ethProvider = null;
         this.smartWallet = null;
         this.ownerAddress = null;
+        this.apiKey = null;
         this.API = null;
         if (!apiKey)
             throw new Error('No API key provided');
@@ -28,6 +29,7 @@ class AlembicWallet {
         this.rpcTarget = rpcTarget;
         this.eoaAdapter = new eoaAdapter();
         this.API = new API_1.API(apiKey);
+        this.apiKey = apiKey;
     }
     connect() {
         var _a, _b;
@@ -39,6 +41,8 @@ class AlembicWallet {
                 throw new Error('No chainId set');
             if (!this.rpcTarget)
                 throw new Error('No rpcUrl set');
+            if (!this.apiKey)
+                throw new Error('No apiKey set');
             // Initialize EOA adapter
             yield this.eoaAdapter.init(this.chainId, this.rpcTarget);
             yield this.eoaAdapter.connect();
@@ -73,7 +77,8 @@ class AlembicWallet {
             if (this.ethProvider && this.smartWalletAddress) {
                 const smartWallet = new SmartWallet_1.SmartWallet({
                     smartWalletAddress: this.smartWalletAddress,
-                    ethProvider: this.ethProvider
+                    ethProvider: this.ethProvider,
+                    apiKey: this.apiKey
                 });
                 yield smartWallet.init();
                 this.smartWallet = smartWallet;
@@ -113,7 +118,7 @@ class AlembicWallet {
                 throw new Error('No smart wallet found');
             if (!this.API)
                 throw new Error('No API found');
-            const relayId = yield this.smartWallet.sendTransaction(safeTxData, this.API);
+            const relayId = yield this.smartWallet.sendTransaction(safeTxData);
             return relayId;
         });
     }
