@@ -2,6 +2,7 @@ import { SafeTransactionDataPartial } from '@safe-global/safe-core-sdk-types'
 
 import { EOAConstructor } from '../../adapters'
 import { TransactionStatus, UserInfos } from '../../types'
+import { AlembicProvider } from '../AlembicProvider'
 
 export interface AlembicWalletConfig {
   eoaAdapter?: EOAConstructor
@@ -28,6 +29,7 @@ export declare class AlembicWallet {
   sendTransaction(
     safeTxData: SafeTransactionDataPartial
   ): Promise<string | null>
+  waitForTxToBeMined(relayId: string): Promise<boolean>
   getRelayTxStatus(
     relayId: string
   ): Promise<TransactionStatus | null | undefined>
@@ -35,4 +37,5 @@ export declare class AlembicWallet {
   getOwnerAddress(): string | null
   getSmartWalletAddress(): string | null
   signMessage(messageToSign: string): Promise<string | undefined>
+  getProvider(): AlembicProvider
 }

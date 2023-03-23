@@ -17,4 +17,5 @@ export declare class SmartWallet {
   sendTransaction(
     safeTxData: SafeTransactionDataPartial
   ): Promise<string | null>
+  waitForTxToBeMined(relayId: string): Promise<boolean>
 }

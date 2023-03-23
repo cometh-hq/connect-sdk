@@ -49,7 +49,7 @@ class SmartWallet {
         });
     }
     sendTransaction(safeTxData) {
-        var _a, _b, _c, _d, _e, _f;
+        var _a, _b, _c, _d, _e, _f, _g;
         return __awaiter(this, void 0, void 0, function* () {
             if (!this.safeSdk)
                 throw new Error('No Safe SDK found');
@@ -57,14 +57,14 @@ class SmartWallet {
                 throw new Error('No API found');
             const safeTxDataTyped = {
                 to: safeTxData.to,
-                value: safeTxData.value,
+                value: (_a = safeTxData.value) !== null && _a !== void 0 ? _a : '0x00',
                 data: safeTxData.data,
-                operation: (_a = safeTxData.operation) !== null && _a !== void 0 ? _a : 0,
-                safeTxGas: (_b = safeTxData.safeTxGas) !== null && _b !== void 0 ? _b : 0,
-                baseGas: (_c = safeTxData.baseGas) !== null && _c !== void 0 ? _c : 0,
-                gasPrice: (_d = safeTxData.gasPrice) !== null && _d !== void 0 ? _d : 0,
-                gasToken: (_e = safeTxData.gasToken) !== null && _e !== void 0 ? _e : ethers_1.ethers.constants.AddressZero,
-                refundReceiver: (_f = safeTxData.refundReceiver) !== null && _f !== void 0 ? _f : ethers_1.ethers.constants.AddressZero
+                operation: (_b = safeTxData.operation) !== null && _b !== void 0 ? _b : 0,
+                safeTxGas: (_c = safeTxData.safeTxGas) !== null && _c !== void 0 ? _c : 0,
+                baseGas: (_d = safeTxData.baseGas) !== null && _d !== void 0 ? _d : 0,
+                gasPrice: (_e = safeTxData.gasPrice) !== null && _e !== void 0 ? _e : 0,
+                gasToken: (_f = safeTxData.gasToken) !== null && _f !== void 0 ? _f : ethers_1.ethers.constants.AddressZero,
+                refundReceiver: (_g = safeTxData.refundReceiver) !== null && _g !== void 0 ? _g : ethers_1.ethers.constants.AddressZero
             };
             const safeTransaction = yield this.safeSdk.createTransaction({
                 safeTransactionData: safeTxDataTyped
@@ -76,6 +76,18 @@ class SmartWallet {
                 smartWalletAddress: this.smartWalletAddress
             });
             return relayId;
+        });
+    }
+    waitForTxToBeMined(relayId) {
+        var _a;
+        return __awaiter(this, void 0, void 0, function* () {
+            if (!this.API)
+                throw new Error('No API found');
+            while (((_a = (yield this.API.getRelayTxStatus(relayId))) === null || _a === void 0 ? void 0 : _a.status) !== 'mined') {
+                console.log('Waiting for tx to be mined...');
+                yield new Promise((resolve) => setTimeout(resolve, 2000));
+            }
+            return true;
         });
     }
 }

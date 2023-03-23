@@ -13,6 +13,7 @@ exports.AlembicWallet = void 0;
 const siwe_1 = require("siwe");
 const adapters_1 = require("../../adapters");
 const API_1 = require("../../services/API/API");
+const AlembicProvider_1 = require("../AlembicProvider");
 const SmartWallet_1 = require("../SmartWallet");
 class AlembicWallet {
     constructor({ eoaAdapter = adapters_1.Web3AuthAdapter, chainId = adapters_1.DEFAULT_CHAIN_ID, rpcTarget = adapters_1.DEFAULT_RPC_TARGET, apiKey }) {
@@ -122,6 +123,13 @@ class AlembicWallet {
             return relayId;
         });
     }
+    waitForTxToBeMined(relayId) {
+        return __awaiter(this, void 0, void 0, function* () {
+            if (!this.smartWallet)
+                throw new Error('No smart wallet found');
+            return yield this.smartWallet.waitForTxToBeMined(relayId);
+        });
+    }
     getRelayTxStatus(relayId) {
         var _a;
         return __awaiter(this, void 0, void 0, function* () {
@@ -152,6 +160,20 @@ class AlembicWallet {
             const signature = yield (signer === null || signer === void 0 ? void 0 : signer.signMessage(messageToSign));
             return signature;
         });
+    }
+    getProvider() {
+        if (!this.ethProvider)
+            throw new Error('No ethProvider found');
+        if (!this.smartWallet)
+            throw new Error('No smart wallet found');
+        if (!this.apiKey)
+            throw new Error('No API key found');
+        const provider = new AlembicProvider_1.AlembicProvider({
+            ethProvider: this.ethProvider,
+            smartWallet: this.smartWallet,
+            apiKey: this.apiKey
+        });
+        return provider;
     }
 }
 exports.AlembicWallet = AlembicWallet;

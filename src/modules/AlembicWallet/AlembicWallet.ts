@@ -11,6 +11,7 @@ import {
 } from '../../adapters'
 import { API } from '../../services/API/API'
 import { TransactionStatus, UserInfos } from '../../types'
+import { AlembicProvider } from '../AlembicProvider'
 import { SmartWallet } from '../SmartWallet'
 
 export interface AlembicWalletConfig {
@@ -143,6 +144,11 @@ export class AlembicWallet {
     return relayId
   }
 
+  public async waitForTxToBeMined(relayId: string): Promise<boolean> {
+    if (!this.smartWallet) throw new Error('No smart wallet found')
+    return await this.smartWallet.waitForTxToBeMined(relayId)
+  }
+
   public async getRelayTxStatus(
     relayId: string
   ): Promise<TransactionStatus | null | undefined> {
@@ -174,5 +180,17 @@ export class AlembicWallet {
     const signer = this.eoaAdapter.getSigner()
     const signature = await signer?.signMessage(messageToSign)
     return signature
+  }
+
+  public getProvider(): AlembicProvider {
+    if (!this.ethProvider) throw new Error('No ethProvider found')
+    if (!this.smartWallet) throw new Error('No smart wallet found')
+    if (!this.apiKey) throw new Error('No API key found')
+    const provider = new AlembicProvider({
+      ethProvider: this.ethProvider,
+      smartWallet: this.smartWallet,
+      apiKey: this.apiKey
+    })
+    return provider
   }
 }

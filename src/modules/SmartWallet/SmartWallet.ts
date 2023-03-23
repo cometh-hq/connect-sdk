@@ -52,7 +52,7 @@ export class SmartWallet {
 
     const safeTxDataTyped = {
       to: safeTxData.to,
-      value: safeTxData.value,
+      value: safeTxData.value ?? '0x00',
       data: safeTxData.data,
       operation: safeTxData.operation ?? 0,
       safeTxGas: safeTxData.safeTxGas ?? 0,
@@ -74,5 +74,16 @@ export class SmartWallet {
     })
 
     return relayId
+  }
+
+  async waitForTxToBeMined(relayId: string): Promise<boolean> {
+    if (!this.API) throw new Error('No API found')
+
+    while ((await this.API.getRelayTxStatus(relayId))?.status !== 'mined') {
+      console.log('Waiting for tx to be mined...')
+      await new Promise((resolve) => setTimeout(resolve, 2000))
+    }
+
+    return true
   }
 }
