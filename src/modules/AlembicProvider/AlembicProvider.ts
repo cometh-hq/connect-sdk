@@ -6,21 +6,27 @@ import {
   Web3Provider
 } from '@ethersproject/providers'
 import { Signer } from 'ethers'
+import { TransactionStatus } from 'src/types'
 
+import { AlembicWallet } from '../AlembicWallet'
 import { AlembicSigner } from './AlembicSigner'
+import { RelayTransactionResponse } from './RelayTransactionResponse'
 
 export class AlembicProvider extends BaseProvider {
   initializedBlockNumber!: number
 
   readonly signer: AlembicSigner
 
-  constructor(private ethProvider: Web3Provider, private smartWallet) {
+  constructor(
+    private ethProvider: Web3Provider,
+    private alembicWallet: AlembicWallet
+  ) {
     super({
       name: 'ERC-4337 Custom Network',
       chainId: 137
     })
 
-    this.signer = new AlembicSigner(smartWallet, this)
+    this.signer = new AlembicSigner(alembicWallet, this)
   }
 
   /**
@@ -40,7 +46,7 @@ export class AlembicProvider extends BaseProvider {
 
   async perform(method: string, params: any): Promise<any> {
     console.log('perform', method, params)
-    if (method === 'sendTransaction' || method === 'getTransactionReceipt') {
+    if (method === 'sendTransaction') {
       // TODO: do we need 'perform' method to be available at all?
       // there is nobody out there to use it for ERC-4337 methods yet, we have nothing to override in fact.
       throw new Error('Should not get here. Investigate.')
@@ -51,13 +57,20 @@ export class AlembicProvider extends BaseProvider {
   async getTransaction(
     transactionHash: string | Promise<string>
   ): Promise<TransactionResponse> {
-    // TODO
-    return await super.getTransaction(transactionHash)
+    const status = await this.getRelayStatus(await transactionHash)
+    const txResponse = await super.getTransaction(status.hash)
+
+    return new RelayTransactionResponse(txResponse, await transactionHash, this)
+  }
+
+  async getRelayStatus(relayId: string): Promise<TransactionStatus> {
+    return this.alembicWallet.getRelayTxStatus(relayId)
   }
 
   async getTransactionReceipt(
     transactionHash: string | Promise<string>
   ): Promise<TransactionReceipt> {
+    console.log('getTransactionReceipt', transactionHash)
     return super.getTransactionReceipt(transactionHash)
   }
 
@@ -66,6 +79,7 @@ export class AlembicProvider extends BaseProvider {
     confirmations?: number,
     timeout?: number
   ): Promise<TransactionReceipt> {
+    console.log('waitForTransaction', transactionHash, confirmations, timeout)
     return super.waitForTransaction(transactionHash, confirmations, timeout)
   }
 

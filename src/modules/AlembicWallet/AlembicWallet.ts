@@ -13,7 +13,11 @@ import {
   Web3AuthAdapter
 } from '../../adapters'
 import { API } from '../../services/API/API'
-import { TransactionStatus, UserInfos } from '../../types'
+import {
+  SendTransactionResponse,
+  TransactionStatus,
+  UserInfos
+} from '../../types'
 import { AlembicProvider } from '../AlembicProvider'
 
 export interface AlembicWalletConfig {
@@ -29,7 +33,7 @@ export class AlembicWallet {
   private connected = false
 
   private safeSdk?: Safe
-  protected API: API
+  private API: API
 
   constructor({
     eoaAdapter = Web3AuthAdapter,
@@ -146,12 +150,12 @@ export class AlembicWallet {
 
   async sendTransaction(
     safeTxData: SafeTransactionDataPartial
-  ): Promise<string> {
+  ): Promise<SendTransactionResponse> {
     if (!this.safeSdk) throw new Error('No Safe SDK found')
 
     const safeTxDataTyped = {
       to: safeTxData.to,
-      value: safeTxData.value ?? '0x00',
+      value: safeTxData.value ?? 0,
       data: safeTxData.data,
       operation: safeTxData.operation ?? 0,
       safeTxGas: safeTxData.safeTxGas ?? 0,
@@ -164,6 +168,11 @@ export class AlembicWallet {
     const safeTransaction = await this.safeSdk.createTransaction({
       safeTransactionData: safeTxDataTyped
     })
+
+    const safeTransactionHash = await this.safeSdk.getTransactionHash(
+      safeTransaction
+    )
+
     const signature = await this.safeSdk.signTypedData(safeTransaction)
 
     const relayId = await this.API.relayTransaction({
@@ -172,7 +181,7 @@ export class AlembicWallet {
       smartWalletAddress: this.safeSdk.getAddress()
     })
 
-    return relayId
+    return { relayId, safeTransactionHash }
   }
 
   async waitForTxToBeMined(relayId: string): Promise<boolean> {

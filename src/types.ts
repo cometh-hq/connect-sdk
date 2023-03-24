@@ -20,3 +20,8 @@ export type TransactionStatus = {
   hash: string
   status: string
 }
+
+export type SendTransactionResponse = {
+  relayId: string
+  safeTransactionHash: string
+}

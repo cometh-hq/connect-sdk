@@ -20,7 +20,7 @@ export class AlembicSigner extends Signer {
   }
 
   getAddress(): Promise<string> {
-    return Promise.resolve(this.smartWallet.getSmartWalletAddress()!)
+    return Promise.resolve(this.smartWallet.getSmartWalletAddress())
   }
   signMessage(message: string | Bytes): Promise<string> {
     return this.smartWallet.signMessage(message)
@@ -43,10 +43,10 @@ export class AlembicSigner extends Signer {
       data: tx.data?.toString() ?? '0x'
     }
 
-    const relayId = await this.smartWallet.sendTransaction(safeTx)
-    const status = await this.smartWallet.getRelayTxStatus(relayId)
+    const transactionResponse = await this.smartWallet.sendTransaction(safeTx)
 
-    return this.provider!.getTransaction(status!.hash)
+    if (!this.provider) throw new Error('missing provider')
+    return this.provider.getTransaction(transactionResponse.relayId)
   }
 
   signTransaction(
