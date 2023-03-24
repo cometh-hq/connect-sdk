@@ -12,7 +12,7 @@ export type RelayTransactionType = {
   smartWalletAddress: string
 }
 export type UserInfos = Partial<UserInfo> & {
-  ownerAddress: string
+  ownerAddress: string | undefined
   smartWalletAddress: string
 }
 

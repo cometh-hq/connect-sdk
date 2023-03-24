@@ -1,49 +1,75 @@
-import { RequestArguments } from 'eip1193-provider'
-import { ethers } from 'ethers'
+import {
+  BaseProvider,
+  Network,
+  TransactionReceipt,
+  TransactionResponse,
+  Web3Provider
+} from '@ethersproject/providers'
+import { Signer } from 'ethers'
 
-import { API } from '../../services/API/API'
-import { SmartWallet } from '../SmartWallet'
+import { AlembicSigner } from './AlembicSigner'
 
-export interface AlembicProviderConfig {
-  ethProvider: ethers.providers.Web3Provider
-  smartWallet: SmartWallet
-  apiKey: string
-}
+export class AlembicProvider extends BaseProvider {
+  initializedBlockNumber!: number
 
-export class AlembicProvider {
-  private ethProvider: ethers.providers.Web3Provider
-  private smartWallet: SmartWallet
-  private API: API
+  readonly signer: AlembicSigner
 
-  constructor({ ethProvider, smartWallet, apiKey }: AlembicProviderConfig) {
-    this.ethProvider = ethProvider
-    this.smartWallet = smartWallet
-    this.API = new API(apiKey)
+  constructor(private ethProvider: Web3Provider, private smartWallet) {
+    super({
+      name: 'ERC-4337 Custom Network',
+      chainId: 137
+    })
+
+    this.signer = new AlembicSigner(smartWallet, this)
   }
 
-  public async request(request: RequestArguments): Promise<any> {
-    if (request.method === 'eth_sendTransaction') {
-      const _params =
-        request?.params && Array.isArray(request?.params) && request?.params[0]
-          ? request?.params[0]
-          : undefined
-      if (_params) {
-        const relayId = await this.smartWallet.sendTransaction(_params)
-        if (!relayId) throw new Error('eth_sendTransaction error')
-        return (await this.API.getRelayTxStatus(relayId))?.hash
-      }
-      throw new Error('eth_sendTransaction error')
-    } else if (request.method === 'eth_getTransactionReceipt') {
-      console.log('eth_getTransactionReceipt', request.params)
-      return await this.ethProvider.send(
-        request.method,
-        (request.params || []) as Array<any>
-      )
-    } else {
-      return await this.ethProvider.send(
-        request.method,
-        (request.params || []) as Array<any>
-      )
+  /**
+   * finish intializing the provider.
+   * MUST be called after construction, before using the provider.
+   */
+  async init(): Promise<this> {
+    // await this.httpRpcClient.validateChainId()
+    this.initializedBlockNumber = await this.ethProvider.getBlockNumber()
+
+    return this
+  }
+
+  getSigner(): Signer {
+    return this.signer
+  }
+
+  async perform(method: string, params: any): Promise<any> {
+    console.log('perform', method, params)
+    if (method === 'sendTransaction' || method === 'getTransactionReceipt') {
+      // TODO: do we need 'perform' method to be available at all?
+      // there is nobody out there to use it for ERC-4337 methods yet, we have nothing to override in fact.
+      throw new Error('Should not get here. Investigate.')
     }
+    return await this.ethProvider.perform(method, params)
+  }
+
+  async getTransaction(
+    transactionHash: string | Promise<string>
+  ): Promise<TransactionResponse> {
+    // TODO
+    return await super.getTransaction(transactionHash)
+  }
+
+  async getTransactionReceipt(
+    transactionHash: string | Promise<string>
+  ): Promise<TransactionReceipt> {
+    return super.getTransactionReceipt(transactionHash)
+  }
+
+  async waitForTransaction(
+    transactionHash: string,
+    confirmations?: number,
+    timeout?: number
+  ): Promise<TransactionReceipt> {
+    return super.waitForTransaction(transactionHash, confirmations, timeout)
+  }
+
+  async detectNetwork(): Promise<Network> {
+    return (this.ethProvider as any).detectNetwork()
   }
 }

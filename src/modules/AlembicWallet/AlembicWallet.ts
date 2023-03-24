@@ -1,5 +1,8 @@
+import { JsonRpcSigner } from '@ethersproject/providers'
+import Safe from '@safe-global/safe-core-sdk'
 import { SafeTransactionDataPartial } from '@safe-global/safe-core-sdk-types'
-import { ethers } from 'ethers'
+import EthersAdapter from '@safe-global/safe-ethers-lib'
+import { Bytes, ethers } from 'ethers'
 import { SiweMessage } from 'siwe'
 
 import {
@@ -12,7 +15,6 @@ import {
 import { API } from '../../services/API/API'
 import { TransactionStatus, UserInfos } from '../../types'
 import { AlembicProvider } from '../AlembicProvider'
-import { SmartWallet } from '../SmartWallet'
 
 export interface AlembicWalletConfig {
   eoaAdapter?: EOAConstructor
@@ -25,12 +27,9 @@ export class AlembicWallet {
   private chainId: number
   private rpcTarget: string
   private connected = false
-  private smartWalletAddress: string | null = null
-  private ethProvider: ethers.providers.Web3Provider | null = null
-  private smartWallet: SmartWallet | null = null
-  private ownerAddress: string | null = null
-  private apiKey: string | null = null
-  private API: API | null = null
+
+  private safeSdk?: Safe
+  protected API: API
 
   constructor({
     eoaAdapter = Web3AuthAdapter,
@@ -38,87 +37,73 @@ export class AlembicWallet {
     rpcTarget = DEFAULT_RPC_TARGET,
     apiKey
   }: AlembicWalletConfig) {
-    if (!apiKey) throw new Error('No API key provided')
-
     this.chainId = chainId
     this.rpcTarget = rpcTarget
     this.eoaAdapter = new eoaAdapter()
     this.API = new API(apiKey)
-    this.apiKey = apiKey
   }
+
+  /**
+   * Connection Section
+   */
 
   public async connect(): Promise<void> {
     // Return if does not match requirements
-
     if (!this.eoaAdapter) throw new Error('No EOA adapter found')
-    if (!this.chainId) throw new Error('No chainId set')
-    if (!this.rpcTarget) throw new Error('No rpcUrl set')
-    if (!this.apiKey) throw new Error('No apiKey set')
-
-    // Initialize EOA adapter
-
     await this.eoaAdapter.init(this.chainId, this.rpcTarget)
     await this.eoaAdapter.connect()
 
-    // We get the owner address
+    const signer = this.getSigner()
+    if (!signer) throw new Error('No signer found')
 
-    const ownerAddress = await this.eoaAdapter.getAccount()
-    if (!ownerAddress) throw new Error('No account found')
+    const ownerAddress = await signer.getAddress()
+    if (!ownerAddress) throw new Error('No ownerAddress found')
 
-    this.ownerAddress = ownerAddress
+    const nonce = await this.API.getNonce(ownerAddress)
 
-    // We get the user nonce by calling AlembicAPI
-
-    const nonce = await this.API?.getNonce(ownerAddress)
-    if (!nonce) throw new Error('No nonce found')
-
-    // We prepare and sign a message, using siwe, in order to prove the user identity
-
-    const message: SiweMessage = this.createMessage(ownerAddress, nonce)
+    const message: SiweMessage = this._createMessage(ownerAddress, nonce)
     const messageToSign = message.prepareMessage()
     const signature = await this.signMessage(messageToSign)
-
-    if (!signature) throw new Error('No signature found')
 
     const smartWalletAddress = await this.API?.connectToAlembicWallet({
       message,
       signature,
       ownerAddress: ownerAddress
     })
-    if (!smartWalletAddress) throw new Error('Failed to connect to Alembic')
 
-    // We set the connection status to true and store the ethProvider
+    const ethAdapter = new EthersAdapter({
+      ethers,
+      signerOrProvider: signer
+    })
 
-    if (smartWalletAddress) {
-      this.smartWalletAddress = smartWalletAddress
-      this.ethProvider = this.eoaAdapter.getEthProvider()
-    }
+    this.safeSdk = await Safe.create({
+      ethAdapter: ethAdapter,
+      safeAddress: smartWalletAddress
+    })
 
-    // We initialize the smart wallet
-
-    if (this.ethProvider && this.smartWalletAddress) {
-      const smartWallet = new SmartWallet({
-        smartWalletAddress: this.smartWalletAddress,
-        ethProvider: this.ethProvider,
-        apiKey: this.apiKey
-      })
-      await smartWallet.init()
-      this.smartWallet = smartWallet
-      this.connected = true
-    }
+    this.connected = true
   }
 
   public getConnected(): boolean {
     return this.connected
   }
 
-  public async logout(): Promise<void> {
-    if (!this.eoaAdapter) throw new Error('No EOA adapter found')
-    await this.eoaAdapter.logout()
-    this.connected = false
+  public async getUserInfos(): Promise<UserInfos> {
+    if (!this.eoaAdapter) throw new Error('Cannot provide user infos')
+    const userInfos = await this.eoaAdapter.getUserInfos()
+
+    return {
+      ...userInfos,
+      ownerAddress: await this.getSigner()?.getAddress(),
+      smartWalletAddress: this.getSmartWalletAddress()
+    }
   }
 
-  private createMessage(address, nonce): SiweMessage {
+  public getSmartWalletAddress(): string {
+    return this.safeSdk?.getAddress() ?? ''
+  }
+
+  private _createMessage(address, nonce): SiweMessage {
     const domain = window.location.host
     const origin = window.location.origin
     const statement = `Sign in with Ethereum to Alembic`
@@ -135,62 +120,83 @@ export class AlembicWallet {
     return message
   }
 
-  public async sendTransaction(
+  public async logout(): Promise<void> {
+    if (!this.eoaAdapter) throw new Error('No EOA adapter found')
+    await this.eoaAdapter.logout()
+    this.connected = false
+  }
+
+  /**
+   * Signing Section
+   */
+
+  public getSigner(): JsonRpcSigner | undefined {
+    return this.eoaAdapter.getEthProvider()?.getSigner()
+  }
+
+  public async signMessage(messageToSign: string | Bytes): Promise<string> {
+    const signer = this.getSigner()
+    if (!signer) throw new Error('Sign message: missing signer')
+    return await signer.signMessage(messageToSign)
+  }
+
+  /**
+   * Transaction Section
+   */
+
+  async sendTransaction(
     safeTxData: SafeTransactionDataPartial
-  ): Promise<string | null> {
-    if (!this.smartWallet) throw new Error('No smart wallet found')
-    if (!this.API) throw new Error('No API found')
-    const relayId = await this.smartWallet.sendTransaction(safeTxData)
+  ): Promise<string> {
+    if (!this.safeSdk) throw new Error('No Safe SDK found')
+
+    const safeTxDataTyped = {
+      to: safeTxData.to,
+      value: safeTxData.value ?? '0x00',
+      data: safeTxData.data,
+      operation: safeTxData.operation ?? 0,
+      safeTxGas: safeTxData.safeTxGas ?? 0,
+      baseGas: safeTxData.baseGas ?? 0,
+      gasPrice: safeTxData.gasPrice ?? 0,
+      gasToken: safeTxData.gasToken ?? ethers.constants.AddressZero,
+      refundReceiver: safeTxData.refundReceiver ?? ethers.constants.AddressZero
+    }
+
+    const safeTransaction = await this.safeSdk.createTransaction({
+      safeTransactionData: safeTxDataTyped
+    })
+    const signature = await this.safeSdk.signTypedData(safeTransaction)
+
+    const relayId = await this.API.relayTransaction({
+      safeTxData: safeTxDataTyped,
+      signatures: signature.data,
+      smartWalletAddress: this.safeSdk.getAddress()
+    })
+
     return relayId
   }
 
-  public async waitForTxToBeMined(relayId: string): Promise<boolean> {
-    if (!this.smartWallet) throw new Error('No smart wallet found')
-    return await this.smartWallet.waitForTxToBeMined(relayId)
-  }
+  async waitForTxToBeMined(relayId: string): Promise<boolean> {
+    if (!this.API) throw new Error('No API found')
 
-  public async getRelayTxStatus(
-    relayId: string
-  ): Promise<TransactionStatus | null | undefined> {
-    if (!this.smartWallet) throw new Error('No smart wallet found')
-    return await this.API?.getRelayTxStatus(relayId)
-  }
-
-  public async getUserInfos(): Promise<UserInfos> {
-    if (!this.eoaAdapter || !this.ownerAddress || !this.smartWalletAddress)
-      throw new Error('Cannot provide user infos')
-    const userInfos = await this.eoaAdapter.getUserInfos()
-    return {
-      ...userInfos,
-      ownerAddress: this.ownerAddress,
-      smartWalletAddress: this.smartWalletAddress
+    while ((await this.API.getRelayTxStatus(relayId))?.status !== 'mined') {
+      console.log('Waiting for tx to be mined...')
+      await new Promise((resolve) => setTimeout(resolve, 2000))
     }
+
+    return true
   }
 
-  public getOwnerAddress(): string | null {
-    return this.ownerAddress
+  public async getRelayTxStatus(relayId: string): Promise<TransactionStatus> {
+    return await this.API.getRelayTxStatus(relayId)
   }
 
-  public getSmartWalletAddress(): string | null {
-    return this.smartWalletAddress
-  }
-
-  public async signMessage(messageToSign: string): Promise<string | undefined> {
-    if (!this.eoaAdapter) throw new Error('No EOA adapter found')
-    const signer = this.eoaAdapter.getSigner()
-    const signature = await signer?.signMessage(messageToSign)
-    return signature
-  }
+  /**
+   * Provider Section
+   */
 
   public getProvider(): AlembicProvider {
-    if (!this.ethProvider) throw new Error('No ethProvider found')
-    if (!this.smartWallet) throw new Error('No smart wallet found')
-    if (!this.apiKey) throw new Error('No API key found')
-    const provider = new AlembicProvider({
-      ethProvider: this.ethProvider,
-      smartWallet: this.smartWallet,
-      apiKey: this.apiKey
-    })
-    return provider
+    const originalProvider = this.eoaAdapter.getEthProvider()
+    if (!originalProvider) throw new Error('No Safe SDK found')
+    return new AlembicProvider(originalProvider, this)
   }
 }
