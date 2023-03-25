@@ -1,6 +1,10 @@
 import { SafeTransactionDataPartial } from '@safe-global/safe-core-sdk-types'
 import { UserInfo } from '@web3auth/base'
 
+export enum RelayStatus {
+  MINED = 'mined'
+}
+
 export type UserNonceType = {
   userAddress: string
   connectionNonce: string

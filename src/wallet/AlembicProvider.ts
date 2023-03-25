@@ -2,8 +2,7 @@ import {
   BaseProvider,
   Network,
   TransactionReceipt,
-  TransactionResponse,
-  Web3Provider
+  TransactionResponse
 } from '@ethersproject/providers'
 import { Signer } from 'ethers'
 import { TransactionStatus } from 'src/wallet/types'
@@ -13,8 +12,6 @@ import { AlembicWallet } from './AlembicWallet'
 import { RelayTransactionResponse } from './RelayTransactionResponse'
 
 export class AlembicProvider extends BaseProvider {
-  initializedBlockNumber!: number
-
   readonly signer: AlembicSigner
 
   constructor(private alembicWallet: AlembicWallet) {
@@ -26,28 +23,13 @@ export class AlembicProvider extends BaseProvider {
     this.signer = new AlembicSigner(alembicWallet, this)
   }
 
-  /**
-   * finish intializing the provider.
-   * MUST be called after construction, before using the provider.
-   */
-  async init(): Promise<this> {
-    this.initializedBlockNumber = await this.alembicWallet
-      .getOwnerProvider()
-      .getBlockNumber()
-
-    return this
-  }
-
   getSigner(): Signer {
     return this.signer
   }
 
   async perform(method: string, params: any): Promise<any> {
-    console.log('perform', method, params)
     if (method === 'sendTransaction') {
-      // TODO: do we need 'perform' method to be available at all?
-      // there is nobody out there to use it for ERC-4337 methods yet, we have nothing to override in fact.
-      throw new Error('Should not get here. Investigate.')
+      throw new Error('Not authorized method: sendTransaction')
     }
     return await this.alembicWallet.getOwnerProvider().perform(method, params)
   }
@@ -68,7 +50,6 @@ export class AlembicProvider extends BaseProvider {
   async getTransactionReceipt(
     transactionHash: string | Promise<string>
   ): Promise<TransactionReceipt> {
-    console.log('getTransactionReceipt', transactionHash)
     return super.getTransactionReceipt(transactionHash)
   }
 
@@ -77,7 +58,6 @@ export class AlembicProvider extends BaseProvider {
     confirmations?: number,
     timeout?: number
   ): Promise<TransactionReceipt> {
-    console.log('waitForTransaction', transactionHash, confirmations, timeout)
     return super.waitForTransaction(transactionHash, confirmations, timeout)
   }
 

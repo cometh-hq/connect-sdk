@@ -6,6 +6,7 @@ import { BigNumber } from 'ethers'
 import { AccessList } from 'ethers/lib/utils'
 
 import { AlembicProvider } from './AlembicProvider'
+import { RelayStatus } from './types'
 
 export class RelayTransactionResponse implements TransactionResponse {
   hash: string
@@ -49,8 +50,8 @@ export class RelayTransactionResponse implements TransactionResponse {
     confirmations?: number | undefined
   ): Promise<TransactionReceipt> {
     const status = await this.provider.getRelayStatus(this.relayID)
-    console.log('Wait:', status.hash, status.status, this.relayID)
-    if (status.status == 'mined') {
+
+    if (status.status == RelayStatus.MINED) {
       return this.provider.getTransactionReceipt(status.hash)
     }
     await new Promise((resolve) => setTimeout(resolve, 2000))

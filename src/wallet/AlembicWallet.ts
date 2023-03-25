@@ -180,17 +180,6 @@ export class AlembicWallet {
     return { relayId, safeTransactionHash }
   }
 
-  async waitForTxToBeMined(relayId: string): Promise<boolean> {
-    if (!this.API) throw new Error('No API found')
-
-    while ((await this.API.getRelayTxStatus(relayId))?.status !== 'mined') {
-      console.log('Waiting for tx to be mined...')
-      await new Promise((resolve) => setTimeout(resolve, 2000))
-    }
-
-    return true
-  }
-
   public async getRelayTxStatus(relayId: string): Promise<TransactionStatus> {
     return await this.API.getRelayTxStatus(relayId)
   }
