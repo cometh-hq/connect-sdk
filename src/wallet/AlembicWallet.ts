@@ -1,24 +1,14 @@
-import { JsonRpcSigner } from '@ethersproject/providers'
+import { JsonRpcSigner, Web3Provider } from '@ethersproject/providers'
 import Safe from '@safe-global/safe-core-sdk'
 import { SafeTransactionDataPartial } from '@safe-global/safe-core-sdk-types'
 import EthersAdapter from '@safe-global/safe-ethers-lib'
 import { Bytes, ethers } from 'ethers'
 import { SiweMessage } from 'siwe'
 
-import {
-  DEFAULT_CHAIN_ID,
-  DEFAULT_RPC_TARGET,
-  EOAAdapter,
-  EOAConstructor,
-  Web3AuthAdapter
-} from '../../adapters'
-import { API } from '../../services/API/API'
-import {
-  SendTransactionResponse,
-  TransactionStatus,
-  UserInfos
-} from '../../types'
-import { AlembicProvider } from '../AlembicProvider'
+import { DEFAULT_CHAIN_ID, DEFAULT_RPC_TARGET } from '../constants'
+import { API } from '../services'
+import { EOAAdapter, EOAConstructor, Web3AuthAdapter } from './adapters'
+import { SendTransactionResponse, TransactionStatus, UserInfos } from './types'
 
 export interface AlembicWalletConfig {
   eoaAdapter?: EOAConstructor
@@ -134,8 +124,14 @@ export class AlembicWallet {
    * Signing Section
    */
 
+  public getOwnerProvider(): Web3Provider {
+    const provider = this.eoaAdapter.getEthProvider()
+    if (!provider) throw new Error('getOwnerProvider: missing provider')
+    return provider
+  }
+
   public getSigner(): JsonRpcSigner | undefined {
-    return this.eoaAdapter.getEthProvider()?.getSigner()
+    return this.getOwnerProvider()?.getSigner()
   }
 
   public async signMessage(messageToSign: string | Bytes): Promise<string> {
@@ -197,15 +193,5 @@ export class AlembicWallet {
 
   public async getRelayTxStatus(relayId: string): Promise<TransactionStatus> {
     return await this.API.getRelayTxStatus(relayId)
-  }
-
-  /**
-   * Provider Section
-   */
-
-  public getProvider(): AlembicProvider {
-    const originalProvider = this.eoaAdapter.getEthProvider()
-    if (!originalProvider) throw new Error('No Safe SDK found')
-    return new AlembicProvider(originalProvider, this)
   }
 }

@@ -1,12 +1,12 @@
 import axios from 'axios'
 import { SiweMessage } from 'siwe'
 
-import { API_URL } from '../../constants'
+import { API_URL } from '../constants'
 import {
   RelayTransactionType,
   TransactionStatus,
   UserNonceType
-} from '../../types'
+} from '../wallet/types'
 
 export const api = axios.create({
   baseURL: API_URL

@@ -16,7 +16,7 @@
     "baseUrl": ".",
     "allowSyntheticDefaultImports": true,
     "paths": {
-      "@Adapters": ["src/adapters"],
+      "@Adapters": ["src/wallet/adapters"],
       "@Services": ["src/services"]
     }
   },

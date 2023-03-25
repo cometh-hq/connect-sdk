@@ -5,7 +5,6 @@ import {
 import { BigNumber } from 'ethers'
 import { AccessList } from 'ethers/lib/utils'
 
-import { AlembicWallet } from '../AlembicWallet'
 import { AlembicProvider } from './AlembicProvider'
 
 export class RelayTransactionResponse implements TransactionResponse {

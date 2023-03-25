@@ -6,10 +6,10 @@ import {
   Web3Provider
 } from '@ethersproject/providers'
 import { Signer } from 'ethers'
-import { TransactionStatus } from 'src/types'
+import { TransactionStatus } from 'src/wallet/types'
 
-import { AlembicWallet } from '../AlembicWallet'
 import { AlembicSigner } from './AlembicSigner'
+import { AlembicWallet } from './AlembicWallet'
 import { RelayTransactionResponse } from './RelayTransactionResponse'
 
 export class AlembicProvider extends BaseProvider {
@@ -17,10 +17,7 @@ export class AlembicProvider extends BaseProvider {
 
   readonly signer: AlembicSigner
 
-  constructor(
-    private ethProvider: Web3Provider,
-    private alembicWallet: AlembicWallet
-  ) {
+  constructor(private alembicWallet: AlembicWallet) {
     super({
       name: 'ERC-4337 Custom Network',
       chainId: 137
@@ -34,8 +31,9 @@ export class AlembicProvider extends BaseProvider {
    * MUST be called after construction, before using the provider.
    */
   async init(): Promise<this> {
-    // await this.httpRpcClient.validateChainId()
-    this.initializedBlockNumber = await this.ethProvider.getBlockNumber()
+    this.initializedBlockNumber = await this.alembicWallet
+      .getOwnerProvider()
+      .getBlockNumber()
 
     return this
   }
@@ -51,7 +49,7 @@ export class AlembicProvider extends BaseProvider {
       // there is nobody out there to use it for ERC-4337 methods yet, we have nothing to override in fact.
       throw new Error('Should not get here. Investigate.')
     }
-    return await this.ethProvider.perform(method, params)
+    return await this.alembicWallet.getOwnerProvider().perform(method, params)
   }
 
   async getTransaction(
@@ -84,6 +82,6 @@ export class AlembicProvider extends BaseProvider {
   }
 
   async detectNetwork(): Promise<Network> {
-    return (this.ethProvider as any).detectNetwork()
+    return this.alembicWallet.getOwnerProvider().detectNetwork()
   }
 }

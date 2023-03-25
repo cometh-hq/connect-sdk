@@ -7,8 +7,8 @@ import { Signer } from '@ethersproject/abstract-signer'
 import { BigNumber, Bytes } from 'ethers'
 import { Deferrable, defineReadOnly } from 'ethers/lib/utils'
 
-import { AlembicWallet } from '../AlembicWallet'
 import { AlembicProvider } from './AlembicProvider'
+import { AlembicWallet } from './AlembicWallet'
 
 export class AlembicSigner extends Signer {
   constructor(

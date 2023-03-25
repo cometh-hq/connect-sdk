@@ -1,8 +1,6 @@
 import { UserInfo } from '@web3auth/base'
 import { ethers } from 'ethers'
 
-import { Constructor } from '../types'
-
 export interface EOAAdapter {
   init(chainId: number, rpcTarget: string): Promise<void>
   logout(): Promise<void>
@@ -13,4 +11,5 @@ export interface EOAAdapter {
   getUserInfos(): Promise<Partial<UserInfo>>
 }
 
+export type Constructor<T> = new (...args: any[]) => T
 export type EOAConstructor = Constructor<EOAAdapter>
