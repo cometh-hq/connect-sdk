@@ -19,8 +19,8 @@ const ethers_1 = require("ethers");
 const siwe_1 = require("siwe");
 const constants_1 = require("../constants");
 const services_1 = require("../services");
-const AlembicProvider_1 = require("./AlembicProvider");
 const adapters_1 = require("./adapters");
+const AlembicProvider_1 = require("./AlembicProvider");
 class AlembicWallet {
     constructor({ eoaAdapter = adapters_1.Web3AuthAdapter, chainId = constants_1.DEFAULT_CHAIN_ID, rpcTarget = constants_1.DEFAULT_RPC_TARGET, apiKey }) {
         this.connected = false;
