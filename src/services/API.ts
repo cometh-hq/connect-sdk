@@ -1,12 +1,12 @@
 import axios from 'axios'
 import { SiweMessage } from 'siwe'
 
-import { API_URL } from '../../constants'
+import { API_URL } from '../constants'
 import {
   RelayTransactionType,
   TransactionStatus,
   UserNonceType
-} from '../../types'
+} from '../wallet/types'
 
 export const api = axios.create({
   baseURL: API_URL
@@ -17,13 +17,9 @@ export class API {
     api.defaults.headers.common['apikey'] = apiKey
   }
 
-  async getNonce(account: string): Promise<UserNonceType | null> {
+  async getNonce(account: string): Promise<UserNonceType> {
     const response = await api.get(`/wallets/connection-nonce/${account}`)
-    const userNonce = response?.data?.userNonce
-    if (userNonce) {
-      return userNonce
-    }
-    return null
+    return response?.data?.userNonce
   }
 
   async connectToAlembicWallet({
@@ -34,7 +30,7 @@ export class API {
     message: SiweMessage
     signature: string
     ownerAddress: string
-  }): Promise<string | null> {
+  }): Promise<string> {
     const body = {
       message,
       signature,
@@ -43,17 +39,15 @@ export class API {
 
     const response = await api.post(`/wallets/connect`, body)
     const data = response?.data
-    if (data?.walletAddress) {
-      return data.walletAddress
-    }
-    return null
+
+    return data.walletAddress
   }
 
   async relayTransaction({
     smartWalletAddress,
     safeTxData,
     signatures
-  }: RelayTransactionType): Promise<string | null> {
+  }: RelayTransactionType): Promise<string> {
     const body = {
       ...safeTxData,
       baseGas: safeTxData?.baseGas?.toString(),
@@ -65,17 +59,11 @@ export class API {
       `/wallets/${smartWalletAddress}/relay`,
       body
     )
-    if (response?.data?.relayId) {
-      return response?.data?.relayId
-    }
-    return null
+    return response.data?.relayId
   }
 
-  async getRelayTxStatus(relayId: string): Promise<TransactionStatus | null> {
+  async getRelayTxStatus(relayId: string): Promise<TransactionStatus> {
     const response = await api.get(`/wallets/relay/${relayId}`)
-    if (response?.data) {
-      return response?.data
-    }
-    return null
+    return response.data
   }
 }
