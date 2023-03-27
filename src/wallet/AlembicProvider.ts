@@ -5,8 +5,9 @@ import {
   TransactionResponse
 } from '@ethersproject/providers'
 import { Signer } from 'ethers'
-import { TransactionStatus } from 'src/wallet/types'
 
+import { DEFAULT_CHAIN_ID } from '../constants'
+import { TransactionStatus } from '../wallet/types'
 import { AlembicSigner } from './AlembicSigner'
 import { AlembicWallet } from './AlembicWallet'
 import { RelayTransactionResponse } from './RelayTransactionResponse'
@@ -17,7 +18,7 @@ export class AlembicProvider extends BaseProvider {
   constructor(private alembicWallet: AlembicWallet) {
     super({
       name: 'ERC-4337 Custom Network',
-      chainId: 137
+      chainId: alembicWallet.chainId ?? DEFAULT_CHAIN_ID
     })
 
     this.signer = new AlembicSigner(alembicWallet, this)
@@ -35,12 +36,12 @@ export class AlembicProvider extends BaseProvider {
   }
 
   async getTransaction(
-    transactionHash: string | Promise<string>
+    relayId: string | Promise<string>
   ): Promise<TransactionResponse> {
-    const status = await this.getRelayStatus(await transactionHash)
+    const status = await this.getRelayStatus(await relayId)
     const txResponse = await super.getTransaction(status.hash)
 
-    return new RelayTransactionResponse(txResponse, await transactionHash, this)
+    return new RelayTransactionResponse(txResponse, await relayId, this)
   }
 
   async getRelayStatus(relayId: string): Promise<TransactionStatus> {

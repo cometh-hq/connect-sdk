@@ -1,4 +1,8 @@
-import { JsonRpcSigner, Web3Provider } from '@ethersproject/providers'
+import {
+  JsonRpcSigner,
+  TransactionReceipt,
+  Web3Provider
+} from '@ethersproject/providers'
 import Safe from '@safe-global/safe-core-sdk'
 import { SafeTransactionDataPartial } from '@safe-global/safe-core-sdk-types'
 import EthersAdapter from '@safe-global/safe-ethers-lib'
@@ -8,6 +12,7 @@ import { SiweMessage } from 'siwe'
 import { DEFAULT_CHAIN_ID, DEFAULT_RPC_TARGET } from '../constants'
 import { API } from '../services'
 import { EOAAdapter, EOAConstructor, Web3AuthAdapter } from './adapters'
+import { AlembicProvider } from './AlembicProvider'
 import { SendTransactionResponse, TransactionStatus, UserInfos } from './types'
 
 export interface AlembicWalletConfig {
@@ -18,7 +23,7 @@ export interface AlembicWalletConfig {
 }
 export class AlembicWallet {
   private eoaAdapter: EOAAdapter
-  private chainId: number
+  readonly chainId: number
   private rpcTarget: string
   private connected = false
 
@@ -182,5 +187,11 @@ export class AlembicWallet {
 
   public async getRelayTxStatus(relayId: string): Promise<TransactionStatus> {
     return await this.API.getRelayTxStatus(relayId)
+  }
+
+  public async waitRelay(relayId: string): Promise<TransactionReceipt> {
+    const provider = new AlembicProvider(this)
+    const tx = await provider.getTransaction(relayId)
+    return await tx.wait()
   }
 }
