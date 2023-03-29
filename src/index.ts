@@ -1,3 +1,3 @@
-export * from './constants'
-export * from './services'
-export * from './wallet/'
+export * from './wallet'
+import * as AlembicWallet from './wallet'
+export default AlembicWallet
