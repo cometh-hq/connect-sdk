@@ -18,5 +18,6 @@ __exportStar(require("./adapters/"), exports);
 __exportStar(require("./AlembicProvider"), exports);
 __exportStar(require("./AlembicSigner"), exports);
 __exportStar(require("./AlembicWallet"), exports);
+__exportStar(require("./connectors/"), exports);
 __exportStar(require("./RelayTransactionResponse"), exports);
 __exportStar(require("./types"), exports);
