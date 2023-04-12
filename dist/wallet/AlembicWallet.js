@@ -88,7 +88,7 @@ class AlembicWallet {
     }
     getBalance() {
         var _a, _b;
-        return (_b = (_a = this.eoaAdapter) === null || _a === void 0 ? void 0 : _a.getBalance()) !== null && _b !== void 0 ? _b : 0;
+        return (_b = (_a = this.eoaAdapter) === null || _a === void 0 ? void 0 : _a.getBalance()) !== null && _b !== void 0 ? _b : null;
     }
     _createMessage(address, nonce) {
         const domain = window.location.host;
@@ -131,10 +131,11 @@ class AlembicWallet {
             const signer = this.getSigner();
             if (!signer)
                 throw new Error('Sign message: missing signer');
+            const messageHash = ethers_1.ethers.utils.hashMessage(messageToSign);
             const signature = yield signer._signTypedData({
                 verifyingContract: yield this.getSmartWalletAddress(),
                 chainId: this.chainId
-            }, exports.EIP712_SAFE_MESSAGE_TYPE, { message: messageToSign });
+            }, exports.EIP712_SAFE_MESSAGE_TYPE, { message: messageHash });
             return signature;
         });
     }

@@ -151,6 +151,7 @@ export class AlembicWallet {
   public async signMessage(messageToSign: string | Bytes): Promise<string> {
     const signer = this.getSigner()
     if (!signer) throw new Error('Sign message: missing signer')
+    const messageHash = ethers.utils.hashMessage(messageToSign)
 
     const signature = await signer._signTypedData(
       {
@@ -158,7 +159,7 @@ export class AlembicWallet {
         chainId: this.chainId
       },
       EIP712_SAFE_MESSAGE_TYPE,
-      { message: messageToSign }
+      { message: messageHash }
     )
 
     return signature

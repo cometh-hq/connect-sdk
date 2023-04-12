@@ -71,8 +71,6 @@ class Web3AuthAdapter {
             const signer = this.getSigner();
             if (!signer)
                 throw new Error('No signer found');
-            console.log((yield signer.getAddress()).toString());
-            console.log((yield signer.getBalance()).toString());
             return (_a = (yield signer.getBalance())) !== null && _a !== void 0 ? _a : null;
         });
     }
