@@ -26,6 +26,10 @@ export function AlembicWalletOnboardConnector(apiKey: string): WalletInit {
           },
           eth_chainId: async () => {
             return ethers.utils.hexlify(instance.chainId)
+          },
+          eth_getBalance: async () => {
+            const balance = instance.getBalance().toString()
+            return balance
           }
         })
 

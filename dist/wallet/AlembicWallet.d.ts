@@ -8,6 +8,12 @@ import { Bytes } from 'ethers'
 
 import { EOAConstructor } from './adapters'
 import { SendTransactionResponse, TransactionStatus, UserInfos } from './types'
+export declare const EIP712_SAFE_MESSAGE_TYPE: {
+  SafeMessage: {
+    type: string
+    name: string
+  }[]
+}
 export interface AlembicWalletConfig {
   eoaAdapter?: EOAConstructor
   chainId?: number
@@ -29,6 +35,7 @@ export declare class AlembicWallet {
   getConnected(): boolean
   getUserInfos(): Promise<UserInfos>
   getSmartWalletAddress(): string
+  getBalance(): any
   private _createMessage
   logout(): Promise<void>
   /**

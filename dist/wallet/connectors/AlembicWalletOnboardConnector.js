@@ -52,6 +52,10 @@ function AlembicWalletOnboardConnector(apiKey) {
                     }),
                     eth_chainId: () => __awaiter(this, void 0, void 0, function* () {
                         return ethers_1.ethers.utils.hexlify(instance.chainId);
+                    }),
+                    eth_getBalance: () => __awaiter(this, void 0, void 0, function* () {
+                        const balance = instance.getBalance().toString();
+                        return balance;
                     })
                 });
                 provider.disconnect = () => instance.logout();

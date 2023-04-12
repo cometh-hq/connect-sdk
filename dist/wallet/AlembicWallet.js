@@ -12,7 +12,7 @@ var __importDefault = (this && this.__importDefault) || function (mod) {
     return (mod && mod.__esModule) ? mod : { "default": mod };
 };
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.AlembicWallet = void 0;
+exports.AlembicWallet = exports.EIP712_SAFE_MESSAGE_TYPE = void 0;
 const safe_core_sdk_1 = __importDefault(require("@safe-global/safe-core-sdk"));
 const safe_ethers_lib_1 = __importDefault(require("@safe-global/safe-ethers-lib"));
 const ethers_1 = require("ethers");
@@ -21,6 +21,10 @@ const constants_1 = require("../constants");
 const services_1 = require("../services");
 const adapters_1 = require("./adapters");
 const AlembicProvider_1 = require("./AlembicProvider");
+exports.EIP712_SAFE_MESSAGE_TYPE = {
+    // "SafeMessage(bytes message)"
+    SafeMessage: [{ type: 'bytes', name: 'message' }]
+};
 class AlembicWallet {
     constructor({ eoaAdapter = adapters_1.Web3AuthAdapter, chainId = constants_1.DEFAULT_CHAIN_ID, rpcTarget = constants_1.DEFAULT_RPC_TARGET, apiKey }) {
         this.connected = false;
@@ -49,7 +53,7 @@ class AlembicWallet {
             const nonce = yield this.API.getNonce(ownerAddress);
             const message = this._createMessage(ownerAddress, nonce);
             const messageToSign = message.prepareMessage();
-            const signature = yield this.signMessage(messageToSign);
+            const signature = yield signer.signMessage(messageToSign);
             const smartWalletAddress = yield ((_a = this.API) === null || _a === void 0 ? void 0 : _a.connectToAlembicWallet({
                 message,
                 signature,
@@ -81,6 +85,10 @@ class AlembicWallet {
     getSmartWalletAddress() {
         var _a, _b;
         return (_b = (_a = this.safeSdk) === null || _a === void 0 ? void 0 : _a.getAddress()) !== null && _b !== void 0 ? _b : '';
+    }
+    getBalance() {
+        var _a, _b;
+        return (_b = (_a = this.eoaAdapter) === null || _a === void 0 ? void 0 : _a.getBalance()) !== null && _b !== void 0 ? _b : 0;
     }
     _createMessage(address, nonce) {
         const domain = window.location.host;
@@ -123,7 +131,11 @@ class AlembicWallet {
             const signer = this.getSigner();
             if (!signer)
                 throw new Error('Sign message: missing signer');
-            return yield signer.signMessage(messageToSign);
+            const signature = yield signer._signTypedData({
+                verifyingContract: yield this.getSmartWalletAddress(),
+                chainId: this.chainId
+            }, exports.EIP712_SAFE_MESSAGE_TYPE, { message: messageToSign });
+            return signature;
         });
     }
     /**

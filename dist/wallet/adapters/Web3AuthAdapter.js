@@ -65,6 +65,17 @@ class Web3AuthAdapter {
             return account !== null && account !== void 0 ? account : null;
         });
     }
+    getBalance() {
+        var _a;
+        return __awaiter(this, void 0, void 0, function* () {
+            const signer = this.getSigner();
+            if (!signer)
+                throw new Error('No signer found');
+            console.log((yield signer.getAddress()).toString());
+            console.log((yield signer.getBalance()).toString());
+            return (_a = (yield signer.getBalance())) !== null && _a !== void 0 ? _a : null;
+        });
+    }
     getSigner() {
         if (!this.ethProvider)
             throw new Error('No Web3Auth provider found');

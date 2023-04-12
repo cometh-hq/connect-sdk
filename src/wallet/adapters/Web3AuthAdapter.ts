@@ -1,6 +1,6 @@
 import { CHAIN_NAMESPACES, UserInfo } from '@web3auth/base'
 import { Web3Auth } from '@web3auth/modal'
-import { ethers } from 'ethers'
+import { BigNumber, ethers } from 'ethers'
 
 import { WEB3AUTH_CLIENT_ID } from '../../constants'
 import { EOAAdapter } from './types'
@@ -47,6 +47,12 @@ export class Web3AuthAdapter implements EOAAdapter {
     if (!signer) throw new Error('No signer found')
     const account = await signer.getAddress()
     return account ?? null
+  }
+
+  async getBalance(): Promise<BigNumber | null> {
+    const signer = this.getSigner()
+    if (!signer) throw new Error('No signer found')
+    return (await signer.getBalance()) ?? null
   }
 
   getSigner(): ethers.Signer | null {
