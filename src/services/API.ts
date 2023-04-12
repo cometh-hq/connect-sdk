@@ -4,6 +4,7 @@ import { SiweMessage } from 'siwe'
 import { API_URL } from '../constants'
 import {
   RelayTransactionType,
+  SponsoredTransaction,
   TransactionStatus,
   UserNonceType
 } from '../wallet/types'
@@ -20,6 +21,11 @@ export class API {
   async getNonce(account: string): Promise<UserNonceType> {
     const response = await api.get(`/wallets/connection-nonce/${account}`)
     return response?.data?.userNonce
+  }
+
+  async getSponsoredAddresses(): Promise<SponsoredTransaction[]> {
+    const response = await api.get(`/sponsored-address`)
+    return response?.data
   }
 
   async connectToAlembicWallet({

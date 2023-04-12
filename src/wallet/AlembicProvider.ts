@@ -2,9 +2,10 @@ import {
   BaseProvider,
   Network,
   TransactionReceipt,
+  TransactionRequest,
   TransactionResponse
 } from '@ethersproject/providers'
-import { Signer } from 'ethers'
+import { BigNumber, Signer } from 'ethers'
 
 import { DEFAULT_CHAIN_ID } from '../constants'
 import { TransactionStatus } from '../wallet/types'
@@ -64,5 +65,9 @@ export class AlembicProvider extends BaseProvider {
 
   async detectNetwork(): Promise<Network> {
     return this.alembicWallet.getOwnerProvider().detectNetwork()
+  }
+
+  async estimateGas(transaction: TransactionRequest): Promise<BigNumber> {
+    return super.estimateGas(transaction)
   }
 }

@@ -26,16 +26,17 @@ export class AlembicSigner extends Signer {
     return this.smartWallet.signMessage(message)
   }
 
-  async estimateGas(
+  /* async estimateGas(
     transaction: Deferrable<TransactionRequest>
   ): Promise<BigNumber> {
     return BigNumber.from('0')
-  }
+  } */
 
   async sendTransaction(
     transaction: Deferrable<TransactionRequest>
   ): Promise<TransactionResponse> {
     const tx = await this.populateTransaction(transaction)
+    const userAddress = await this.getAddress()
 
     const safeTx = {
       to: tx.to ?? '',
@@ -43,7 +44,10 @@ export class AlembicSigner extends Signer {
       data: tx.data?.toString() ?? '0x'
     }
 
-    const transactionResponse = await this.smartWallet.sendTransaction(safeTx)
+    const transactionResponse = await this.smartWallet.sendTransaction(
+      userAddress,
+      safeTx
+    )
 
     if (!this.provider) throw new Error('missing provider')
     return this.provider.getTransaction(transactionResponse.relayId)

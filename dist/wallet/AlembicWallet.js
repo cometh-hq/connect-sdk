@@ -28,6 +28,8 @@ class AlembicWallet {
         this.rpcTarget = rpcTarget;
         this.eoaAdapter = new eoaAdapter();
         this.API = new services_1.API(apiKey);
+        this.BASE_GAS = constants_1.DEFAULT_BASE_GAS;
+        this.REWARD_PERCENTILE = constants_1.DEFAULT_REWARD_PERCENTILE;
     }
     /**
      * Connection Section
@@ -47,6 +49,7 @@ class AlembicWallet {
             if (!ownerAddress)
                 throw new Error('No ownerAddress found');
             const nonce = yield this.API.getNonce(ownerAddress);
+            this.sponsoredAddresses = yield this.API.getSponsoredAddresses();
             const message = this._createMessage(ownerAddress, nonce);
             const messageToSign = message.prepareMessage();
             const signature = yield this.signMessage(messageToSign);
@@ -129,8 +132,8 @@ class AlembicWallet {
     /**
      * Transaction Section
      */
-    sendTransaction(safeTxData) {
-        var _a, _b, _c, _d, _e, _f, _g;
+    sendTransaction(userAddress, safeTxData) {
+        var _a, _b, _c, _d;
         return __awaiter(this, void 0, void 0, function* () {
             if (!this.safeSdk)
                 throw new Error('No Safe SDK found');
@@ -139,12 +142,18 @@ class AlembicWallet {
                 value: (_a = safeTxData.value) !== null && _a !== void 0 ? _a : 0,
                 data: safeTxData.data,
                 operation: (_b = safeTxData.operation) !== null && _b !== void 0 ? _b : 0,
-                safeTxGas: (_c = safeTxData.safeTxGas) !== null && _c !== void 0 ? _c : 0,
-                baseGas: (_d = safeTxData.baseGas) !== null && _d !== void 0 ? _d : 0,
-                gasPrice: (_e = safeTxData.gasPrice) !== null && _e !== void 0 ? _e : 0,
-                gasToken: (_f = safeTxData.gasToken) !== null && _f !== void 0 ? _f : ethers_1.ethers.constants.AddressZero,
-                refundReceiver: (_g = safeTxData.refundReceiver) !== null && _g !== void 0 ? _g : ethers_1.ethers.constants.AddressZero
+                safeTxGas: 0,
+                baseGas: 0,
+                gasPrice: 0,
+                gasToken: (_c = safeTxData.gasToken) !== null && _c !== void 0 ? _c : ethers_1.ethers.constants.AddressZero,
+                refundReceiver: (_d = safeTxData.refundReceiver) !== null && _d !== void 0 ? _d : ethers_1.ethers.constants.AddressZero
             };
+            if (!this._isSponsoredAddress(userAddress)) {
+                const { safeTxGas, baseGas, gasPrice } = yield this.estimateTransactionGas(userAddress, safeTxData);
+                safeTxDataTyped.safeTxGas = +safeTxGas;
+                safeTxDataTyped.baseGas = baseGas;
+                safeTxDataTyped.gasPrice = +gasPrice;
+            }
             const safeTransaction = yield this.safeSdk.createTransaction({
                 safeTransactionData: safeTxDataTyped
             });
@@ -158,6 +167,11 @@ class AlembicWallet {
             return { relayId, safeTransactionHash };
         });
     }
+    _isSponsoredAddress(userAddress) {
+        var _a;
+        const sponsoredAddress = (_a = this.sponsoredAddresses) === null || _a === void 0 ? void 0 : _a.filter((sponsoredAddress) => sponsoredAddress.userAddress === userAddress);
+        return sponsoredAddress ? true : false;
+    }
     getRelayTxStatus(relayId) {
         return __awaiter(this, void 0, void 0, function* () {
             return yield this.API.getRelayTxStatus(relayId);
@@ -168,6 +182,31 @@ class AlembicWallet {
             const provider = new AlembicProvider_1.AlembicProvider(this);
             const tx = yield provider.getTransaction(relayId);
             return yield tx.wait();
+        });
+    }
+    estimateTransactionGas(userAddress, safeTxData) {
+        return __awaiter(this, void 0, void 0, function* () {
+            const provider = new AlembicProvider_1.AlembicProvider(this);
+            const safeTxGas = yield provider.estimateGas({
+                from: userAddress,
+                to: safeTxData.to,
+                value: safeTxData.value,
+                data: safeTxData.data
+            });
+            const ethFeeHistory = yield provider.perform('eth_feeHistory', [
+                1,
+                'latest',
+                [this.REWARD_PERCENTILE]
+            ]);
+            const [reward, BaseFee] = [
+                ethers_1.BigNumber.from(ethFeeHistory.reward[0][0]),
+                ethers_1.BigNumber.from(ethFeeHistory.baseFeePerGas[0])
+            ];
+            return {
+                safeTxGas,
+                baseGas: this.BASE_GAS,
+                gasPrice: reward.add(BaseFee)
+            };
         });
     }
 }

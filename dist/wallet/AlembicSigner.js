@@ -34,12 +34,13 @@ class AlembicSigner extends abstract_signer_1.Signer {
         var _a, _b, _c, _d;
         return __awaiter(this, void 0, void 0, function* () {
             const tx = yield this.populateTransaction(transaction);
+            const userAddress = yield this.getAddress();
             const safeTx = {
                 to: (_a = tx.to) !== null && _a !== void 0 ? _a : '',
                 value: ethers_1.BigNumber.from((_b = tx.value) !== null && _b !== void 0 ? _b : '0').toHexString(),
                 data: (_d = (_c = tx.data) === null || _c === void 0 ? void 0 : _c.toString()) !== null && _d !== void 0 ? _d : '0x'
             };
-            const transactionResponse = yield this.smartWallet.sendTransaction(safeTx);
+            const transactionResponse = yield this.smartWallet.sendTransaction(userAddress, safeTx);
             if (!this.provider)
                 throw new Error('missing provider');
             return this.provider.getTransaction(transactionResponse.relayId);

@@ -4,7 +4,7 @@ import {
   Web3Provider
 } from '@ethersproject/providers'
 import { SafeTransactionDataPartial } from '@safe-global/safe-core-sdk-types'
-import { Bytes } from 'ethers'
+import { BigNumber, Bytes } from 'ethers'
 
 import { EOAConstructor } from './adapters'
 import { SendTransactionResponse, TransactionStatus, UserInfos } from './types'
@@ -19,6 +19,9 @@ export declare class AlembicWallet {
   readonly chainId: number
   private rpcTarget
   private connected
+  private BASE_GAS
+  private REWARD_PERCENTILE
+  private sponsoredAddresses?
   private safeSdk?
   private API
   constructor({ eoaAdapter, chainId, rpcTarget, apiKey }: AlembicWalletConfig)
@@ -41,8 +44,18 @@ export declare class AlembicWallet {
    * Transaction Section
    */
   sendTransaction(
+    userAddress: string,
     safeTxData: SafeTransactionDataPartial
   ): Promise<SendTransactionResponse>
+  private _isSponsoredAddress
   getRelayTxStatus(relayId: string): Promise<TransactionStatus>
   waitRelay(relayId: string): Promise<TransactionReceipt>
+  estimateTransactionGas(
+    userAddress: string,
+    safeTxData: SafeTransactionDataPartial
+  ): Promise<{
+    safeTxGas: BigNumber
+    baseGas: number
+    gasPrice: BigNumber
+  }>
 }

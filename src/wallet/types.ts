@@ -9,6 +9,10 @@ export type UserNonceType = {
   userAddress: string
   connectionNonce: string
 }
+export type SponsoredTransaction = {
+  customerId: string
+  userAddress: string
+}
 export type RelayTransactionType = {
   safeTxData: SafeTransactionDataPartial
   signatures: string
