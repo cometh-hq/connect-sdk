@@ -13,7 +13,8 @@ import {
   DEFAULT_BASE_GAS,
   DEFAULT_CHAIN_ID,
   DEFAULT_REWARD_PERCENTILE,
-  DEFAULT_RPC_TARGET
+  DEFAULT_RPC_TARGET,
+  EIP712_SAFE_MESSAGE_TYPE
 } from '../constants'
 import { API } from '../services'
 import { EOAAdapter, EOAConstructor, Web3AuthAdapter } from './adapters'
@@ -24,11 +25,6 @@ import {
   TransactionStatus,
   UserInfos
 } from './types'
-
-export const EIP712_SAFE_MESSAGE_TYPE = {
-  // "SafeMessage(bytes message)"
-  SafeMessage: [{ type: 'bytes', name: 'message' }]
-}
 
 export interface AlembicWalletConfig {
   eoaAdapter?: EOAConstructor
@@ -182,10 +178,10 @@ export class AlembicWallet {
    */
 
   async sendTransaction(
-    userAddress: string,
     safeTxData: SafeTransactionDataPartial
   ): Promise<SendTransactionResponse> {
     if (!this.safeSdk) throw new Error('No Safe SDK found')
+    const userAddress = this.getSmartWalletAddress()
 
     const safeTxDataTyped = {
       to: safeTxData.to,
@@ -228,7 +224,7 @@ export class AlembicWallet {
   }
 
   private _isSponsoredAddress(userAddress: string): boolean {
-    const sponsoredAddress = this.sponsoredAddresses?.filter(
+    const sponsoredAddress = this.sponsoredAddresses?.find(
       (sponsoredAddress) => sponsoredAddress.userAddress === userAddress
     )
     return sponsoredAddress ? true : false
@@ -252,7 +248,8 @@ export class AlembicWallet {
     baseGas: number
     gasPrice: BigNumber
   }> {
-    const provider = new AlembicProvider(this)
+    const provider = new ethers.providers.StaticJsonRpcProvider(this.rpcTarget)
+
     const safeTxGas = await provider.estimateGas({
       from: userAddress,
       to: safeTxData.to,
@@ -260,7 +257,7 @@ export class AlembicWallet {
       data: safeTxData.data
     })
 
-    const ethFeeHistory = await provider.perform('eth_feeHistory', [
+    const ethFeeHistory = await provider.send('eth_feeHistory', [
       1,
       'latest',
       [this.REWARD_PERCENTILE]

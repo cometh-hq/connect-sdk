@@ -25,7 +25,7 @@ export class API {
 
   async getSponsoredAddresses(): Promise<SponsoredTransaction[]> {
     const response = await api.get(`/sponsored-address`)
-    return response?.data
+    return response?.data?.sponsoredAddresses
   }
 
   async connectToAlembicWallet({

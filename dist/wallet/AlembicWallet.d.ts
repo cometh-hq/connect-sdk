@@ -8,12 +8,6 @@ import { BigNumber, Bytes } from 'ethers'
 
 import { EOAConstructor } from './adapters'
 import { SendTransactionResponse, TransactionStatus, UserInfos } from './types'
-export declare const EIP712_SAFE_MESSAGE_TYPE: {
-  SafeMessage: {
-    type: string
-    name: string
-  }[]
-}
 export interface AlembicWalletConfig {
   eoaAdapter?: EOAConstructor
   chainId?: number
@@ -50,7 +44,6 @@ export declare class AlembicWallet {
    * Transaction Section
    */
   sendTransaction(
-    userAddress: string,
     safeTxData: SafeTransactionDataPartial
   ): Promise<SendTransactionResponse>
   private _isSponsoredAddress

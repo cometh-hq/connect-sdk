@@ -30,9 +30,10 @@ class API {
         });
     }
     getSponsoredAddresses() {
+        var _a;
         return __awaiter(this, void 0, void 0, function* () {
             const response = yield exports.api.get(`/sponsored-address`);
-            return response === null || response === void 0 ? void 0 : response.data;
+            return (_a = response === null || response === void 0 ? void 0 : response.data) === null || _a === void 0 ? void 0 : _a.sponsoredAddresses;
         });
     }
     connectToAlembicWallet({ message, signature, ownerAddress }) {

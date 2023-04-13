@@ -12,7 +12,7 @@ var __importDefault = (this && this.__importDefault) || function (mod) {
     return (mod && mod.__esModule) ? mod : { "default": mod };
 };
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.AlembicWallet = exports.EIP712_SAFE_MESSAGE_TYPE = void 0;
+exports.AlembicWallet = void 0;
 const safe_core_sdk_1 = __importDefault(require("@safe-global/safe-core-sdk"));
 const safe_ethers_lib_1 = __importDefault(require("@safe-global/safe-ethers-lib"));
 const ethers_1 = require("ethers");
@@ -21,10 +21,6 @@ const constants_1 = require("../constants");
 const services_1 = require("../services");
 const adapters_1 = require("./adapters");
 const AlembicProvider_1 = require("./AlembicProvider");
-exports.EIP712_SAFE_MESSAGE_TYPE = {
-    // "SafeMessage(bytes message)"
-    SafeMessage: [{ type: 'bytes', name: 'message' }]
-};
 class AlembicWallet {
     constructor({ eoaAdapter = adapters_1.Web3AuthAdapter, chainId = constants_1.DEFAULT_CHAIN_ID, rpcTarget = constants_1.DEFAULT_RPC_TARGET, apiKey }) {
         this.connected = false;
@@ -134,18 +130,19 @@ class AlembicWallet {
             const signature = yield signer._signTypedData({
                 verifyingContract: yield this.getSmartWalletAddress(),
                 chainId: this.chainId
-            }, exports.EIP712_SAFE_MESSAGE_TYPE, { message: messageHash });
+            }, constants_1.EIP712_SAFE_MESSAGE_TYPE, { message: messageHash });
             return signature;
         });
     }
     /**
      * Transaction Section
      */
-    sendTransaction(userAddress, safeTxData) {
+    sendTransaction(safeTxData) {
         var _a, _b, _c, _d;
         return __awaiter(this, void 0, void 0, function* () {
             if (!this.safeSdk)
                 throw new Error('No Safe SDK found');
+            const userAddress = this.getSmartWalletAddress();
             const safeTxDataTyped = {
                 to: safeTxData.to,
                 value: (_a = safeTxData.value) !== null && _a !== void 0 ? _a : 0,
@@ -178,7 +175,7 @@ class AlembicWallet {
     }
     _isSponsoredAddress(userAddress) {
         var _a;
-        const sponsoredAddress = (_a = this.sponsoredAddresses) === null || _a === void 0 ? void 0 : _a.filter((sponsoredAddress) => sponsoredAddress.userAddress === userAddress);
+        const sponsoredAddress = (_a = this.sponsoredAddresses) === null || _a === void 0 ? void 0 : _a.find((sponsoredAddress) => sponsoredAddress.userAddress === userAddress);
         return sponsoredAddress ? true : false;
     }
     getRelayTxStatus(relayId) {
@@ -195,14 +192,14 @@ class AlembicWallet {
     }
     estimateTransactionGas(userAddress, safeTxData) {
         return __awaiter(this, void 0, void 0, function* () {
-            const provider = new AlembicProvider_1.AlembicProvider(this);
+            const provider = new ethers_1.ethers.providers.StaticJsonRpcProvider(this.rpcTarget);
             const safeTxGas = yield provider.estimateGas({
                 from: userAddress,
                 to: safeTxData.to,
                 value: safeTxData.value,
                 data: safeTxData.data
             });
-            const ethFeeHistory = yield provider.perform('eth_feeHistory', [
+            const ethFeeHistory = yield provider.send('eth_feeHistory', [
                 1,
                 'latest',
                 [this.REWARD_PERCENTILE]
