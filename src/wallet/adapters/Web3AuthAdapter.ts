@@ -49,12 +49,6 @@ export class Web3AuthAdapter implements EOAAdapter {
     return account ?? null
   }
 
-  async getBalance(): Promise<BigNumber | null> {
-    const signer = this.getSigner()
-    if (!signer) throw new Error('No signer found')
-    return (await signer.getBalance()) ?? null
-  }
-
   getSigner(): ethers.Signer | null {
     if (!this.ethProvider) throw new Error('No Web3Auth provider found')
     const signer = this.ethProvider.getSigner()

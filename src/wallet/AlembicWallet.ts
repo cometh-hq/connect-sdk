@@ -107,10 +107,6 @@ export class AlembicWallet {
     return this.safeSdk?.getAddress() ?? ''
   }
 
-  public getBalance(): any {
-    return this.eoaAdapter?.getBalance() ?? null
-  }
-
   private _createMessage(address, nonce): SiweMessage {
     const domain = window.location.host
     const origin = window.location.origin

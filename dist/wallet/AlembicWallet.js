@@ -86,10 +86,6 @@ class AlembicWallet {
         var _a, _b;
         return (_b = (_a = this.safeSdk) === null || _a === void 0 ? void 0 : _a.getAddress()) !== null && _b !== void 0 ? _b : '';
     }
-    getBalance() {
-        var _a, _b;
-        return (_b = (_a = this.eoaAdapter) === null || _a === void 0 ? void 0 : _a.getBalance()) !== null && _b !== void 0 ? _b : null;
-    }
     _createMessage(address, nonce) {
         const domain = window.location.host;
         const origin = window.location.origin;

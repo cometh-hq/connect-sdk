@@ -35,7 +35,6 @@ export declare class AlembicWallet {
   getConnected(): boolean
   getUserInfos(): Promise<UserInfos>
   getSmartWalletAddress(): string
-  getBalance(): any
   private _createMessage
   logout(): Promise<void>
   /**

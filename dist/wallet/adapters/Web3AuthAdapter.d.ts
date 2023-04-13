@@ -1,5 +1,5 @@
 import { UserInfo } from '@web3auth/base'
-import { BigNumber, ethers } from 'ethers'
+import { ethers } from 'ethers'
 
 import { EOAAdapter } from './types'
 export declare class Web3AuthAdapter implements EOAAdapter {
@@ -9,7 +9,6 @@ export declare class Web3AuthAdapter implements EOAAdapter {
   connect(): Promise<void>
   logout(): Promise<void>
   getAccount(): Promise<string | null>
-  getBalance(): Promise<BigNumber | null>
   getSigner(): ethers.Signer | null
   getEthProvider(): ethers.providers.Web3Provider | null
   getUserInfos(): Promise<Partial<UserInfo>>

@@ -17,6 +17,7 @@ export function AlembicWalletOnboardConnector(apiKey: string): WalletInit {
         const { createEIP1193Provider } = await import('@web3-onboard/common')
 
         const instance = new AlembicWallet({ apiKey })
+        const instanceProvider = new AlembicProvider(instance)
         await instance.connect()
 
         const provider = createEIP1193Provider(new AlembicProvider(instance), {
@@ -28,8 +29,8 @@ export function AlembicWalletOnboardConnector(apiKey: string): WalletInit {
             return ethers.utils.hexlify(instance.chainId)
           },
           eth_getBalance: async () => {
-            const balance = instance.getBalance().toString()
-            return balance
+            const balance = await instanceProvider.getSigner().getBalance()
+            return balance?.toString() ?? '0'
           }
         })
 
