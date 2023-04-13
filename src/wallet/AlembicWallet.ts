@@ -15,6 +15,11 @@ import { EOAAdapter, EOAConstructor, Web3AuthAdapter } from './adapters'
 import { AlembicProvider } from './AlembicProvider'
 import { SendTransactionResponse, TransactionStatus, UserInfos } from './types'
 
+export const EIP712_SAFE_MESSAGE_TYPE = {
+  // "SafeMessage(bytes message)"
+  SafeMessage: [{ type: 'bytes', name: 'message' }]
+}
+
 export interface AlembicWalletConfig {
   eoaAdapter?: EOAConstructor
   chainId?: number
@@ -62,7 +67,7 @@ export class AlembicWallet {
 
     const message: SiweMessage = this._createMessage(ownerAddress, nonce)
     const messageToSign = message.prepareMessage()
-    const signature = await this.signMessage(messageToSign)
+    const signature = await signer.signMessage(messageToSign)
 
     const smartWalletAddress = await this.API?.connectToAlembicWallet({
       message,
@@ -142,7 +147,18 @@ export class AlembicWallet {
   public async signMessage(messageToSign: string | Bytes): Promise<string> {
     const signer = this.getSigner()
     if (!signer) throw new Error('Sign message: missing signer')
-    return await signer.signMessage(messageToSign)
+    const messageHash = ethers.utils.hashMessage(messageToSign)
+
+    const signature = await signer._signTypedData(
+      {
+        verifyingContract: await this.getSmartWalletAddress(),
+        chainId: this.chainId
+      },
+      EIP712_SAFE_MESSAGE_TYPE,
+      { message: messageHash }
+    )
+
+    return signature
   }
 
   /**
