@@ -1,6 +1,6 @@
 import { CHAIN_NAMESPACES, UserInfo } from '@web3auth/base'
 import { Web3Auth } from '@web3auth/modal'
-import { ethers } from 'ethers'
+import { BigNumber, ethers } from 'ethers'
 
 import { WEB3AUTH_CLIENT_ID } from '../../constants'
 import { EOAAdapter } from './types'
