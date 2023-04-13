@@ -25,11 +25,6 @@ class AlembicSigner extends abstract_signer_1.Signer {
     signMessage(message) {
         return this.smartWallet.signMessage(message);
     }
-    /* async getBalance(): Promise<BigNumber> {
-      console.log((await this.getAddress()).toString())
-      console.log(Promise.resolve(this.smartWallet.getSmartWalletAddress()))
-      return await super.getBalance((await this.getAddress()).toString())
-    } */
     estimateGas(transaction) {
         return __awaiter(this, void 0, void 0, function* () {
             return ethers_1.BigNumber.from('0');

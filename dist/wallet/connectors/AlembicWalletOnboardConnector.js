@@ -44,9 +44,9 @@ function AlembicWalletOnboardConnector(apiKey) {
             getInterface: () => __awaiter(this, void 0, void 0, function* () {
                 const { createEIP1193Provider } = yield Promise.resolve().then(() => __importStar(require('@web3-onboard/common')));
                 const instance = new AlembicWallet_1.AlembicWallet({ apiKey });
-                yield instance.connect();
                 const instanceProvider = new AlembicProvider_1.AlembicProvider(instance);
-                const provider = createEIP1193Provider(new AlembicProvider_1.AlembicProvider(instance), {
+                yield instance.connect();
+                const provider = createEIP1193Provider(instanceProvider, {
                     eth_requestAccounts: () => __awaiter(this, void 0, void 0, function* () {
                         const address = instance.getSmartWalletAddress();
                         return [address];
@@ -55,10 +55,9 @@ function AlembicWalletOnboardConnector(apiKey) {
                         return ethers_1.ethers.utils.hexlify(instance.chainId);
                     }),
                     eth_getBalance: () => __awaiter(this, void 0, void 0, function* () {
-                        var _a, _b;
+                        var _a;
                         const balance = yield instanceProvider.getSigner().getBalance();
-                        console.log(balance.toString());
-                        return (_b = (_a = (yield balance)) === null || _a === void 0 ? void 0 : _a.toString()) !== null && _b !== void 0 ? _b : '0';
+                        return (_a = balance === null || balance === void 0 ? void 0 : balance.toString()) !== null && _a !== void 0 ? _a : '0';
                     })
                 });
                 provider.disconnect = () => instance.logout();
