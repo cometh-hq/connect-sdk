@@ -142,7 +142,6 @@ class AlembicWallet {
         return __awaiter(this, void 0, void 0, function* () {
             if (!this.safeSdk)
                 throw new Error('No Safe SDK found');
-            const userAddress = this.getSmartWalletAddress();
             const safeTxDataTyped = {
                 to: safeTxData.to,
                 value: (_a = safeTxData.value) !== null && _a !== void 0 ? _a : 0,
@@ -154,8 +153,8 @@ class AlembicWallet {
                 gasToken: (_c = safeTxData.gasToken) !== null && _c !== void 0 ? _c : ethers_1.ethers.constants.AddressZero,
                 refundReceiver: (_d = safeTxData.refundReceiver) !== null && _d !== void 0 ? _d : ethers_1.ethers.constants.AddressZero
             };
-            if (!this._isSponsoredAddress(userAddress)) {
-                const { safeTxGas, baseGas, gasPrice } = yield this.estimateTransactionGas(userAddress, safeTxData);
+            if (!this._isToSponsoredAddress(safeTxData.to)) {
+                const { safeTxGas, baseGas, gasPrice } = yield this.estimateTransactionGas(safeTxData);
                 safeTxDataTyped.safeTxGas = +safeTxGas;
                 safeTxDataTyped.baseGas = baseGas;
                 safeTxDataTyped.gasPrice = +gasPrice;
@@ -173,9 +172,9 @@ class AlembicWallet {
             return { relayId, safeTransactionHash };
         });
     }
-    _isSponsoredAddress(userAddress) {
+    _isToSponsoredAddress(targetAddress) {
         var _a;
-        const sponsoredAddress = (_a = this.sponsoredAddresses) === null || _a === void 0 ? void 0 : _a.find((sponsoredAddress) => sponsoredAddress.userAddress === userAddress);
+        const sponsoredAddress = (_a = this.sponsoredAddresses) === null || _a === void 0 ? void 0 : _a.find((sponsoredAddress) => sponsoredAddress.targetAddress === targetAddress);
         return sponsoredAddress ? true : false;
     }
     getRelayTxStatus(relayId) {
@@ -190,11 +189,11 @@ class AlembicWallet {
             return yield tx.wait();
         });
     }
-    estimateTransactionGas(userAddress, safeTxData) {
+    estimateTransactionGas(safeTxData) {
         return __awaiter(this, void 0, void 0, function* () {
             const provider = new ethers_1.ethers.providers.StaticJsonRpcProvider(this.rpcTarget);
             const safeTxGas = yield provider.estimateGas({
-                from: userAddress,
+                from: this.getSmartWalletAddress(),
                 to: safeTxData.to,
                 value: safeTxData.value,
                 data: safeTxData.data

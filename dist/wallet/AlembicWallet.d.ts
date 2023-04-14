@@ -46,13 +46,10 @@ export declare class AlembicWallet {
   sendTransaction(
     safeTxData: SafeTransactionDataPartial
   ): Promise<SendTransactionResponse>
-  private _isSponsoredAddress
+  private _isToSponsoredAddress
   getRelayTxStatus(relayId: string): Promise<TransactionStatus>
   waitRelay(relayId: string): Promise<TransactionReceipt>
-  estimateTransactionGas(
-    userAddress: string,
-    safeTxData: SafeTransactionDataPartial
-  ): Promise<{
+  estimateTransactionGas(safeTxData: SafeTransactionDataPartial): Promise<{
     safeTxGas: BigNumber
     baseGas: number
     gasPrice: BigNumber

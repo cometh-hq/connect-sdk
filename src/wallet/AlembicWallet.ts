@@ -84,7 +84,7 @@ export class AlembicWallet {
     const smartWalletAddress = await this.API?.connectToAlembicWallet({
       message,
       signature,
-      ownerAddress: ownerAddress
+      ownerAddress
     })
 
     const ethAdapter = new EthersAdapter({
@@ -181,7 +181,6 @@ export class AlembicWallet {
     safeTxData: SafeTransactionDataPartial
   ): Promise<SendTransactionResponse> {
     if (!this.safeSdk) throw new Error('No Safe SDK found')
-    const userAddress = this.getSmartWalletAddress()
 
     const safeTxDataTyped = {
       to: safeTxData.to,
@@ -195,9 +194,9 @@ export class AlembicWallet {
       refundReceiver: safeTxData.refundReceiver ?? ethers.constants.AddressZero
     }
 
-    if (!this._isSponsoredAddress(userAddress)) {
+    if (!this._isToSponsoredAddress(safeTxData.to)) {
       const { safeTxGas, baseGas, gasPrice } =
-        await this.estimateTransactionGas(userAddress, safeTxData)
+        await this.estimateTransactionGas(safeTxData)
 
       safeTxDataTyped.safeTxGas = +safeTxGas
       safeTxDataTyped.baseGas = baseGas
@@ -223,9 +222,9 @@ export class AlembicWallet {
     return { relayId, safeTransactionHash }
   }
 
-  private _isSponsoredAddress(userAddress: string): boolean {
+  private _isToSponsoredAddress(targetAddress: string): boolean {
     const sponsoredAddress = this.sponsoredAddresses?.find(
-      (sponsoredAddress) => sponsoredAddress.userAddress === userAddress
+      (sponsoredAddress) => sponsoredAddress.targetAddress === targetAddress
     )
     return sponsoredAddress ? true : false
   }
@@ -241,7 +240,6 @@ export class AlembicWallet {
   }
 
   public async estimateTransactionGas(
-    userAddress: string,
     safeTxData: SafeTransactionDataPartial
   ): Promise<{
     safeTxGas: BigNumber
@@ -251,7 +249,7 @@ export class AlembicWallet {
     const provider = new ethers.providers.StaticJsonRpcProvider(this.rpcTarget)
 
     const safeTxGas = await provider.estimateGas({
-      from: userAddress,
+      from: this.getSmartWalletAddress(),
       to: safeTxData.to,
       value: safeTxData.value,
       data: safeTxData.data
