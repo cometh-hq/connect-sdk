@@ -35,6 +35,11 @@ class AlembicProvider extends providers_1.BaseProvider {
             return yield this.alembicWallet.getOwnerProvider().perform(method, params);
         });
     }
+    send(method, params) {
+        return __awaiter(this, void 0, void 0, function* () {
+            return yield this.alembicWallet.getOwnerProvider().send(method, params);
+        });
+    }
     getTransaction(relayId) {
         const _super = Object.create(null, {
             getTransaction: { get: () => super.getTransaction }
@@ -69,14 +74,6 @@ class AlembicProvider extends providers_1.BaseProvider {
     detectNetwork() {
         return __awaiter(this, void 0, void 0, function* () {
             return this.alembicWallet.getOwnerProvider().detectNetwork();
-        });
-    }
-    estimateGas(transaction) {
-        const _super = Object.create(null, {
-            estimateGas: { get: () => super.estimateGas }
-        });
-        return __awaiter(this, void 0, void 0, function* () {
-            return _super.estimateGas.call(this, transaction);
         });
     }
 }

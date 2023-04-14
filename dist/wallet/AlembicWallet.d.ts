@@ -1,8 +1,4 @@
-import {
-  JsonRpcSigner,
-  TransactionReceipt,
-  Web3Provider
-} from '@ethersproject/providers'
+import { Web3Provider } from '@ethersproject/providers'
 import { SafeTransactionDataPartial } from '@safe-global/safe-core-sdk-types'
 import { BigNumber, Bytes } from 'ethers'
 
@@ -38,7 +34,6 @@ export declare class AlembicWallet {
    * Signing Section
    */
   getOwnerProvider(): Web3Provider
-  getSigner(): JsonRpcSigner | undefined
   signMessage(messageToSign: string | Bytes): Promise<string>
   /**
    * Transaction Section
@@ -46,9 +41,8 @@ export declare class AlembicWallet {
   sendTransaction(
     safeTxData: SafeTransactionDataPartial
   ): Promise<SendTransactionResponse>
-  private _isToSponsoredAddress
+  private _toSponsoredAddress
   getRelayTxStatus(relayId: string): Promise<TransactionStatus>
-  waitRelay(relayId: string): Promise<TransactionReceipt>
   estimateTransactionGas(safeTxData: SafeTransactionDataPartial): Promise<{
     safeTxGas: BigNumber
     baseGas: number

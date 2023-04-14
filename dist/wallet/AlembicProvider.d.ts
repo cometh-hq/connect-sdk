@@ -2,10 +2,9 @@ import {
   BaseProvider,
   Network,
   TransactionReceipt,
-  TransactionRequest,
   TransactionResponse
 } from '@ethersproject/providers'
-import { BigNumber, Signer } from 'ethers'
+import { Signer } from 'ethers'
 
 import { TransactionStatus } from '../wallet/types'
 import { AlembicSigner } from './AlembicSigner'
@@ -16,6 +15,7 @@ export declare class AlembicProvider extends BaseProvider {
   constructor(alembicWallet: AlembicWallet)
   getSigner(): Signer
   perform(method: string, params: any): Promise<any>
+  send(method: string, params: any): Promise<any>
   getTransaction(
     relayId: string | Promise<string>
   ): Promise<TransactionResponse>
@@ -29,5 +29,4 @@ export declare class AlembicProvider extends BaseProvider {
     timeout?: number
   ): Promise<TransactionReceipt>
   detectNetwork(): Promise<Network>
-  estimateGas(transaction: TransactionRequest): Promise<BigNumber>
 }
