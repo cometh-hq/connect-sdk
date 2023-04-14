@@ -15,6 +15,7 @@ export declare class AlembicProvider extends BaseProvider {
   constructor(alembicWallet: AlembicWallet)
   getSigner(): Signer
   perform(method: string, params: any): Promise<any>
+  send(method: string, params: any): Promise<any>
   getTransaction(
     relayId: string | Promise<string>
   ): Promise<TransactionResponse>

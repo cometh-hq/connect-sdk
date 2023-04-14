@@ -1,24 +1,25 @@
-import {
-  JsonRpcSigner,
-  TransactionReceipt,
-  Web3Provider
-} from '@ethersproject/providers'
+import { Web3Provider } from '@ethersproject/providers'
 import Safe from '@safe-global/safe-core-sdk'
 import { SafeTransactionDataPartial } from '@safe-global/safe-core-sdk-types'
 import EthersAdapter from '@safe-global/safe-ethers-lib'
-import { Bytes, ethers } from 'ethers'
+import { BigNumber, Bytes, ethers } from 'ethers'
 import { SiweMessage } from 'siwe'
 
-import { DEFAULT_CHAIN_ID, DEFAULT_RPC_TARGET } from '../constants'
+import {
+  DEFAULT_BASE_GAS,
+  DEFAULT_CHAIN_ID,
+  DEFAULT_REWARD_PERCENTILE,
+  DEFAULT_RPC_TARGET,
+  EIP712_SAFE_MESSAGE_TYPE
+} from '../constants'
 import { API } from '../services'
 import { EOAAdapter, EOAConstructor, Web3AuthAdapter } from './adapters'
-import { AlembicProvider } from './AlembicProvider'
-import { SendTransactionResponse, TransactionStatus, UserInfos } from './types'
-
-export const EIP712_SAFE_MESSAGE_TYPE = {
-  // "SafeMessage(bytes message)"
-  SafeMessage: [{ type: 'bytes', name: 'message' }]
-}
+import {
+  SendTransactionResponse,
+  SponsoredTransaction,
+  TransactionStatus,
+  UserInfos
+} from './types'
 
 export interface AlembicWalletConfig {
   eoaAdapter?: EOAConstructor
@@ -31,7 +32,9 @@ export class AlembicWallet {
   readonly chainId: number
   private rpcTarget: string
   private connected = false
-
+  private BASE_GAS: number
+  private REWARD_PERCENTILE: number
+  private sponsoredAddresses?: SponsoredTransaction[]
   private safeSdk?: Safe
   private API: API
 
@@ -45,6 +48,8 @@ export class AlembicWallet {
     this.rpcTarget = rpcTarget
     this.eoaAdapter = new eoaAdapter()
     this.API = new API(apiKey)
+    this.BASE_GAS = DEFAULT_BASE_GAS
+    this.REWARD_PERCENTILE = DEFAULT_REWARD_PERCENTILE
   }
 
   /**
@@ -57,7 +62,7 @@ export class AlembicWallet {
     await this.eoaAdapter.init(this.chainId, this.rpcTarget)
     await this.eoaAdapter.connect()
 
-    const signer = this.getSigner()
+    const signer = this.eoaAdapter.getEthProvider()?.getSigner()
     if (!signer) throw new Error('No signer found')
 
     const ownerAddress = await signer.getAddress()
@@ -72,7 +77,7 @@ export class AlembicWallet {
     const smartWalletAddress = await this.API?.connectToAlembicWallet({
       message,
       signature,
-      ownerAddress: ownerAddress
+      ownerAddress
     })
 
     const ethAdapter = new EthersAdapter({
@@ -85,6 +90,7 @@ export class AlembicWallet {
       safeAddress: smartWalletAddress
     })
 
+    this.sponsoredAddresses = await this.API.getSponsoredAddresses()
     this.connected = true
   }
 
@@ -98,7 +104,7 @@ export class AlembicWallet {
 
     return {
       ...userInfos,
-      ownerAddress: await this.getSigner()?.getAddress(),
+      ownerAddress: await this.eoaAdapter.getSigner()?.getAddress(),
       smartWalletAddress: this.getSmartWalletAddress()
     }
   }
@@ -140,12 +146,8 @@ export class AlembicWallet {
     return provider
   }
 
-  public getSigner(): JsonRpcSigner | undefined {
-    return this.getOwnerProvider()?.getSigner()
-  }
-
   public async signMessage(messageToSign: string | Bytes): Promise<string> {
-    const signer = this.getSigner()
+    const signer = this.eoaAdapter.getEthProvider()?.getSigner()
     if (!signer) throw new Error('Sign message: missing signer')
     const messageHash = ethers.utils.hashMessage(messageToSign)
 
@@ -175,39 +177,76 @@ export class AlembicWallet {
       value: safeTxData.value ?? 0,
       data: safeTxData.data,
       operation: safeTxData.operation ?? 0,
-      safeTxGas: safeTxData.safeTxGas ?? 0,
-      baseGas: safeTxData.baseGas ?? 0,
-      gasPrice: safeTxData.gasPrice ?? 0,
+      safeTxGas: 0,
+      baseGas: 0,
+      gasPrice: 0,
       gasToken: safeTxData.gasToken ?? ethers.constants.AddressZero,
       refundReceiver: safeTxData.refundReceiver ?? ethers.constants.AddressZero
+    }
+
+    if (!this._toSponsoredAddress(safeTxData.to)) {
+      const { safeTxGas, baseGas, gasPrice } =
+        await this.estimateTransactionGas(safeTxData)
+
+      safeTxDataTyped.safeTxGas = +safeTxGas
+      safeTxDataTyped.baseGas = baseGas
+      safeTxDataTyped.gasPrice = +gasPrice
     }
 
     const safeTransaction = await this.safeSdk.createTransaction({
       safeTransactionData: safeTxDataTyped
     })
 
-    const safeTransactionHash = await this.safeSdk.getTransactionHash(
-      safeTransaction
-    )
-
     const signature = await this.safeSdk.signTypedData(safeTransaction)
 
     const relayId = await this.API.relayTransaction({
       safeTxData: safeTxDataTyped,
       signatures: signature.data,
-      smartWalletAddress: this.safeSdk.getAddress()
+      smartWalletAddress: this.getSmartWalletAddress()
     })
 
-    return { relayId, safeTransactionHash }
+    return { relayId }
+  }
+
+  private _toSponsoredAddress(targetAddress: string): boolean {
+    const sponsoredAddress = this.sponsoredAddresses?.find(
+      (sponsoredAddress) => sponsoredAddress.targetAddress === targetAddress
+    )
+    return sponsoredAddress ? true : false
   }
 
   public async getRelayTxStatus(relayId: string): Promise<TransactionStatus> {
     return await this.API.getRelayTxStatus(relayId)
   }
 
-  public async waitRelay(relayId: string): Promise<TransactionReceipt> {
-    const provider = new AlembicProvider(this)
-    const tx = await provider.getTransaction(relayId)
-    return await tx.wait()
+  public async estimateTransactionGas(
+    safeTxData: SafeTransactionDataPartial
+  ): Promise<{
+    safeTxGas: BigNumber
+    baseGas: number
+    gasPrice: BigNumber
+  }> {
+    const safeTxGas = await this.getOwnerProvider().estimateGas({
+      from: this.getSmartWalletAddress(),
+      to: safeTxData.to,
+      value: safeTxData.value,
+      data: safeTxData.data
+    })
+
+    const ethFeeHistory = await this.getOwnerProvider().send('eth_feeHistory', [
+      1,
+      'latest',
+      [this.REWARD_PERCENTILE]
+    ])
+    const [reward, BaseFee] = [
+      BigNumber.from(ethFeeHistory.reward[0][0]),
+      BigNumber.from(ethFeeHistory.baseFeePerGas[0])
+    ]
+
+    return {
+      safeTxGas,
+      baseGas: this.BASE_GAS,
+      gasPrice: reward.add(BaseFee)
+    }
   }
 }

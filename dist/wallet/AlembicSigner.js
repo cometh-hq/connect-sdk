@@ -25,11 +25,6 @@ class AlembicSigner extends abstract_signer_1.Signer {
     signMessage(message) {
         return this.smartWallet.signMessage(message);
     }
-    estimateGas(transaction) {
-        return __awaiter(this, void 0, void 0, function* () {
-            return ethers_1.BigNumber.from('0');
-        });
-    }
     sendTransaction(transaction) {
         var _a, _b, _c, _d;
         return __awaiter(this, void 0, void 0, function* () {

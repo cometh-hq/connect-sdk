@@ -4,8 +4,12 @@ export declare enum RelayStatus {
   MINED = 'mined'
 }
 export type UserNonceType = {
-  userAddress: string
+  walletAddress: string
   connectionNonce: string
+}
+export type SponsoredTransaction = {
+  customerId: string
+  targetAddress: string
 }
 export type RelayTransactionType = {
   safeTxData: SafeTransactionDataPartial
@@ -22,5 +26,4 @@ export type TransactionStatus = {
 }
 export type SendTransactionResponse = {
   relayId: string
-  safeTransactionHash: string
 }

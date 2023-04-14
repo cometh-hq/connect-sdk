@@ -20,7 +20,6 @@ export class AlembicProvider extends BaseProvider {
       name: 'ERC-4337 Custom Network',
       chainId: alembicWallet.chainId ?? DEFAULT_CHAIN_ID
     })
-
     this.signer = new AlembicSigner(alembicWallet, this)
   }
 
@@ -33,6 +32,10 @@ export class AlembicProvider extends BaseProvider {
       throw new Error('Not authorized method: sendTransaction')
     }
     return await this.alembicWallet.getOwnerProvider().perform(method, params)
+  }
+
+  async send(method: string, params: any): Promise<any> {
+    return await this.alembicWallet.getOwnerProvider().send(method, params)
   }
 
   async getTransaction(

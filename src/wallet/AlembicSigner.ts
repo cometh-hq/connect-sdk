@@ -26,12 +26,6 @@ export class AlembicSigner extends Signer {
     return this.smartWallet.signMessage(message)
   }
 
-  async estimateGas(
-    transaction: Deferrable<TransactionRequest>
-  ): Promise<BigNumber> {
-    return BigNumber.from('0')
-  }
-
   async sendTransaction(
     transaction: Deferrable<TransactionRequest>
   ): Promise<TransactionResponse> {
