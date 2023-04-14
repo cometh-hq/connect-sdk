@@ -9,3 +9,27 @@ export const EIP712_SAFE_MESSAGE_TYPE = {
   // "SafeMessage(bytes message)"
   SafeMessage: [{ type: 'bytes', name: 'message' }]
 }
+export const EIP712_SAFE_TX_TYPES = {
+  EIP712Domain: [
+    {
+      type: 'uint256',
+      name: 'chainId'
+    },
+    {
+      type: 'address',
+      name: 'verifyingContract'
+    }
+  ],
+  SafeTx: [
+    { type: 'address', name: 'to' },
+    { type: 'uint256', name: 'value' },
+    { type: 'bytes', name: 'data' },
+    { type: 'uint8', name: 'operation' },
+    { type: 'uint256', name: 'safeTxGas' },
+    { type: 'uint256', name: 'baseGas' },
+    { type: 'uint256', name: 'gasPrice' },
+    { type: 'address', name: 'gasToken' },
+    { type: 'address', name: 'refundReceiver' },
+    { type: 'uint256', name: 'nonce' }
+  ]
+}

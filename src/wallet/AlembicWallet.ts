@@ -14,7 +14,8 @@ import {
   DEFAULT_CHAIN_ID,
   DEFAULT_REWARD_PERCENTILE,
   DEFAULT_RPC_TARGET,
-  EIP712_SAFE_MESSAGE_TYPE
+  EIP712_SAFE_MESSAGE_TYPE,
+  EIP712_SAFE_TX_TYPES
 } from '../constants'
 import { API } from '../services'
 import { EOAAdapter, EOAConstructor, Web3AuthAdapter } from './adapters'
@@ -173,6 +174,32 @@ export class AlembicWallet {
     return signature
   }
 
+  private _getSignTypedData = (
+    to: string,
+    data: string,
+    value: BigNumber
+  ): any => {
+    return {
+      types: EIP712_SAFE_TX_TYPES,
+      domain: {
+        chainId: this.chainId,
+        verifyingContract: this.getSmartWalletAddress()
+      },
+      primaryType: 'SafeTx',
+      message: {
+        to,
+        value: BigNumber.from(value).toString(),
+        data,
+        operation: 0,
+        safeTxGas: BigNumber.from(0).toString(),
+        baseGas: BigNumber.from(0).toString(),
+        gasPrice: BigNumber.from(0).toString(),
+        gasToken: ethers.constants.AddressZero,
+        refundReceiver: ethers.constants.AddressZero
+      }
+    }
+  }
+
   /**
    * Transaction Section
    */
@@ -182,7 +209,7 @@ export class AlembicWallet {
   ): Promise<SendTransactionResponse> {
     if (!this.safeSdk) throw new Error('No Safe SDK found')
 
-    const safeTxDataTyped = {
+    /*   const safeTxDataTyped = {
       to: safeTxData.to,
       value: safeTxData.value ?? 0,
       data: safeTxData.data,
@@ -192,7 +219,13 @@ export class AlembicWallet {
       gasPrice: 0,
       gasToken: safeTxData.gasToken ?? ethers.constants.AddressZero,
       refundReceiver: safeTxData.refundReceiver ?? ethers.constants.AddressZero
-    }
+    } */
+
+    const safeTxDataTyped = this._getSignTypedData(
+      safeTxData.to,
+      safeTxData.data,
+      BigNumber.from(safeTxData.value)
+    )
 
     if (!this._isToSponsoredAddress(safeTxData.to)) {
       const { safeTxGas, baseGas, gasPrice } =
@@ -216,7 +249,7 @@ export class AlembicWallet {
     const relayId = await this.API.relayTransaction({
       safeTxData: safeTxDataTyped,
       signatures: signature.data,
-      smartWalletAddress: this.safeSdk.getAddress()
+      smartWalletAddress: this.getSmartWalletAddress()
     })
 
     return { relayId, safeTransactionHash }
