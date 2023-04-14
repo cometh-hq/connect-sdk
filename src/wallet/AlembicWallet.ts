@@ -194,7 +194,7 @@ export class AlembicWallet {
       refundReceiver: safeTxData.refundReceiver ?? ethers.constants.AddressZero
     }
 
-    if (!this._isToSponsoredAddress(safeTxData.to)) {
+    if (!this._toSponsoredAddress(safeTxData.to)) {
       const { safeTxGas, baseGas, gasPrice } =
         await this.estimateTransactionGas(safeTxData)
 
@@ -207,10 +207,6 @@ export class AlembicWallet {
       safeTransactionData: safeTxDataTyped
     })
 
-    const safeTransactionHash = await this.safeSdk.getTransactionHash(
-      safeTransaction
-    )
-
     const signature = await this.safeSdk.signTypedData(safeTransaction)
 
     const relayId = await this.API.relayTransaction({
@@ -219,10 +215,10 @@ export class AlembicWallet {
       smartWalletAddress: this.safeSdk.getAddress()
     })
 
-    return { relayId, safeTransactionHash }
+    return { relayId }
   }
 
-  private _isToSponsoredAddress(targetAddress: string): boolean {
+  private _toSponsoredAddress(targetAddress: string): boolean {
     const sponsoredAddress = this.sponsoredAddresses?.find(
       (sponsoredAddress) => sponsoredAddress.targetAddress === targetAddress
     )
