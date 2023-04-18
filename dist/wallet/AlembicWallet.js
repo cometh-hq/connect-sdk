@@ -138,6 +138,7 @@ class AlembicWallet {
         return __awaiter(this, void 0, void 0, function* () {
             if (!this.safeSdk)
                 throw new Error('No Safe SDK found');
+            console.log('yes');
             const safeTxDataTyped = {
                 to: safeTxData.to,
                 value: (_a = safeTxData.value) !== null && _a !== void 0 ? _a : 0,
@@ -149,9 +150,7 @@ class AlembicWallet {
                 gasToken: (_c = safeTxData.gasToken) !== null && _c !== void 0 ? _c : ethers_1.ethers.constants.AddressZero,
                 refundReceiver: (_d = safeTxData.refundReceiver) !== null && _d !== void 0 ? _d : ethers_1.ethers.constants.AddressZero
             };
-            console.log(safeTxData.to);
             if (!this._toSponsoredAddress(safeTxData.to)) {
-                console.log('NOOOO');
                 const { safeTxGas, baseGas, gasPrice } = yield this.estimateTransactionGas(safeTxData);
                 safeTxDataTyped.safeTxGas = +safeTxGas;
                 safeTxDataTyped.baseGas = baseGas;

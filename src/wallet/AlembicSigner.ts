@@ -5,7 +5,7 @@ import {
 } from '@ethersproject/abstract-provider'
 import { Signer } from '@ethersproject/abstract-signer'
 import { BigNumber, Bytes } from 'ethers'
-import { Deferrable, defineReadOnly } from 'ethers/lib/utils'
+import { Deferrable, defineReadOnly, resolveProperties } from 'ethers/lib/utils'
 
 import { AlembicProvider } from './AlembicProvider'
 import { AlembicWallet } from './AlembicWallet'
@@ -29,9 +29,7 @@ export class AlembicSigner extends Signer {
   async sendTransaction(
     transaction: Deferrable<TransactionRequest>
   ): Promise<TransactionResponse> {
-    transaction.maxFeePerGas = '0x0'
-    transaction.maxPriorityFeePerGas = '0x0'
-    const tx = await this.populateTransaction(transaction)
+    const tx = await resolveProperties(this.checkTransaction(transaction))
 
     const safeTx = {
       to: tx.to ?? '',
@@ -42,7 +40,7 @@ export class AlembicSigner extends Signer {
     const transactionResponse = await this.smartWallet.sendTransaction(safeTx)
 
     if (!this.provider) throw new Error('missing provider')
-    return this.provider.getTransaction(transactionResponse.relayId)
+    return await this.provider.getTransaction(transactionResponse.relayId)
   }
 
   signTransaction(

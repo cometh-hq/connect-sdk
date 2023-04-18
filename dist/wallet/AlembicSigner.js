@@ -28,19 +28,21 @@ class AlembicSigner extends abstract_signer_1.Signer {
     sendTransaction(transaction) {
         var _a, _b, _c, _d;
         return __awaiter(this, void 0, void 0, function* () {
-            transaction.maxFeePerGas = '0x0';
-            transaction.maxPriorityFeePerGas = '0x0';
-            const tx = yield this.populateTransaction(transaction);
-            console.log(tx);
+            const tx = yield (0, utils_1.resolveProperties)(this.checkTransaction(transaction));
             const safeTx = {
                 to: (_a = tx.to) !== null && _a !== void 0 ? _a : '',
                 value: ethers_1.BigNumber.from((_b = tx.value) !== null && _b !== void 0 ? _b : '0').toHexString(),
                 data: (_d = (_c = tx.data) === null || _c === void 0 ? void 0 : _c.toString()) !== null && _d !== void 0 ? _d : '0x'
             };
             const transactionResponse = yield this.smartWallet.sendTransaction(safeTx);
+            console.log(transactionResponse);
             if (!this.provider)
                 throw new Error('missing provider');
-            return this.provider.getTransaction(transactionResponse.relayId);
+            console.log('test');
+            console.log(yield this.provider.getTransaction(transactionResponse.relayId));
+            console.log(this.provider.getTransaction(transactionResponse.relayId));
+            console.log('done');
+            return yield this.provider.getTransaction(transactionResponse.relayId);
         });
     }
     signTransaction(transaction) {
