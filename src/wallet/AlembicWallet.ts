@@ -1,8 +1,4 @@
-import {
-  JsonRpcSigner,
-  TransactionReceipt,
-  Web3Provider
-} from '@ethersproject/providers'
+import { Web3Provider } from '@ethersproject/providers'
 import Safe from '@safe-global/safe-core-sdk'
 import { SafeTransactionDataPartial } from '@safe-global/safe-core-sdk-types'
 import EthersAdapter from '@safe-global/safe-ethers-lib'
@@ -19,7 +15,6 @@ import {
 } from '../constants'
 import { API } from '../services'
 import { EOAAdapter, EOAConstructor, Web3AuthAdapter } from './adapters'
-import { AlembicProvider } from './AlembicProvider'
 import {
   SendTransactionResponse,
   SponsoredTransaction,
@@ -40,7 +35,6 @@ export class AlembicWallet {
   private connected = false
   private BASE_GAS: number
   private REWARD_PERCENTILE: number
-
   private sponsoredAddresses?: SponsoredTransaction[]
   private safeSdk?: Safe
   private API: API
@@ -69,7 +63,7 @@ export class AlembicWallet {
     await this.eoaAdapter.init(this.chainId, this.rpcTarget)
     await this.eoaAdapter.connect()
 
-    const signer = this.getSigner()
+    const signer = this.eoaAdapter.getEthProvider()?.getSigner()
     if (!signer) throw new Error('No signer found')
 
     const ownerAddress = await signer.getAddress()
@@ -98,6 +92,7 @@ export class AlembicWallet {
       safeAddress: smartWalletAddress
     })
 
+    this.sponsoredAddresses = await this.API.getSponsoredAddresses()
     this.connected = true
   }
 
@@ -111,7 +106,7 @@ export class AlembicWallet {
 
     return {
       ...userInfos,
-      ownerAddress: await this.getSigner()?.getAddress(),
+      ownerAddress: await this.eoaAdapter.getSigner()?.getAddress(),
       smartWalletAddress: this.getSmartWalletAddress()
     }
   }
@@ -153,12 +148,8 @@ export class AlembicWallet {
     return provider
   }
 
-  public getSigner(): JsonRpcSigner | undefined {
-    return this.getOwnerProvider()?.getSigner()
-  }
-
   public async signMessage(messageToSign: string | Bytes): Promise<string> {
-    const signer = this.getSigner()
+    const signer = this.eoaAdapter.getEthProvider()?.getSigner()
     if (!signer) throw new Error('Sign message: missing signer')
     const messageHash = ethers.utils.hashMessage(messageToSign)
 
@@ -236,13 +227,18 @@ export class AlembicWallet {
       safeTxDataTyped.gasPrice = +gasPrice
     }
 
+    if (!this._toSponsoredAddress(safeTxData.to)) {
+      const { safeTxGas, baseGas, gasPrice } =
+        await this.estimateTransactionGas(safeTxData)
+
+      safeTxDataTyped.safeTxGas = +safeTxGas
+      safeTxDataTyped.baseGas = baseGas
+      safeTxDataTyped.gasPrice = +gasPrice
+    }
+
     const safeTransaction = await this.safeSdk.createTransaction({
       safeTransactionData: safeTxDataTyped
     })
-
-    const safeTransactionHash = await this.safeSdk.getTransactionHash(
-      safeTransaction
-    )
 
     const signature = await this.safeSdk.signTypedData(safeTransaction)
 
@@ -252,7 +248,14 @@ export class AlembicWallet {
       smartWalletAddress: this.getSmartWalletAddress()
     })
 
-    return { relayId, safeTransactionHash }
+    return { relayId }
+  }
+
+  private _toSponsoredAddress(targetAddress: string): boolean {
+    const sponsoredAddress = this.sponsoredAddresses?.find(
+      (sponsoredAddress) => sponsoredAddress.targetAddress === targetAddress
+    )
+    return sponsoredAddress ? true : false
   }
 
   private _isToSponsoredAddress(targetAddress: string): boolean {
@@ -266,12 +269,6 @@ export class AlembicWallet {
     return await this.API.getRelayTxStatus(relayId)
   }
 
-  public async waitRelay(relayId: string): Promise<TransactionReceipt> {
-    const provider = new AlembicProvider(this)
-    const tx = await provider.getTransaction(relayId)
-    return await tx.wait()
-  }
-
   public async estimateTransactionGas(
     safeTxData: SafeTransactionDataPartial
   ): Promise<{
@@ -279,16 +276,14 @@ export class AlembicWallet {
     baseGas: number
     gasPrice: BigNumber
   }> {
-    const provider = new ethers.providers.StaticJsonRpcProvider(this.rpcTarget)
-
-    const safeTxGas = await provider.estimateGas({
+    const safeTxGas = await this.getOwnerProvider().estimateGas({
       from: this.getSmartWalletAddress(),
       to: safeTxData.to,
       value: safeTxData.value,
       data: safeTxData.data
     })
 
-    const ethFeeHistory = await provider.send('eth_feeHistory', [
+    const ethFeeHistory = await this.getOwnerProvider().send('eth_feeHistory', [
       1,
       'latest',
       [this.REWARD_PERCENTILE]

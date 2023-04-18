@@ -20,10 +20,30 @@ const siwe_1 = require("siwe");
 const constants_1 = require("../constants");
 const services_1 = require("../services");
 const adapters_1 = require("./adapters");
-const AlembicProvider_1 = require("./AlembicProvider");
 class AlembicWallet {
     constructor({ eoaAdapter = adapters_1.Web3AuthAdapter, chainId = constants_1.DEFAULT_CHAIN_ID, rpcTarget = constants_1.DEFAULT_RPC_TARGET, apiKey }) {
         this.connected = false;
+        this._getSignTypedData = (to, data, value) => {
+            return {
+                types: constants_1.EIP712_SAFE_TX_TYPES,
+                domain: {
+                    chainId: this.chainId,
+                    verifyingContract: this.getSmartWalletAddress()
+                },
+                primaryType: 'SafeTx',
+                message: {
+                    to,
+                    value: ethers_1.BigNumber.from(value).toString(),
+                    data,
+                    operation: 0,
+                    safeTxGas: ethers_1.BigNumber.from(0).toString(),
+                    baseGas: ethers_1.BigNumber.from(0).toString(),
+                    gasPrice: ethers_1.BigNumber.from(0).toString(),
+                    gasToken: ethers_1.ethers.constants.AddressZero,
+                    refundReceiver: ethers_1.ethers.constants.AddressZero
+                }
+            };
+        };
         this.chainId = chainId;
         this.rpcTarget = rpcTarget;
         this.eoaAdapter = new eoaAdapter();
@@ -35,14 +55,14 @@ class AlembicWallet {
      * Connection Section
      */
     connect() {
-        var _a;
+        var _a, _b;
         return __awaiter(this, void 0, void 0, function* () {
             // Return if does not match requirements
             if (!this.eoaAdapter)
                 throw new Error('No EOA adapter found');
             yield this.eoaAdapter.init(this.chainId, this.rpcTarget);
             yield this.eoaAdapter.connect();
-            const signer = this.getSigner();
+            const signer = (_a = this.eoaAdapter.getEthProvider()) === null || _a === void 0 ? void 0 : _a.getSigner();
             if (!signer)
                 throw new Error('No signer found');
             const ownerAddress = yield signer.getAddress();
@@ -53,10 +73,10 @@ class AlembicWallet {
             const message = this._createMessage(ownerAddress, nonce);
             const messageToSign = message.prepareMessage();
             const signature = yield signer.signMessage(messageToSign);
-            const smartWalletAddress = yield ((_a = this.API) === null || _a === void 0 ? void 0 : _a.connectToAlembicWallet({
+            const smartWalletAddress = yield ((_b = this.API) === null || _b === void 0 ? void 0 : _b.connectToAlembicWallet({
                 message,
                 signature,
-                ownerAddress: ownerAddress
+                ownerAddress
             }));
             const ethAdapter = new safe_ethers_lib_1.default({
                 ethers: ethers_1.ethers,
@@ -66,6 +86,7 @@ class AlembicWallet {
                 ethAdapter: ethAdapter,
                 safeAddress: smartWalletAddress
             });
+            this.sponsoredAddresses = yield this.API.getSponsoredAddresses();
             this.connected = true;
         });
     }
@@ -78,7 +99,7 @@ class AlembicWallet {
             if (!this.eoaAdapter)
                 throw new Error('Cannot provide user infos');
             const userInfos = yield this.eoaAdapter.getUserInfos();
-            return Object.assign(Object.assign({}, userInfos), { ownerAddress: yield ((_a = this.getSigner()) === null || _a === void 0 ? void 0 : _a.getAddress()), smartWalletAddress: this.getSmartWalletAddress() });
+            return Object.assign(Object.assign({}, userInfos), { ownerAddress: yield ((_a = this.eoaAdapter.getSigner()) === null || _a === void 0 ? void 0 : _a.getAddress()), smartWalletAddress: this.getSmartWalletAddress() });
         });
     }
     getSmartWalletAddress() {
@@ -117,13 +138,10 @@ class AlembicWallet {
             throw new Error('getOwnerProvider: missing provider');
         return provider;
     }
-    getSigner() {
-        var _a;
-        return (_a = this.getOwnerProvider()) === null || _a === void 0 ? void 0 : _a.getSigner();
-    }
     signMessage(messageToSign) {
+        var _a;
         return __awaiter(this, void 0, void 0, function* () {
-            const signer = this.getSigner();
+            const signer = (_a = this.eoaAdapter.getEthProvider()) === null || _a === void 0 ? void 0 : _a.getSigner();
             if (!signer)
                 throw new Error('Sign message: missing signer');
             const messageHash = ethers_1.ethers.utils.hashMessage(messageToSign);
@@ -138,22 +156,28 @@ class AlembicWallet {
      * Transaction Section
      */
     sendTransaction(safeTxData) {
-        var _a, _b, _c, _d;
         return __awaiter(this, void 0, void 0, function* () {
             if (!this.safeSdk)
                 throw new Error('No Safe SDK found');
-            const safeTxDataTyped = {
-                to: safeTxData.to,
-                value: (_a = safeTxData.value) !== null && _a !== void 0 ? _a : 0,
-                data: safeTxData.data,
-                operation: (_b = safeTxData.operation) !== null && _b !== void 0 ? _b : 0,
-                safeTxGas: 0,
-                baseGas: 0,
-                gasPrice: 0,
-                gasToken: (_c = safeTxData.gasToken) !== null && _c !== void 0 ? _c : ethers_1.ethers.constants.AddressZero,
-                refundReceiver: (_d = safeTxData.refundReceiver) !== null && _d !== void 0 ? _d : ethers_1.ethers.constants.AddressZero
-            };
+            /*   const safeTxDataTyped = {
+              to: safeTxData.to,
+              value: safeTxData.value ?? 0,
+              data: safeTxData.data,
+              operation: safeTxData.operation ?? 0,
+              safeTxGas: 0,
+              baseGas: 0,
+              gasPrice: 0,
+              gasToken: safeTxData.gasToken ?? ethers.constants.AddressZero,
+              refundReceiver: safeTxData.refundReceiver ?? ethers.constants.AddressZero
+            } */
+            const safeTxDataTyped = this._getSignTypedData(safeTxData.to, safeTxData.data, ethers_1.BigNumber.from(safeTxData.value));
             if (!this._isToSponsoredAddress(safeTxData.to)) {
+                const { safeTxGas, baseGas, gasPrice } = yield this.estimateTransactionGas(safeTxData);
+                safeTxDataTyped.safeTxGas = +safeTxGas;
+                safeTxDataTyped.baseGas = baseGas;
+                safeTxDataTyped.gasPrice = +gasPrice;
+            }
+            if (!this._toSponsoredAddress(safeTxData.to)) {
                 const { safeTxGas, baseGas, gasPrice } = yield this.estimateTransactionGas(safeTxData);
                 safeTxDataTyped.safeTxGas = +safeTxGas;
                 safeTxDataTyped.baseGas = baseGas;
@@ -162,15 +186,19 @@ class AlembicWallet {
             const safeTransaction = yield this.safeSdk.createTransaction({
                 safeTransactionData: safeTxDataTyped
             });
-            const safeTransactionHash = yield this.safeSdk.getTransactionHash(safeTransaction);
             const signature = yield this.safeSdk.signTypedData(safeTransaction);
             const relayId = yield this.API.relayTransaction({
                 safeTxData: safeTxDataTyped,
                 signatures: signature.data,
-                smartWalletAddress: this.safeSdk.getAddress()
+                smartWalletAddress: this.getSmartWalletAddress()
             });
-            return { relayId, safeTransactionHash };
+            return { relayId };
         });
+    }
+    _toSponsoredAddress(targetAddress) {
+        var _a;
+        const sponsoredAddress = (_a = this.sponsoredAddresses) === null || _a === void 0 ? void 0 : _a.find((sponsoredAddress) => sponsoredAddress.targetAddress === targetAddress);
+        return sponsoredAddress ? true : false;
     }
     _isToSponsoredAddress(targetAddress) {
         var _a;
@@ -182,23 +210,15 @@ class AlembicWallet {
             return yield this.API.getRelayTxStatus(relayId);
         });
     }
-    waitRelay(relayId) {
-        return __awaiter(this, void 0, void 0, function* () {
-            const provider = new AlembicProvider_1.AlembicProvider(this);
-            const tx = yield provider.getTransaction(relayId);
-            return yield tx.wait();
-        });
-    }
     estimateTransactionGas(safeTxData) {
         return __awaiter(this, void 0, void 0, function* () {
-            const provider = new ethers_1.ethers.providers.StaticJsonRpcProvider(this.rpcTarget);
-            const safeTxGas = yield provider.estimateGas({
+            const safeTxGas = yield this.getOwnerProvider().estimateGas({
                 from: this.getSmartWalletAddress(),
                 to: safeTxData.to,
                 value: safeTxData.value,
                 data: safeTxData.data
             });
-            const ethFeeHistory = yield provider.send('eth_feeHistory', [
+            const ethFeeHistory = yield this.getOwnerProvider().send('eth_feeHistory', [
                 1,
                 'latest',
                 [this.REWARD_PERCENTILE]

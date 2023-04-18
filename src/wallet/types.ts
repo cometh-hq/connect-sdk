@@ -30,5 +30,4 @@ export type TransactionStatus = {
 
 export type SendTransactionResponse = {
   relayId: string
-  safeTransactionHash: string
 }

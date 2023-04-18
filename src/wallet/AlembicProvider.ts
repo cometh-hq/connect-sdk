@@ -21,7 +21,6 @@ export class AlembicProvider extends BaseProvider {
       name: 'ERC-4337 Custom Network',
       chainId: alembicWallet.chainId ?? DEFAULT_CHAIN_ID
     })
-
     this.signer = new AlembicSigner(alembicWallet, this)
   }
 
@@ -36,11 +35,22 @@ export class AlembicProvider extends BaseProvider {
     return await this.alembicWallet.getOwnerProvider().perform(method, params)
   }
 
+  async send(method: string, params: any): Promise<any> {
+    return await this.alembicWallet.getOwnerProvider().send(method, params)
+  }
+
   async getTransaction(
     relayId: string | Promise<string>
   ): Promise<TransactionResponse> {
     const status = await this.getRelayStatus(await relayId)
-    const txResponse = await super.getTransaction(status.hash)
+
+    let txResponse = await super.getTransaction(status.hash)
+
+    // TODO: Remove this dirty quick fix
+    if (txResponse == null) {
+      new Promise((res) => setTimeout(res, 3000))
+      txResponse = await super.getTransaction(status.hash)
+    }
 
     return new RelayTransactionResponse(txResponse, await relayId, this)
   }
