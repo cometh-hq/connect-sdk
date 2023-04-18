@@ -174,7 +174,8 @@ class AlembicWallet {
     }
     getRelayTxStatus(relayId) {
         return __awaiter(this, void 0, void 0, function* () {
-            return yield this.API.getRelayTxStatus(relayId);
+            const relayStatus = yield this.API.getRelayTxStatus(relayId);
+            return relayStatus;
         });
     }
     estimateTransactionGas(safeTxData) {
