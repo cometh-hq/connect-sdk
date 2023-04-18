@@ -28,7 +28,10 @@ class AlembicSigner extends abstract_signer_1.Signer {
     sendTransaction(transaction) {
         var _a, _b, _c, _d;
         return __awaiter(this, void 0, void 0, function* () {
+            transaction.maxFeePerGas = '0x0';
+            transaction.maxPriorityFeePerGas = '0x0';
             const tx = yield this.populateTransaction(transaction);
+            console.log(tx);
             const safeTx = {
                 to: (_a = tx.to) !== null && _a !== void 0 ? _a : '',
                 value: ethers_1.BigNumber.from((_b = tx.value) !== null && _b !== void 0 ? _b : '0').toHexString(),

@@ -29,6 +29,8 @@ export class AlembicSigner extends Signer {
   async sendTransaction(
     transaction: Deferrable<TransactionRequest>
   ): Promise<TransactionResponse> {
+    transaction.maxFeePerGas = '0x0'
+    transaction.maxPriorityFeePerGas = '0x0'
     const tx = await this.populateTransaction(transaction)
 
     const safeTx = {

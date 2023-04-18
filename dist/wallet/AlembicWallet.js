@@ -149,7 +149,9 @@ class AlembicWallet {
                 gasToken: (_c = safeTxData.gasToken) !== null && _c !== void 0 ? _c : ethers_1.ethers.constants.AddressZero,
                 refundReceiver: (_d = safeTxData.refundReceiver) !== null && _d !== void 0 ? _d : ethers_1.ethers.constants.AddressZero
             };
+            console.log(safeTxData.to);
             if (!this._toSponsoredAddress(safeTxData.to)) {
+                console.log('NOOOO');
                 const { safeTxGas, baseGas, gasPrice } = yield this.estimateTransactionGas(safeTxData);
                 safeTxDataTyped.safeTxGas = +safeTxGas;
                 safeTxDataTyped.baseGas = baseGas;
@@ -164,6 +166,7 @@ class AlembicWallet {
                 signatures: signature.data,
                 smartWalletAddress: this.getSmartWalletAddress()
             });
+            console.log(relayId);
             return { relayId };
         });
     }
@@ -177,10 +180,6 @@ class AlembicWallet {
             return yield this.API.getRelayTxStatus(relayId);
         });
     }
-    /*   public async waitRelay(relayId: string): Promise<TransactionReceipt> {
-      const tx = await this.getOwnerProvider().getTransaction(relayId)
-      return await tx.wait()
-    } */
     estimateTransactionGas(safeTxData) {
         return __awaiter(this, void 0, void 0, function* () {
             const safeTxGas = yield this.getOwnerProvider().estimateGas({
