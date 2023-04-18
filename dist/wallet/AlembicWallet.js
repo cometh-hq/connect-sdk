@@ -177,10 +177,6 @@ class AlembicWallet {
             return yield this.API.getRelayTxStatus(relayId);
         });
     }
-    /*   public async waitRelay(relayId: string): Promise<TransactionReceipt> {
-      const tx = await this.getOwnerProvider().getTransaction(relayId)
-      return await tx.wait()
-    } */
     estimateTransactionGas(safeTxData) {
         return __awaiter(this, void 0, void 0, function* () {
             const safeTxGas = yield this.getOwnerProvider().estimateGas({

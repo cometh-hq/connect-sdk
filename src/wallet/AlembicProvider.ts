@@ -42,7 +42,14 @@ export class AlembicProvider extends BaseProvider {
     relayId: string | Promise<string>
   ): Promise<TransactionResponse> {
     const status = await this.getRelayStatus(await relayId)
-    const txResponse = await super.getTransaction(status.hash)
+
+    let txResponse = await super.getTransaction(status.hash)
+
+    // TODO: Remove this dirty quick fix
+    if (txResponse == null) {
+      new Promise((res) => setTimeout(res, 3000))
+      txResponse = await super.getTransaction(status.hash)
+    }
 
     return new RelayTransactionResponse(txResponse, await relayId, this)
   }
