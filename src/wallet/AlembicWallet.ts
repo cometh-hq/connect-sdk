@@ -172,8 +172,6 @@ export class AlembicWallet {
   ): Promise<SendTransactionResponse> {
     if (!this.safeSdk) throw new Error('No Safe SDK found')
 
-    console.log('yes')
-
     const safeTxDataTyped = {
       to: safeTxData.to,
       value: safeTxData.value ?? 0,
@@ -206,8 +204,6 @@ export class AlembicWallet {
       signatures: signature.data,
       smartWalletAddress: this.getSmartWalletAddress()
     })
-
-    console.log(relayId)
 
     return { relayId }
   }
