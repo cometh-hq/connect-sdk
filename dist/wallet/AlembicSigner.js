@@ -35,13 +35,8 @@ class AlembicSigner extends abstract_signer_1.Signer {
                 data: (_d = (_c = tx.data) === null || _c === void 0 ? void 0 : _c.toString()) !== null && _d !== void 0 ? _d : '0x'
             };
             const transactionResponse = yield this.smartWallet.sendTransaction(safeTx);
-            console.log(transactionResponse);
             if (!this.provider)
                 throw new Error('missing provider');
-            console.log('test');
-            console.log(yield this.provider.getTransaction(transactionResponse.relayId));
-            console.log(this.provider.getTransaction(transactionResponse.relayId));
-            console.log('done');
             return yield this.provider.getTransaction(transactionResponse.relayId);
         });
     }

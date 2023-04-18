@@ -138,7 +138,6 @@ class AlembicWallet {
         return __awaiter(this, void 0, void 0, function* () {
             if (!this.safeSdk)
                 throw new Error('No Safe SDK found');
-            console.log('yes');
             const safeTxDataTyped = {
                 to: safeTxData.to,
                 value: (_a = safeTxData.value) !== null && _a !== void 0 ? _a : 0,
@@ -165,7 +164,6 @@ class AlembicWallet {
                 signatures: signature.data,
                 smartWalletAddress: this.getSmartWalletAddress()
             });
-            console.log(relayId);
             return { relayId };
         });
     }
