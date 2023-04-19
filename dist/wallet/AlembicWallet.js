@@ -12,8 +12,8 @@ Object.defineProperty(exports, "__esModule", { value: true });
 exports.AlembicWallet = void 0;
 const ethers_1 = require("ethers");
 const siwe_1 = require("siwe");
-const Safe__factory_1 = require("../contracts/types/factories/Safe__factory");
 const constants_1 = require("../constants");
+const Safe__factory_1 = require("../contracts/types/factories/Safe__factory");
 const services_1 = require("../services");
 const adapters_1 = require("./adapters");
 class AlembicWallet {
@@ -21,6 +21,16 @@ class AlembicWallet {
         this.connected = false;
         // Contract Interfaces
         this.SafeInterface = Safe__factory_1.Safe__factory.createInterface();
+        /**
+         * Transaction Section
+         */
+        this._getSignature = (safeTxData) => __awaiter(this, void 0, void 0, function* () {
+            var _a;
+            return yield this.getOwnerProvider().send(constants_1.SIGNED_TYPE_DATA_METHOD, [
+                yield ((_a = this.eoaAdapter.getSigner()) === null || _a === void 0 ? void 0 : _a.getAddress()),
+                JSON.stringify(this._getSignTypedData(safeTxData, yield this._getNonce()))
+            ]);
+        });
         this._getSignTypedData = (safeTxData, nonce) => {
             return {
                 types: constants_1.EIP712_SAFE_TX_TYPES,
@@ -158,18 +168,6 @@ class AlembicWallet {
                 chainId: this.chainId
             }, constants_1.EIP712_SAFE_MESSAGE_TYPE, { message: messageHash });
             return signature;
-        });
-    }
-    /**
-     * Transaction Section
-     */
-    _getSignature(safeTxData) {
-        var _a;
-        return __awaiter(this, void 0, void 0, function* () {
-            return yield this.getOwnerProvider().send(constants_1.SIGNED_TYPE_DATA_METHOD, [
-                yield ((_a = this.eoaAdapter.getSigner()) === null || _a === void 0 ? void 0 : _a.getAddress()),
-                JSON.stringify(this._getSignTypedData(safeTxData, yield this._getNonce()))
-            ]);
         });
     }
     _toSponsoredAddress(targetAddress) {
