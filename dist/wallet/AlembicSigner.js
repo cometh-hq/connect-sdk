@@ -37,8 +37,7 @@ class AlembicSigner extends abstract_signer_1.Signer {
             const transactionResponse = yield this.smartWallet.sendTransaction(safeTx);
             if (!this.provider)
                 throw new Error('missing provider');
-            const txReturn = yield this.provider.getTransaction(transactionResponse.relayId);
-            return txReturn;
+            return yield this.provider.getTransaction(transactionResponse.relayId);
         });
     }
     signTransaction(transaction) {

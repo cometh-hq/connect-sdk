@@ -47,7 +47,7 @@ export class AlembicProvider extends BaseProvider {
 
     // TODO: Remove this dirty quick fix
     if (txResponse == null) {
-      await new Promise((resolve) => setTimeout(resolve, 5000))
+      await new Promise((resolve) => setTimeout(resolve, 4000))
       txResponse = await super.getTransaction(status.hash)
     }
 

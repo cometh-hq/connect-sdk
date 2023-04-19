@@ -40,11 +40,8 @@ export class AlembicSigner extends Signer {
     const transactionResponse = await this.smartWallet.sendTransaction(safeTx)
 
     if (!this.provider) throw new Error('missing provider')
-    const txReturn = await this.provider.getTransaction(
-      transactionResponse.relayId
-    )
 
-    return txReturn
+    return await this.provider.getTransaction(transactionResponse.relayId)
   }
 
   signTransaction(

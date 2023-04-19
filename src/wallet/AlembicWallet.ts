@@ -216,8 +216,7 @@ export class AlembicWallet {
   }
 
   public async getRelayTxStatus(relayId: string): Promise<TransactionStatus> {
-    const relayStatus = await this.API.getRelayTxStatus(relayId)
-    return relayStatus
+    return await this.API.getRelayTxStatus(relayId)
   }
 
   public async estimateTransactionGas(
