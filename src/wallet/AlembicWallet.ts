@@ -289,4 +289,26 @@ export class AlembicWallet {
   public async getRelayTxStatus(relayId: string): Promise<TransactionStatus> {
     return await this.API.getRelayTxStatus(relayId)
   }
+
+  public async getTransactionHash(
+    safeTxData: SafeTransactionDataPartial,
+    nonce: number
+  ): Promise<string> {
+    const hash = await Safe__factory.connect(
+      this.getSmartWalletAddress(),
+      this.getOwnerProvider()
+    ).encodeTransactionData(
+      safeTxData.to,
+      BigNumber.from(safeTxData.value).toString(),
+      safeTxData.data,
+      0,
+      BigNumber.from(safeTxData.safeTxGas).toString(),
+      BigNumber.from(safeTxData.baseGas).toString(),
+      BigNumber.from(safeTxData.gasPrice).toString(),
+      ethers.constants.AddressZero,
+      ethers.constants.AddressZero,
+      nonce
+    )
+    return ethers.utils.keccak256(hash)
+  }
 }

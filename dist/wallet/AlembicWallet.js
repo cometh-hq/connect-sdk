@@ -225,5 +225,11 @@ class AlembicWallet {
             return yield this.API.getRelayTxStatus(relayId);
         });
     }
+    getTransactionHash(safeTxData, nonce) {
+        return __awaiter(this, void 0, void 0, function* () {
+            const hash = yield Safe__factory_1.Safe__factory.connect(this.getSmartWalletAddress(), this.getOwnerProvider()).encodeTransactionData(safeTxData.to, ethers_1.BigNumber.from(safeTxData.value).toString(), safeTxData.data, 0, ethers_1.BigNumber.from(safeTxData.safeTxGas).toString(), ethers_1.BigNumber.from(safeTxData.baseGas).toString(), ethers_1.BigNumber.from(safeTxData.gasPrice).toString(), ethers_1.ethers.constants.AddressZero, ethers_1.ethers.constants.AddressZero, nonce);
+            return ethers_1.ethers.utils.keccak256(hash);
+        });
+    }
 }
 exports.AlembicWallet = AlembicWallet;
