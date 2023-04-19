@@ -1,10 +1,14 @@
 import { Web3Provider } from '@ethersproject/providers'
-import { SafeTransactionDataPartial } from '@safe-global/safe-core-sdk-types'
 import { BigNumber, Bytes } from 'ethers'
 
 import { SafeInterface } from '../contracts/types/Safe'
 import { EOAConstructor } from './adapters'
-import { SendTransactionResponse, TransactionStatus, UserInfos } from './types'
+import {
+  SafeTransactionDataPartial,
+  SendTransactionResponse,
+  TransactionStatus,
+  UserInfos
+} from './types'
 export interface AlembicWalletConfig {
   eoaAdapter?: EOAConstructor
   chainId?: number

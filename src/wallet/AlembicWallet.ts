@@ -1,5 +1,4 @@
 import { Web3Provider } from '@ethersproject/providers'
-import { SafeTransactionDataPartial } from '@safe-global/safe-core-sdk-types'
 import { BigNumber, Bytes, ethers } from 'ethers'
 import { SiweMessage } from 'siwe'
 
@@ -16,6 +15,7 @@ import { SafeInterface } from '../contracts/types/Safe'
 import { API } from '../services'
 import { EOAAdapter, EOAConstructor, Web3AuthAdapter } from './adapters'
 import {
+  SafeTransactionDataPartial,
   SendTransactionResponse,
   SponsoredTransaction,
   TransactionStatus,

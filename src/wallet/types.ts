@@ -1,8 +1,28 @@
-import { SafeTransactionDataPartial } from '@safe-global/safe-core-sdk-types'
 import { UserInfo } from '@web3auth/base'
 
 export enum RelayStatus {
   MINED = 'mined'
+}
+
+export declare enum OperationType {
+  Call = 0,
+  DelegateCall = 1
+}
+
+export interface MetaTransactionData {
+  readonly to: string
+  readonly value: string
+  readonly data: string
+  readonly operation?: OperationType
+}
+
+export interface SafeTransactionDataPartial extends MetaTransactionData {
+  readonly safeTxGas?: number
+  readonly baseGas?: number
+  readonly gasPrice?: number
+  readonly gasToken?: string
+  readonly refundReceiver?: string
+  readonly nonce?: number
 }
 
 export type UserNonceType = {
