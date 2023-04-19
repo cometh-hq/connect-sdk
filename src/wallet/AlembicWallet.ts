@@ -9,8 +9,7 @@ import {
   DEFAULT_REWARD_PERCENTILE,
   DEFAULT_RPC_TARGET,
   EIP712_SAFE_MESSAGE_TYPE,
-  EIP712_SAFE_TX_TYPES,
-  SIGNED_TYPE_DATA_METHOD
+  EIP712_SAFE_TX_TYPES
 } from '../constants'
 import { Safe__factory } from '../contracts/types/factories/Safe__factory'
 import { SafeInterface } from '../contracts/types/Safe'
