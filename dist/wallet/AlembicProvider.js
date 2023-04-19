@@ -81,13 +81,5 @@ class AlembicProvider extends providers_1.BaseProvider {
             return this.alembicWallet.getOwnerProvider().detectNetwork();
         });
     }
-    estimateGas(transaction) {
-        const _super = Object.create(null, {
-            estimateGas: { get: () => super.estimateGas }
-        });
-        return __awaiter(this, void 0, void 0, function* () {
-            return _super.estimateGas.call(this, transaction);
-        });
-    }
 }
 exports.AlembicProvider = AlembicProvider;

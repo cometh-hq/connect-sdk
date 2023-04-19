@@ -24,7 +24,7 @@ class AlembicWallet {
         /**
          * Transaction Section
          */
-        this._getSignature = (safeTxData) => __awaiter(this, void 0, void 0, function* () {
+        this._signTransaction = (safeTxData) => __awaiter(this, void 0, void 0, function* () {
             var _a;
             const signer = (_a = this.eoaAdapter.getEthProvider()) === null || _a === void 0 ? void 0 : _a.getSigner();
             if (!signer)
@@ -211,8 +211,7 @@ class AlembicWallet {
                 safeTxDataTyped.baseGas = baseGas;
                 safeTxDataTyped.gasPrice = +gasPrice;
             }
-            const signature = yield this._getSignature(safeTxDataTyped);
-            console.log({ signature });
+            const signature = yield this._signTransaction(safeTxDataTyped);
             const relayId = yield this.API.relayTransaction({
                 safeTxData: safeTxDataTyped,
                 signatures: signature,

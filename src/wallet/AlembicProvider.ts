@@ -76,8 +76,4 @@ export class AlembicProvider extends BaseProvider {
   async detectNetwork(): Promise<Network> {
     return this.alembicWallet.getOwnerProvider().detectNetwork()
   }
-
-  async estimateGas(transaction: TransactionRequest): Promise<BigNumber> {
-    return super.estimateGas(transaction)
-  }
 }

@@ -175,7 +175,7 @@ export class AlembicWallet {
    * Transaction Section
    */
 
-  private _getSignature = async (
+  private _signTransaction = async (
     safeTxData: SafeTransactionDataPartial
   ): Promise<string> => {
     const signer = this.eoaAdapter.getEthProvider()?.getSigner()
@@ -275,8 +275,7 @@ export class AlembicWallet {
       safeTxDataTyped.gasPrice = +gasPrice
     }
 
-    const signature = await this._getSignature(safeTxDataTyped)
-    console.log({ signature })
+    const signature = await this._signTransaction(safeTxDataTyped)
 
     const relayId = await this.API.relayTransaction({
       safeTxData: safeTxDataTyped,
