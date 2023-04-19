@@ -48,7 +48,7 @@ export class AlembicProvider extends BaseProvider {
 
     // TODO: Remove this dirty quick fix
     if (txResponse == null) {
-      new Promise((res) => setTimeout(res, 3000))
+      await new Promise((resolve) => setTimeout(resolve, 4000))
       txResponse = await super.getTransaction(status.hash)
     }
 
@@ -56,7 +56,7 @@ export class AlembicProvider extends BaseProvider {
   }
 
   async getRelayStatus(relayId: string): Promise<TransactionStatus> {
-    return this.alembicWallet.getRelayTxStatus(relayId)
+    return await this.alembicWallet.getRelayTxStatus(relayId)
   }
 
   async getTransactionReceipt(
