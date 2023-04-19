@@ -42,7 +42,6 @@ export declare class AlembicWallet {
    * Transaction Section
    */
   private _getSignature
-  private _getSignTypedData
   private _getNonce
   private _toSponsoredAddress
   _estimateTransactionGas(safeTxData: SafeTransactionDataPartial): Promise<{

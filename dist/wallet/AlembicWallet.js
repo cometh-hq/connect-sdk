@@ -26,33 +26,25 @@ class AlembicWallet {
          */
         this._getSignature = (safeTxData) => __awaiter(this, void 0, void 0, function* () {
             var _a;
-            return yield this.getOwnerProvider().send(constants_1.SIGNED_TYPE_DATA_METHOD, [
-                yield ((_a = this.eoaAdapter.getSigner()) === null || _a === void 0 ? void 0 : _a.getAddress()),
-                JSON.stringify(this._getSignTypedData(safeTxData, yield this._getNonce()))
-            ]);
+            const signer = (_a = this.eoaAdapter.getEthProvider()) === null || _a === void 0 ? void 0 : _a.getSigner();
+            if (!signer)
+                throw new Error('Sign message: missing signer');
+            return yield signer._signTypedData({
+                chainId: this.chainId,
+                verifyingContract: this.getSmartWalletAddress()
+            }, constants_1.EIP712_SAFE_TX_TYPES, {
+                to: safeTxData.to,
+                value: ethers_1.BigNumber.from(safeTxData.value).toString(),
+                data: safeTxData.data,
+                operation: 0,
+                safeTxGas: ethers_1.BigNumber.from(safeTxData.safeTxGas).toString(),
+                baseGas: ethers_1.BigNumber.from(safeTxData.baseGas).toString(),
+                gasPrice: ethers_1.BigNumber.from(safeTxData.gasPrice).toString(),
+                gasToken: ethers_1.ethers.constants.AddressZero,
+                refundReceiver: ethers_1.ethers.constants.AddressZero,
+                nonce: ethers_1.BigNumber.from(yield this._getNonce()).toString()
+            });
         });
-        this._getSignTypedData = (safeTxData, nonce) => {
-            return {
-                types: constants_1.EIP712_SAFE_TX_TYPES,
-                domain: {
-                    chainId: this.chainId,
-                    verifyingContract: this.getSmartWalletAddress()
-                },
-                primaryType: 'SafeTx',
-                message: {
-                    to: safeTxData.to,
-                    value: ethers_1.BigNumber.from(safeTxData.value).toString(),
-                    data: safeTxData.data,
-                    operation: 0,
-                    safeTxGas: ethers_1.BigNumber.from(safeTxData.safeTxGas).toString(),
-                    baseGas: ethers_1.BigNumber.from(safeTxData.baseGas).toString(),
-                    gasPrice: ethers_1.BigNumber.from(safeTxData.gasPrice).toString(),
-                    gasToken: ethers_1.ethers.constants.AddressZero,
-                    refundReceiver: ethers_1.ethers.constants.AddressZero,
-                    nonce: ethers_1.BigNumber.from(nonce).toString()
-                }
-            };
-        };
         this._getNonce = () => __awaiter(this, void 0, void 0, function* () {
             return (yield this.isDeployed())
                 ? (yield Safe__factory_1.Safe__factory.connect(this.getSmartWalletAddress(), this.getOwnerProvider()).nonce()).toNumber()
@@ -220,6 +212,7 @@ class AlembicWallet {
                 safeTxDataTyped.gasPrice = +gasPrice;
             }
             const signature = yield this._getSignature(safeTxDataTyped);
+            console.log({ signature });
             const relayId = yield this.API.relayTransaction({
                 safeTxData: safeTxDataTyped,
                 signatures: signature,

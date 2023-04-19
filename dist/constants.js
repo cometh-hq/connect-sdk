@@ -13,16 +13,6 @@ exports.EIP712_SAFE_MESSAGE_TYPE = {
     SafeMessage: [{ type: 'bytes', name: 'message' }]
 };
 exports.EIP712_SAFE_TX_TYPES = {
-    EIP712Domain: [
-        {
-            type: 'uint256',
-            name: 'chainId'
-        },
-        {
-            type: 'address',
-            name: 'verifyingContract'
-        }
-    ],
     SafeTx: [
         { type: 'address', name: 'to' },
         { type: 'uint256', name: 'value' },

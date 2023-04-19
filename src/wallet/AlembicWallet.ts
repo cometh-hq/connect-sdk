@@ -179,24 +179,16 @@ export class AlembicWallet {
   private _getSignature = async (
     safeTxData: SafeTransactionDataPartial
   ): Promise<string> => {
-    return await this.getOwnerProvider().send(SIGNED_TYPE_DATA_METHOD, [
-      await this.eoaAdapter.getSigner()?.getAddress(),
-      JSON.stringify(this._getSignTypedData(safeTxData, await this._getNonce()))
-    ])
-  }
+    const signer = this.eoaAdapter.getEthProvider()?.getSigner()
+    if (!signer) throw new Error('Sign message: missing signer')
 
-  private _getSignTypedData = (
-    safeTxData: SafeTransactionDataPartial,
-    nonce: number
-  ): any => {
-    return {
-      types: EIP712_SAFE_TX_TYPES,
-      domain: {
+    return await signer._signTypedData(
+      {
         chainId: this.chainId,
         verifyingContract: this.getSmartWalletAddress()
       },
-      primaryType: 'SafeTx',
-      message: {
+      EIP712_SAFE_TX_TYPES,
+      {
         to: safeTxData.to,
         value: BigNumber.from(safeTxData.value).toString(),
         data: safeTxData.data,
@@ -206,9 +198,9 @@ export class AlembicWallet {
         gasPrice: BigNumber.from(safeTxData.gasPrice).toString(),
         gasToken: ethers.constants.AddressZero,
         refundReceiver: ethers.constants.AddressZero,
-        nonce: BigNumber.from(nonce).toString()
+        nonce: BigNumber.from(await this._getNonce()).toString()
       }
-    }
+    )
   }
 
   private _getNonce = async (): Promise<number> => {
@@ -285,6 +277,7 @@ export class AlembicWallet {
     }
 
     const signature = await this._getSignature(safeTxDataTyped)
+    console.log({ signature })
 
     const relayId = await this.API.relayTransaction({
       safeTxData: safeTxDataTyped,
