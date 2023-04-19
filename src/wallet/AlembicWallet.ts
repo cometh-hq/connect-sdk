@@ -1,7 +1,5 @@
 import { Web3Provider } from '@ethersproject/providers'
-import Safe from '@safe-global/safe-core-sdk'
 import { SafeTransactionDataPartial } from '@safe-global/safe-core-sdk-types'
-import EthersAdapter from '@safe-global/safe-ethers-lib'
 import { BigNumber, Bytes, ethers } from 'ethers'
 import { SiweMessage } from 'siwe'
 
@@ -11,8 +9,11 @@ import {
   DEFAULT_REWARD_PERCENTILE,
   DEFAULT_RPC_TARGET,
   EIP712_SAFE_MESSAGE_TYPE,
-  EIP712_SAFE_TX_TYPES
+  EIP712_SAFE_TX_TYPES,
+  SIGNED_TYPE_DATA_METHOD
 } from '../constants'
+import { Safe__factory } from '../contracts/types/factories/Safe__factory'
+import { SafeInterface } from '../contracts/types/Safe'
 import { API } from '../services'
 import { EOAAdapter, EOAConstructor, Web3AuthAdapter } from './adapters'
 import {
@@ -35,9 +36,12 @@ export class AlembicWallet {
   private connected = false
   private BASE_GAS: number
   private REWARD_PERCENTILE: number
-  private sponsoredAddresses?: SponsoredTransaction[]
-  private safeSdk?: Safe
   private API: API
+  private sponsoredAddresses?: SponsoredTransaction[]
+  private smartWalletAddress?: string
+
+  // Contract Interfaces
+  readonly SafeInterface: SafeInterface = Safe__factory.createInterface()
 
   constructor({
     eoaAdapter = Web3AuthAdapter,
@@ -82,22 +86,25 @@ export class AlembicWallet {
       ownerAddress
     })
 
-    const ethAdapter = new EthersAdapter({
-      ethers,
-      signerOrProvider: signer
-    })
-
-    this.safeSdk = await Safe.create({
-      ethAdapter: ethAdapter,
-      safeAddress: smartWalletAddress
-    })
-
     this.sponsoredAddresses = await this.API.getSponsoredAddresses()
     this.connected = true
+    this.smartWalletAddress = smartWalletAddress
   }
 
   public getConnected(): boolean {
     return this.connected
+  }
+
+  public async isDeployed(): Promise<boolean> {
+    try {
+      await Safe__factory.connect(
+        this.getSmartWalletAddress(),
+        this.getOwnerProvider()
+      ).deployed()
+      return true
+    } catch (error) {
+      return false
+    }
   }
 
   public async getUserInfos(): Promise<UserInfos> {
@@ -112,7 +119,7 @@ export class AlembicWallet {
   }
 
   public getSmartWalletAddress(): string {
-    return this.safeSdk?.getAddress() ?? ''
+    return this.smartWalletAddress ?? ''
   }
 
   private _createMessage(address, nonce): SiweMessage {
@@ -139,7 +146,7 @@ export class AlembicWallet {
   }
 
   /**
-   * Signing Section
+   * Signing Message Section
    */
 
   public getOwnerProvider(): Web3Provider {
@@ -165,10 +172,22 @@ export class AlembicWallet {
     return signature
   }
 
+  /**
+   * Transaction Section
+   */
+
+  private _getSignature = async (
+    safeTxData: SafeTransactionDataPartial
+  ): Promise<string> => {
+    return await this.getOwnerProvider().send(SIGNED_TYPE_DATA_METHOD, [
+      await this.eoaAdapter.getSigner()?.getAddress(),
+      JSON.stringify(this._getSignTypedData(safeTxData, await this._getNonce()))
+    ])
+  }
+
   private _getSignTypedData = (
-    to: string,
-    data: string,
-    value: BigNumber
+    safeTxData: SafeTransactionDataPartial,
+    nonce: number
   ): any => {
     return {
       types: EIP712_SAFE_TX_TYPES,
@@ -178,77 +197,29 @@ export class AlembicWallet {
       },
       primaryType: 'SafeTx',
       message: {
-        to,
-        value: BigNumber.from(value).toString(),
-        data,
+        to: safeTxData.to,
+        value: BigNumber.from(safeTxData.value).toString(),
+        data: safeTxData.data,
         operation: 0,
-        safeTxGas: BigNumber.from(0).toString(),
-        baseGas: BigNumber.from(0).toString(),
-        gasPrice: BigNumber.from(0).toString(),
+        safeTxGas: BigNumber.from(safeTxData.safeTxGas).toString(),
+        baseGas: BigNumber.from(safeTxData.baseGas).toString(),
+        gasPrice: BigNumber.from(safeTxData.gasPrice).toString(),
         gasToken: ethers.constants.AddressZero,
-        refundReceiver: ethers.constants.AddressZero
+        refundReceiver: ethers.constants.AddressZero,
+        nonce: BigNumber.from(nonce).toString()
       }
     }
   }
 
-  /**
-   * Transaction Section
-   */
-
-  async sendTransaction(
-    safeTxData: SafeTransactionDataPartial
-  ): Promise<SendTransactionResponse> {
-    if (!this.safeSdk) throw new Error('No Safe SDK found')
-
-    /*   const safeTxDataTyped = {
-      to: safeTxData.to,
-      value: safeTxData.value ?? 0,
-      data: safeTxData.data,
-      operation: safeTxData.operation ?? 0,
-      safeTxGas: 0,
-      baseGas: 0,
-      gasPrice: 0,
-      gasToken: safeTxData.gasToken ?? ethers.constants.AddressZero,
-      refundReceiver: safeTxData.refundReceiver ?? ethers.constants.AddressZero
-    } */
-
-    const safeTxDataTyped = this._getSignTypedData(
-      safeTxData.to,
-      safeTxData.data,
-      BigNumber.from(safeTxData.value)
-    )
-
-    if (!this._isToSponsoredAddress(safeTxData.to)) {
-      const { safeTxGas, baseGas, gasPrice } =
-        await this.estimateTransactionGas(safeTxData)
-
-      safeTxDataTyped.safeTxGas = +safeTxGas
-      safeTxDataTyped.baseGas = baseGas
-      safeTxDataTyped.gasPrice = +gasPrice
-    }
-
-    if (!this._toSponsoredAddress(safeTxData.to)) {
-      const { safeTxGas, baseGas, gasPrice } =
-        await this.estimateTransactionGas(safeTxData)
-
-      safeTxDataTyped.safeTxGas = +safeTxGas
-      safeTxDataTyped.baseGas = baseGas
-      safeTxDataTyped.gasPrice = +gasPrice
-    }
-
-    const safeTransaction = await this.safeSdk.createTransaction({
-      safeTransactionData: safeTxDataTyped
-    })
-
-    const signature = await this.safeSdk.signTypedData(safeTransaction)
-
-    const relayId = await this.API.relayTransaction({
-      safeTxData: safeTxDataTyped,
-      signatures: signature.data,
-      smartWalletAddress: this.getSmartWalletAddress()
-    })
-
-    return { relayId }
+  private _getNonce = async (): Promise<number> => {
+    return (await this.isDeployed())
+      ? (
+          await Safe__factory.connect(
+            this.getSmartWalletAddress(),
+            this.getOwnerProvider()
+          ).nonce()
+        ).toNumber()
+      : 0
   }
 
   private _toSponsoredAddress(targetAddress: string): boolean {
@@ -258,18 +229,7 @@ export class AlembicWallet {
     return sponsoredAddress ? true : false
   }
 
-  private _isToSponsoredAddress(targetAddress: string): boolean {
-    const sponsoredAddress = this.sponsoredAddresses?.find(
-      (sponsoredAddress) => sponsoredAddress.targetAddress === targetAddress
-    )
-    return sponsoredAddress ? true : false
-  }
-
-  public async getRelayTxStatus(relayId: string): Promise<TransactionStatus> {
-    return await this.API.getRelayTxStatus(relayId)
-  }
-
-  public async estimateTransactionGas(
+  public async _estimateTransactionGas(
     safeTxData: SafeTransactionDataPartial
   ): Promise<{
     safeTxGas: BigNumber
@@ -298,5 +258,44 @@ export class AlembicWallet {
       baseGas: this.BASE_GAS,
       gasPrice: reward.add(BaseFee)
     }
+  }
+
+  async sendTransaction(
+    safeTxData: SafeTransactionDataPartial
+  ): Promise<SendTransactionResponse> {
+    const safeTxDataTyped = {
+      to: safeTxData.to,
+      value: safeTxData.value ?? 0,
+      data: safeTxData.data,
+      operation: safeTxData.operation ?? 0,
+      safeTxGas: 0,
+      baseGas: 0,
+      gasPrice: 0,
+      gasToken: safeTxData.gasToken ?? ethers.constants.AddressZero,
+      refundReceiver: safeTxData.refundReceiver ?? ethers.constants.AddressZero
+    }
+
+    if (!this._toSponsoredAddress(safeTxData.to)) {
+      const { safeTxGas, baseGas, gasPrice } =
+        await this._estimateTransactionGas(safeTxData)
+
+      safeTxDataTyped.safeTxGas = +safeTxGas
+      safeTxDataTyped.baseGas = baseGas
+      safeTxDataTyped.gasPrice = +gasPrice
+    }
+
+    const signature = await this._getSignature(safeTxDataTyped)
+
+    const relayId = await this.API.relayTransaction({
+      safeTxData: safeTxDataTyped,
+      signatures: signature,
+      smartWalletAddress: this.getSmartWalletAddress()
+    })
+
+    return { relayId }
+  }
+
+  public async getRelayTxStatus(relayId: string): Promise<TransactionStatus> {
+    return await this.API.getRelayTxStatus(relayId)
   }
 }
