@@ -1,9 +1,14 @@
 import { Web3Provider } from '@ethersproject/providers'
-import { SafeTransactionDataPartial } from '@safe-global/safe-core-sdk-types'
 import { BigNumber, Bytes } from 'ethers'
 
+import { SafeInterface } from '../contracts/types/Safe'
 import { EOAConstructor } from './adapters'
-import { SendTransactionResponse, TransactionStatus, UserInfos } from './types'
+import {
+  SafeTransactionDataPartial,
+  SendTransactionResponse,
+  TransactionStatus,
+  UserInfos
+} from './types'
 export interface AlembicWalletConfig {
   eoaAdapter?: EOAConstructor
   chainId?: number
@@ -17,35 +22,43 @@ export declare class AlembicWallet {
   private connected
   private BASE_GAS
   private REWARD_PERCENTILE
-  private sponsoredAddresses?
-  private safeSdk?
   private API
+  private sponsoredAddresses?
+  private smartWalletAddress?
+  readonly SafeInterface: SafeInterface
   constructor({ eoaAdapter, chainId, rpcTarget, apiKey }: AlembicWalletConfig)
   /**
    * Connection Section
    */
   connect(): Promise<void>
   getConnected(): boolean
+  isDeployed(): Promise<boolean>
   getUserInfos(): Promise<UserInfos>
   getSmartWalletAddress(): string
   private _createMessage
   logout(): Promise<void>
   /**
-   * Signing Section
+   * Signing Message Section
    */
   getOwnerProvider(): Web3Provider
   signMessage(messageToSign: string | Bytes): Promise<string>
   /**
    * Transaction Section
    */
-  sendTransaction(
-    safeTxData: SafeTransactionDataPartial
-  ): Promise<SendTransactionResponse>
+  private _signTransaction
+  private _getNonce
   private _toSponsoredAddress
-  getRelayTxStatus(relayId: string): Promise<TransactionStatus>
-  estimateTransactionGas(safeTxData: SafeTransactionDataPartial): Promise<{
+  _estimateTransactionGas(safeTxData: SafeTransactionDataPartial): Promise<{
     safeTxGas: BigNumber
     baseGas: number
     gasPrice: BigNumber
   }>
+  sendTransaction(
+    safeTxData: SafeTransactionDataPartial
+  ): Promise<SendTransactionResponse>
+  getRelayTxStatus(relayId: string): Promise<TransactionStatus>
+  getTransactionHash(
+    safeTxData: SafeTransactionDataPartial,
+    nonce: number
+  ): Promise<string>
 }

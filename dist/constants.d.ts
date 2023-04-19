@@ -11,3 +11,9 @@ export declare const EIP712_SAFE_MESSAGE_TYPE: {
     name: string
   }[]
 }
+export declare const EIP712_SAFE_TX_TYPES: {
+  SafeTx: {
+    type: string
+    name: string
+  }[]
+}

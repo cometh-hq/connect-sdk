@@ -49,7 +49,7 @@ class AlembicProvider extends providers_1.BaseProvider {
             let txResponse = yield _super.getTransaction.call(this, status.hash);
             // TODO: Remove this dirty quick fix
             if (txResponse == null) {
-                yield new Promise((resolve) => setTimeout(resolve, 4000));
+                yield new Promise((resolve) => setTimeout(resolve, 5000));
                 txResponse = yield _super.getTransaction.call(this, status.hash);
             }
             return new RelayTransactionResponse_1.RelayTransactionResponse(txResponse, yield relayId, this);
