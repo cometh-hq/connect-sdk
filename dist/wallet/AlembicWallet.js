@@ -139,6 +139,19 @@ class AlembicWallet {
             this.connected = false;
         });
     }
+    addOwner(newOwner) {
+        return __awaiter(this, void 0, void 0, function* () {
+            const tx = {
+                to: this.getSmartWalletAddress(),
+                value: ethers_1.BigNumber.from(0).toString(),
+                data: this.SafeInterface.encodeFunctionData('addOwnerWithThreshold', [
+                    newOwner,
+                    ethers_1.BigNumber.from(1).toString()
+                ])
+            };
+            this.sendTransaction(tx);
+        });
+    }
     /**
      * Signing Message Section
      */
@@ -156,7 +169,7 @@ class AlembicWallet {
                 throw new Error('Sign message: missing signer');
             const messageHash = ethers_1.ethers.utils.hashMessage(messageToSign);
             const signature = yield signer._signTypedData({
-                verifyingContract: yield this.getSmartWalletAddress(),
+                verifyingContract: this.getSmartWalletAddress(),
                 chainId: this.chainId
             }, constants_1.EIP712_SAFE_MESSAGE_TYPE, { message: messageHash });
             return signature;
@@ -205,8 +218,8 @@ class AlembicWallet {
                 gasToken: (_c = safeTxData.gasToken) !== null && _c !== void 0 ? _c : ethers_1.ethers.constants.AddressZero,
                 refundReceiver: (_d = safeTxData.refundReceiver) !== null && _d !== void 0 ? _d : ethers_1.ethers.constants.AddressZero
             };
-            if (!this._toSponsoredAddress(safeTxData.to)) {
-                const { safeTxGas, baseGas, gasPrice } = yield this._estimateTransactionGas(safeTxData);
+            if (!this._toSponsoredAddress(safeTxDataTyped.to)) {
+                const { safeTxGas, baseGas, gasPrice } = yield this._estimateTransactionGas(safeTxDataTyped);
                 safeTxDataTyped.safeTxGas = +safeTxGas;
                 safeTxDataTyped.baseGas = baseGas;
                 safeTxDataTyped.gasPrice = +gasPrice;

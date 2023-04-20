@@ -144,6 +144,19 @@ export class AlembicWallet {
     this.connected = false
   }
 
+  public async addOwner(newOwner: string): Promise<void> {
+    const tx = {
+      to: this.getSmartWalletAddress(),
+      value: BigNumber.from(0).toString(),
+      data: this.SafeInterface.encodeFunctionData('addOwnerWithThreshold', [
+        newOwner,
+        BigNumber.from(1).toString()
+      ])
+    }
+
+    this.sendTransaction(tx)
+  }
+
   /**
    * Signing Message Section
    */
@@ -161,7 +174,7 @@ export class AlembicWallet {
 
     const signature = await signer._signTypedData(
       {
-        verifyingContract: await this.getSmartWalletAddress(),
+        verifyingContract: this.getSmartWalletAddress(),
         chainId: this.chainId
       },
       EIP712_SAFE_MESSAGE_TYPE,
@@ -266,9 +279,9 @@ export class AlembicWallet {
       refundReceiver: safeTxData.refundReceiver ?? ethers.constants.AddressZero
     }
 
-    if (!this._toSponsoredAddress(safeTxData.to)) {
+    if (!this._toSponsoredAddress(safeTxDataTyped.to)) {
       const { safeTxGas, baseGas, gasPrice } =
-        await this._estimateTransactionGas(safeTxData)
+        await this._estimateTransactionGas(safeTxDataTyped)
 
       safeTxDataTyped.safeTxGas = +safeTxGas
       safeTxDataTyped.baseGas = baseGas
