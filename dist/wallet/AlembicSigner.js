@@ -20,7 +20,7 @@ class AlembicSigner extends abstract_signer_1.Signer {
         (0, utils_1.defineReadOnly)(this, 'provider', albProvider);
     }
     getAddress() {
-        return Promise.resolve(this.smartWallet.getSmartWalletAddress());
+        return Promise.resolve(this.smartWallet.getAddress());
     }
     signMessage(message) {
         return this.smartWallet.signMessage(message);

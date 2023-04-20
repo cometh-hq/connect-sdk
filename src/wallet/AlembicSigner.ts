@@ -20,7 +20,7 @@ export class AlembicSigner extends Signer {
   }
 
   getAddress(): Promise<string> {
-    return Promise.resolve(this.smartWallet.getSmartWalletAddress())
+    return Promise.resolve(this.smartWallet.getAddress())
   }
   signMessage(message: string | Bytes): Promise<string> {
     return this.smartWallet.signMessage(message)
