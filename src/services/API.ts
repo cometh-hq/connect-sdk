@@ -50,26 +50,31 @@ export class API {
   }
 
   async relayTransaction({
-    smartWalletAddress,
+    walletAddress,
     safeTxData,
-    signatures
+    signatures,
+    transactionHash
   }: RelayTransactionType): Promise<string> {
     const body = {
       ...safeTxData,
       baseGas: safeTxData?.baseGas?.toString(),
       gasPrice: safeTxData?.gasPrice?.toString(),
       safeTxGas: safeTxData?.safeTxGas?.toString(),
-      signatures
+      signatures,
+      transactionHash
     }
-    const response = await api.post(
-      `/wallets/${smartWalletAddress}/relay`,
-      body
-    )
-    return response.data?.relayId
+    const response = await api.post(`/wallets/${walletAddress}/relay`, body)
+    return response.data?.transactionHash
   }
 
-  async getRelayTxStatus(relayId: string): Promise<TransactionStatus> {
-    const response = await api.get(`/wallets/relay/${relayId}`)
+  async getRelayTxStatus(
+    walletAddress: string,
+    transactionHash: string
+  ): Promise<TransactionStatus> {
+    const body = {
+      walletAddress
+    }
+    const response = await api.post(`/wallets/relay/${transactionHash}`, body)
     return response.data
   }
 }

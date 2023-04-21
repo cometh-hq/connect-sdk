@@ -38,24 +38,21 @@ export class AlembicProvider extends BaseProvider {
     return await this.alembicWallet.getOwnerProvider().send(method, params)
   }
 
-  async getTransaction(
-    relayId: string | Promise<string>
-  ): Promise<TransactionResponse> {
-    const status = await this.getRelayStatus(await relayId)
-
-    let txResponse = await super.getTransaction(status.hash)
+  async getTransaction(transactionHash: string): Promise<TransactionResponse> {
+    let txResponse = await this.getRelayStatus(transactionHash)
+    console.log(txResponse)
 
     // TODO: Remove this dirty quick fix
     if (txResponse == null) {
-      await new Promise((resolve) => setTimeout(resolve, 5000))
-      txResponse = await super.getTransaction(status.hash)
+      await new Promise((resolve) => setTimeout(resolve, 10000))
+      txResponse = await this.getRelayStatus(transactionHash)
     }
 
-    return new RelayTransactionResponse(txResponse, await relayId, this)
+    return new RelayTransactionResponse(txResponse, transactionHash, this)
   }
 
-  async getRelayStatus(relayId: string): Promise<TransactionStatus> {
-    return await this.alembicWallet.getRelayTxStatus(relayId)
+  async getRelayStatus(transactionHash: string): Promise<any> {
+    return await this.alembicWallet.getRelayTxStatus(transactionHash)
   }
 
   async getTransactionReceipt(

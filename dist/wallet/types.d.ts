@@ -31,16 +31,17 @@ export type SponsoredTransaction = {
 export type RelayTransactionType = {
   safeTxData: SafeTransactionDataPartial
   signatures: string
-  smartWalletAddress: string
+  walletAddress: string
+  transactionHash: string
 }
 export type UserInfos = Partial<UserInfo> & {
   ownerAddress: string | undefined
-  smartWalletAddress: string
+  walletAddress: string
 }
 export type TransactionStatus = {
   hash: string
   status: string
 }
 export type SendTransactionResponse = {
-  relayId: string
+  transactionHash: string
 }

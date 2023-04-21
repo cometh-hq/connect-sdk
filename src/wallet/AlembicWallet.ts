@@ -114,7 +114,7 @@ export class AlembicWallet {
     return {
       ...userInfos,
       ownerAddress: await this.eoaAdapter.getSigner()?.getAddress(),
-      smartWalletAddress: this.getAddress()
+      walletAddress: this.getAddress()
     }
   }
 
@@ -291,17 +291,25 @@ export class AlembicWallet {
 
     const signature = await this._signTransaction(safeTxDataTyped)
 
-    const relayId = await this.API.relayTransaction({
+    const transactionHash = await this.getTransactionHash(
+      safeTxDataTyped,
+      await this._getNonce()
+    )
+
+    await this.API.relayTransaction({
       safeTxData: safeTxDataTyped,
       signatures: signature,
-      smartWalletAddress: this.getAddress()
+      walletAddress: this.getAddress(),
+      transactionHash
     })
 
-    return { relayId }
+    return { transactionHash }
   }
 
-  public async getRelayTxStatus(relayId: string): Promise<TransactionStatus> {
-    return await this.API.getRelayTxStatus(relayId)
+  public async getRelayTxStatus(
+    transactionHash: string
+  ): Promise<TransactionStatus> {
+    return await this.API.getRelayTxStatus(this.getAddress(), transactionHash)
   }
 
   public async getTransactionHash(

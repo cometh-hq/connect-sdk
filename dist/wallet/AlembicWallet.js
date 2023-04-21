@@ -109,7 +109,7 @@ class AlembicWallet {
             if (!this.eoaAdapter)
                 throw new Error('Cannot provide user infos');
             const userInfos = yield this.eoaAdapter.getUserInfos();
-            return Object.assign(Object.assign({}, userInfos), { ownerAddress: yield ((_a = this.eoaAdapter.getSigner()) === null || _a === void 0 ? void 0 : _a.getAddress()), smartWalletAddress: this.getAddress() });
+            return Object.assign(Object.assign({}, userInfos), { ownerAddress: yield ((_a = this.eoaAdapter.getSigner()) === null || _a === void 0 ? void 0 : _a.getAddress()), walletAddress: this.getAddress() });
         });
     }
     getAddress() {
@@ -225,17 +225,19 @@ class AlembicWallet {
                 safeTxDataTyped.gasPrice = +gasPrice;
             }
             const signature = yield this._signTransaction(safeTxDataTyped);
-            const relayId = yield this.API.relayTransaction({
+            const transactionHash = yield this.getTransactionHash(safeTxDataTyped, yield this._getNonce());
+            yield this.API.relayTransaction({
                 safeTxData: safeTxDataTyped,
                 signatures: signature,
-                smartWalletAddress: this.getAddress()
+                walletAddress: this.getAddress(),
+                transactionHash
             });
-            return { relayId };
+            return { transactionHash };
         });
     }
-    getRelayTxStatus(relayId) {
+    getRelayTxStatus(transactionHash) {
         return __awaiter(this, void 0, void 0, function* () {
-            return yield this.API.getRelayTxStatus(relayId);
+            return yield this.API.getRelayTxStatus(this.getAddress(), transactionHash);
         });
     }
     getTransactionHash(safeTxData, nonce) {

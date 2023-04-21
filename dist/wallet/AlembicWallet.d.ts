@@ -58,7 +58,7 @@ export declare class AlembicWallet {
   sendTransaction(
     safeTxData: MetaTransactionData
   ): Promise<SendTransactionResponse>
-  getRelayTxStatus(relayId: string): Promise<TransactionStatus>
+  getRelayTxStatus(transactionHash: string): Promise<TransactionStatus>
   getTransactionHash(
     safeTxData: SafeTransactionDataPartial,
     nonce: number

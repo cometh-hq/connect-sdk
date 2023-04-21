@@ -21,9 +21,13 @@ export declare class API {
     ownerAddress: string
   }): Promise<string>
   relayTransaction({
-    smartWalletAddress,
+    walletAddress,
     safeTxData,
-    signatures
+    signatures,
+    transactionHash
   }: RelayTransactionType): Promise<string>
-  getRelayTxStatus(relayId: string): Promise<TransactionStatus>
+  getRelayTxStatus(
+    walletAddress: string,
+    transactionHash: string
+  ): Promise<TransactionStatus>
 }

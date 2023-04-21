@@ -48,17 +48,21 @@ class API {
             return data.walletAddress;
         });
     }
-    relayTransaction({ smartWalletAddress, safeTxData, signatures }) {
+    relayTransaction({ walletAddress, safeTxData, signatures, transactionHash }) {
         var _a, _b, _c, _d;
         return __awaiter(this, void 0, void 0, function* () {
-            const body = Object.assign(Object.assign({}, safeTxData), { baseGas: (_a = safeTxData === null || safeTxData === void 0 ? void 0 : safeTxData.baseGas) === null || _a === void 0 ? void 0 : _a.toString(), gasPrice: (_b = safeTxData === null || safeTxData === void 0 ? void 0 : safeTxData.gasPrice) === null || _b === void 0 ? void 0 : _b.toString(), safeTxGas: (_c = safeTxData === null || safeTxData === void 0 ? void 0 : safeTxData.safeTxGas) === null || _c === void 0 ? void 0 : _c.toString(), signatures });
-            const response = yield exports.api.post(`/wallets/${smartWalletAddress}/relay`, body);
-            return (_d = response.data) === null || _d === void 0 ? void 0 : _d.relayId;
+            const body = Object.assign(Object.assign({}, safeTxData), { baseGas: (_a = safeTxData === null || safeTxData === void 0 ? void 0 : safeTxData.baseGas) === null || _a === void 0 ? void 0 : _a.toString(), gasPrice: (_b = safeTxData === null || safeTxData === void 0 ? void 0 : safeTxData.gasPrice) === null || _b === void 0 ? void 0 : _b.toString(), safeTxGas: (_c = safeTxData === null || safeTxData === void 0 ? void 0 : safeTxData.safeTxGas) === null || _c === void 0 ? void 0 : _c.toString(), signatures,
+                transactionHash });
+            const response = yield exports.api.post(`/wallets/${walletAddress}/relay`, body);
+            return (_d = response.data) === null || _d === void 0 ? void 0 : _d.transactionHash;
         });
     }
-    getRelayTxStatus(relayId) {
+    getRelayTxStatus(walletAddress, transactionHash) {
         return __awaiter(this, void 0, void 0, function* () {
-            const response = yield exports.api.get(`/wallets/relay/${relayId}`);
+            const body = {
+                walletAddress
+            };
+            const response = yield exports.api.post(`/wallets/relay/${transactionHash}`, body);
             return response.data;
         });
     }
