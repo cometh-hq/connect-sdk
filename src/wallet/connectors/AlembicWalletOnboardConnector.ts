@@ -22,7 +22,7 @@ export function AlembicWalletOnboardConnector(apiKey: string): WalletInit {
 
         const provider = createEIP1193Provider(instanceProvider, {
           eth_requestAccounts: async () => {
-            const address = instance.getSmartWalletAddress()
+            const address = instance.getAddress()
             return [address]
           },
           eth_chainId: async () => {

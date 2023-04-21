@@ -48,7 +48,7 @@ function AlembicWalletOnboardConnector(apiKey) {
                 yield instance.connect();
                 const provider = createEIP1193Provider(instanceProvider, {
                     eth_requestAccounts: () => __awaiter(this, void 0, void 0, function* () {
-                        const address = instance.getSmartWalletAddress();
+                        const address = instance.getAddress();
                         return [address];
                     }),
                     eth_chainId: () => __awaiter(this, void 0, void 0, function* () {

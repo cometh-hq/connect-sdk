@@ -4,6 +4,7 @@ import { BigNumber, Bytes } from 'ethers'
 import { SafeInterface } from '../contracts/types/Safe'
 import { EOAConstructor } from './adapters'
 import {
+  MetaTransactionData,
   SafeTransactionDataPartial,
   SendTransactionResponse,
   TransactionStatus,
@@ -24,7 +25,7 @@ export declare class AlembicWallet {
   private REWARD_PERCENTILE
   private API
   private sponsoredAddresses?
-  private smartWalletAddress?
+  private walletAddress?
   readonly SafeInterface: SafeInterface
   constructor({ eoaAdapter, chainId, rpcTarget, apiKey }: AlembicWalletConfig)
   /**
@@ -34,9 +35,10 @@ export declare class AlembicWallet {
   getConnected(): boolean
   isDeployed(): Promise<boolean>
   getUserInfos(): Promise<UserInfos>
-  getSmartWalletAddress(): string
+  getAddress(): string
   private _createMessage
   logout(): Promise<void>
+  addOwner(newOwner: string): Promise<void>
   /**
    * Signing Message Section
    */
@@ -54,7 +56,7 @@ export declare class AlembicWallet {
     gasPrice: BigNumber
   }>
   sendTransaction(
-    safeTxData: SafeTransactionDataPartial
+    safeTxData: MetaTransactionData
   ): Promise<SendTransactionResponse>
   getRelayTxStatus(relayId: string): Promise<TransactionStatus>
   getTransactionHash(

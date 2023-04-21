@@ -15,6 +15,7 @@ import { SafeInterface } from '../contracts/types/Safe'
 import { API } from '../services'
 import { EOAAdapter, EOAConstructor, Web3AuthAdapter } from './adapters'
 import {
+  MetaTransactionData,
   SafeTransactionDataPartial,
   SendTransactionResponse,
   SponsoredTransaction,
@@ -37,7 +38,7 @@ export class AlembicWallet {
   private REWARD_PERCENTILE: number
   private API: API
   private sponsoredAddresses?: SponsoredTransaction[]
-  private smartWalletAddress?: string
+  private walletAddress?: string
 
   // Contract Interfaces
   readonly SafeInterface: SafeInterface = Safe__factory.createInterface()
@@ -79,7 +80,7 @@ export class AlembicWallet {
     const messageToSign = message.prepareMessage()
     const signature = await signer.signMessage(messageToSign)
 
-    const smartWalletAddress = await this.API?.connectToAlembicWallet({
+    const walletAddress = await this.API?.connectToAlembicWallet({
       message,
       signature,
       ownerAddress
@@ -87,7 +88,7 @@ export class AlembicWallet {
 
     this.sponsoredAddresses = await this.API.getSponsoredAddresses()
     this.connected = true
-    this.smartWalletAddress = smartWalletAddress
+    this.walletAddress = walletAddress
   }
 
   public getConnected(): boolean {
@@ -97,7 +98,7 @@ export class AlembicWallet {
   public async isDeployed(): Promise<boolean> {
     try {
       await Safe__factory.connect(
-        this.getSmartWalletAddress(),
+        this.getAddress(),
         this.getOwnerProvider()
       ).deployed()
       return true
@@ -113,12 +114,12 @@ export class AlembicWallet {
     return {
       ...userInfos,
       ownerAddress: await this.eoaAdapter.getSigner()?.getAddress(),
-      smartWalletAddress: this.getSmartWalletAddress()
+      smartWalletAddress: this.getAddress()
     }
   }
 
-  public getSmartWalletAddress(): string {
-    return this.smartWalletAddress ?? ''
+  public getAddress(): string {
+    return this.walletAddress ?? ''
   }
 
   private _createMessage(address, nonce): SiweMessage {
@@ -144,6 +145,19 @@ export class AlembicWallet {
     this.connected = false
   }
 
+  public async addOwner(newOwner: string): Promise<void> {
+    const tx = {
+      to: this.getAddress(),
+      value: '0x0',
+      data: this.SafeInterface.encodeFunctionData('addOwnerWithThreshold', [
+        newOwner,
+        1
+      ])
+    }
+
+    this.sendTransaction(tx)
+  }
+
   /**
    * Signing Message Section
    */
@@ -161,7 +175,7 @@ export class AlembicWallet {
 
     const signature = await signer._signTypedData(
       {
-        verifyingContract: await this.getSmartWalletAddress(),
+        verifyingContract: this.getAddress(),
         chainId: this.chainId
       },
       EIP712_SAFE_MESSAGE_TYPE,
@@ -184,7 +198,7 @@ export class AlembicWallet {
     return await signer._signTypedData(
       {
         chainId: this.chainId,
-        verifyingContract: this.getSmartWalletAddress()
+        verifyingContract: this.getAddress()
       },
       EIP712_SAFE_TX_TYPES,
       {
@@ -206,7 +220,7 @@ export class AlembicWallet {
     return (await this.isDeployed())
       ? (
           await Safe__factory.connect(
-            this.getSmartWalletAddress(),
+            this.getAddress(),
             this.getOwnerProvider()
           ).nonce()
         ).toNumber()
@@ -228,7 +242,7 @@ export class AlembicWallet {
     gasPrice: BigNumber
   }> {
     const safeTxGas = await this.getOwnerProvider().estimateGas({
-      from: this.getSmartWalletAddress(),
+      from: this.getAddress(),
       to: safeTxData.to,
       value: safeTxData.value,
       data: safeTxData.data
@@ -251,24 +265,24 @@ export class AlembicWallet {
     }
   }
 
-  async sendTransaction(
-    safeTxData: SafeTransactionDataPartial
+  public async sendTransaction(
+    safeTxData: MetaTransactionData
   ): Promise<SendTransactionResponse> {
     const safeTxDataTyped = {
       to: safeTxData.to,
       value: safeTxData.value ?? 0,
       data: safeTxData.data,
-      operation: safeTxData.operation ?? 0,
+      operation: 0,
       safeTxGas: 0,
       baseGas: 0,
       gasPrice: 0,
-      gasToken: safeTxData.gasToken ?? ethers.constants.AddressZero,
-      refundReceiver: safeTxData.refundReceiver ?? ethers.constants.AddressZero
+      gasToken: ethers.constants.AddressZero,
+      refundReceiver: ethers.constants.AddressZero
     }
 
-    if (!this._toSponsoredAddress(safeTxData.to)) {
+    if (!this._toSponsoredAddress(safeTxDataTyped.to)) {
       const { safeTxGas, baseGas, gasPrice } =
-        await this._estimateTransactionGas(safeTxData)
+        await this._estimateTransactionGas(safeTxDataTyped)
 
       safeTxDataTyped.safeTxGas = +safeTxGas
       safeTxDataTyped.baseGas = baseGas
@@ -280,7 +294,7 @@ export class AlembicWallet {
     const relayId = await this.API.relayTransaction({
       safeTxData: safeTxDataTyped,
       signatures: signature,
-      smartWalletAddress: this.getSmartWalletAddress()
+      smartWalletAddress: this.getAddress()
     })
 
     return { relayId }
@@ -295,7 +309,7 @@ export class AlembicWallet {
     nonce: number
   ): Promise<string> {
     const hash = await Safe__factory.connect(
-      this.getSmartWalletAddress(),
+      this.getAddress(),
       this.getOwnerProvider()
     ).encodeTransactionData(
       safeTxData.to,
