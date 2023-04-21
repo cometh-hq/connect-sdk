@@ -56,6 +56,7 @@ export class API {
   }: RelayTransactionType): Promise<string> {
     const body = {
       ...safeTxData,
+      nonce: safeTxData?.nonce?.toString(),
       baseGas: safeTxData?.baseGas?.toString(),
       gasPrice: safeTxData?.gasPrice?.toString(),
       safeTxGas: safeTxData?.safeTxGas?.toString(),
