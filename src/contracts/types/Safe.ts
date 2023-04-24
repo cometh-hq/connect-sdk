@@ -402,6 +402,8 @@ export interface SafeInterface extends utils.Interface {
     "ExecutionFromModuleSuccess(address)": EventFragment;
     "ExecutionSuccess(bytes32,uint256)": EventFragment;
     "RemovedOwner(address)": EventFragment;
+    "SafeModuleTransaction(address,address,uint256,bytes,uint8)": EventFragment;
+    "SafeMultiSigTransaction(address,uint256,bytes,uint8,uint256,uint256,uint256,address,address,bytes,bytes)": EventFragment;
     "SafeReceived(address,uint256)": EventFragment;
     "SafeSetup(address,address[],uint256,address,address)": EventFragment;
     "SignMsg(bytes32)": EventFragment;
@@ -419,6 +421,8 @@ export interface SafeInterface extends utils.Interface {
   getEvent(nameOrSignatureOrTopic: "ExecutionFromModuleSuccess"): EventFragment;
   getEvent(nameOrSignatureOrTopic: "ExecutionSuccess"): EventFragment;
   getEvent(nameOrSignatureOrTopic: "RemovedOwner"): EventFragment;
+  getEvent(nameOrSignatureOrTopic: "SafeModuleTransaction"): EventFragment;
+  getEvent(nameOrSignatureOrTopic: "SafeMultiSigTransaction"): EventFragment;
   getEvent(nameOrSignatureOrTopic: "SafeReceived"): EventFragment;
   getEvent(nameOrSignatureOrTopic: "SafeSetup"): EventFragment;
   getEvent(nameOrSignatureOrTopic: "SignMsg"): EventFragment;
@@ -540,6 +544,54 @@ export interface RemovedOwnerEventObject {
 export type RemovedOwnerEvent = TypedEvent<[string], RemovedOwnerEventObject>;
 
 export type RemovedOwnerEventFilter = TypedEventFilter<RemovedOwnerEvent>;
+
+export interface SafeModuleTransactionEventObject {
+  module: string;
+  to: string;
+  value: BigNumber;
+  data: string;
+  operation: number;
+}
+export type SafeModuleTransactionEvent = TypedEvent<
+  [string, string, BigNumber, string, number],
+  SafeModuleTransactionEventObject
+>;
+
+export type SafeModuleTransactionEventFilter =
+  TypedEventFilter<SafeModuleTransactionEvent>;
+
+export interface SafeMultiSigTransactionEventObject {
+  to: string;
+  value: BigNumber;
+  data: string;
+  operation: number;
+  safeTxGas: BigNumber;
+  baseGas: BigNumber;
+  gasPrice: BigNumber;
+  gasToken: string;
+  refundReceiver: string;
+  signatures: string;
+  additionalInfo: string;
+}
+export type SafeMultiSigTransactionEvent = TypedEvent<
+  [
+    string,
+    BigNumber,
+    string,
+    number,
+    BigNumber,
+    BigNumber,
+    BigNumber,
+    string,
+    string,
+    string,
+    string
+  ],
+  SafeMultiSigTransactionEventObject
+>;
+
+export type SafeMultiSigTransactionEventFilter =
+  TypedEventFilter<SafeMultiSigTransactionEvent>;
 
 export interface SafeReceivedEventObject {
   sender: string;
@@ -1252,6 +1304,48 @@ export interface Safe extends BaseContract {
 
     "RemovedOwner(address)"(owner?: null): RemovedOwnerEventFilter;
     RemovedOwner(owner?: null): RemovedOwnerEventFilter;
+
+    "SafeModuleTransaction(address,address,uint256,bytes,uint8)"(
+      module?: null,
+      to?: null,
+      value?: null,
+      data?: null,
+      operation?: null
+    ): SafeModuleTransactionEventFilter;
+    SafeModuleTransaction(
+      module?: null,
+      to?: null,
+      value?: null,
+      data?: null,
+      operation?: null
+    ): SafeModuleTransactionEventFilter;
+
+    "SafeMultiSigTransaction(address,uint256,bytes,uint8,uint256,uint256,uint256,address,address,bytes,bytes)"(
+      to?: null,
+      value?: null,
+      data?: null,
+      operation?: null,
+      safeTxGas?: null,
+      baseGas?: null,
+      gasPrice?: null,
+      gasToken?: null,
+      refundReceiver?: null,
+      signatures?: null,
+      additionalInfo?: null
+    ): SafeMultiSigTransactionEventFilter;
+    SafeMultiSigTransaction(
+      to?: null,
+      value?: null,
+      data?: null,
+      operation?: null,
+      safeTxGas?: null,
+      baseGas?: null,
+      gasPrice?: null,
+      gasToken?: null,
+      refundReceiver?: null,
+      signatures?: null,
+      additionalInfo?: null
+    ): SafeMultiSigTransactionEventFilter;
 
     "SafeReceived(address,uint256)"(
       sender?: PromiseOrValue<string> | null,
