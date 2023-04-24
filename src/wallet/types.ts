@@ -37,7 +37,7 @@ export type RelayTransactionType = {
   safeTxData: SafeTransactionDataPartial
   signatures: string
   walletAddress: string
-  transactionHash: string
+  safeTxHash: string
 }
 export type UserInfos = Partial<UserInfo> & {
   ownerAddress: string | undefined
@@ -50,5 +50,5 @@ export type TransactionStatus = {
 }
 
 export type SendTransactionResponse = {
-  transactionHash: string
+  safeTxHash: string
 }

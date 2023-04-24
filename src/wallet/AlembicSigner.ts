@@ -41,9 +41,7 @@ export class AlembicSigner extends Signer {
 
     if (!this.provider) throw new Error('missing provider')
 
-    return await this.provider.getTransaction(
-      transactionResponse.transactionHash
-    )
+    return await this.provider.getTransaction(transactionResponse.safeTxHash)
   }
 
   signTransaction(

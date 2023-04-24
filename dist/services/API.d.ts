@@ -24,10 +24,10 @@ export declare class API {
     walletAddress,
     safeTxData,
     signatures,
-    transactionHash
+    safeTxHash
   }: RelayTransactionType): Promise<string>
   getRelayTxStatus(
     walletAddress: string,
-    transactionHash: string
+    safeTxHash: string
   ): Promise<TransactionStatus>
 }

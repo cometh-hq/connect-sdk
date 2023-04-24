@@ -296,7 +296,7 @@ export class AlembicWallet {
 
     const signature = await this._signTransaction(safeTxDataTyped, nonce)
 
-    const transactionHash = await this.getTransactionHash(
+    const safeTxHash = await this.getSafeTransactionHash(
       safeTxDataTyped,
       await this._getNonce()
     )
@@ -305,23 +305,23 @@ export class AlembicWallet {
       safeTxData: safeTxDataTyped,
       signatures: signature,
       walletAddress: this.getAddress(),
-      transactionHash
+      safeTxHash
     })
 
-    return { transactionHash }
+    return { safeTxHash }
   }
 
   public async getRelayTxStatus(
-    transactionHash: string
+    safeTxHash: string
   ): Promise<TransactionStatus> {
-    return await this.API.getRelayTxStatus(this.getAddress(), transactionHash)
+    return await this.API.getRelayTxStatus(this.getAddress(), safeTxHash)
   }
 
-  public async getTransactionHash(
+  public async getSafeTransactionHash(
     safeTxData: SafeTransactionDataPartial,
     nonce: number
   ): Promise<string> {
-    const hash = await Safe__factory.connect(
+    const safeTxHash = await Safe__factory.connect(
       this.getAddress(),
       this.getOwnerProvider()
     ).encodeTransactionData(
@@ -336,12 +336,10 @@ export class AlembicWallet {
       ethers.constants.AddressZero,
       nonce
     )
-    return ethers.utils.keccak256(hash)
+    return ethers.utils.keccak256(safeTxHash)
   }
 
-  public async getExecTransactionEvent(
-    transactionHash: string
-  ): Promise<any[]> {
+  public async getExecTransactionEvent(safeTxHash: string): Promise<any[]> {
     const safeInstance = await Safe__factory.connect(
       this.getAddress(),
       this.getOwnerProvider()
@@ -352,6 +350,6 @@ export class AlembicWallet {
       BLOCK_EVENT_GAP
     )
 
-    return events.filter((e) => e.args.txHash === transactionHash)
+    return events.filter((e) => e.args.txHash === safeTxHash)
   }
 }
