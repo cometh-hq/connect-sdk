@@ -7,7 +7,6 @@ import { AccessList } from 'ethers/lib/utils'
 
 import { AlembicProvider } from './AlembicProvider'
 export declare class RelayTransactionResponse implements TransactionResponse {
-  private relayID
   private provider
   hash: string
   blockNumber?: number | undefined
@@ -30,10 +29,6 @@ export declare class RelayTransactionResponse implements TransactionResponse {
   accessList?: AccessList | undefined
   maxPriorityFeePerGas?: BigNumber | undefined
   maxFeePerGas?: BigNumber | undefined
-  constructor(
-    tx: TransactionResponse,
-    relayID: string,
-    provider: AlembicProvider
-  )
-  wait(confirmations?: number | undefined): Promise<TransactionReceipt>
+  constructor(tx: TransactionResponse, provider: AlembicProvider)
+  wait(): Promise<TransactionReceipt>
 }

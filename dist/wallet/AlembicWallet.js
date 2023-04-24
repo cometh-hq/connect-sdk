@@ -248,5 +248,12 @@ class AlembicWallet {
             return ethers_1.ethers.utils.keccak256(hash);
         });
     }
+    getExecTransactionEvent(transactionHash) {
+        return __awaiter(this, void 0, void 0, function* () {
+            const safeInstance = yield Safe__factory_1.Safe__factory.connect(this.getAddress(), this.getOwnerProvider());
+            const events = yield safeInstance.queryFilter(safeInstance.filters.ExecutionSuccess(), constants_1.BLOCK_EVENT_GAP);
+            return events.filter((e) => e.args.txHash === transactionHash);
+        });
+    }
 }
 exports.AlembicWallet = AlembicWallet;

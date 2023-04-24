@@ -10,10 +10,8 @@ var __awaiter = (this && this.__awaiter) || function (thisArg, _arguments, P, ge
 };
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.RelayTransactionResponse = void 0;
-const types_1 = require("./types");
 class RelayTransactionResponse {
-    constructor(tx, relayID, provider) {
-        this.relayID = relayID;
+    constructor(tx, provider) {
         this.provider = provider;
         this.hash = tx.hash;
         this.confirmations = tx.confirmations;
@@ -24,14 +22,9 @@ class RelayTransactionResponse {
         this.data = tx.data;
         this.chainId = tx.chainId;
     }
-    wait(confirmations) {
+    wait() {
         return __awaiter(this, void 0, void 0, function* () {
-            const status = yield this.provider.getRelayStatus(this.relayID);
-            if (status.status == types_1.RelayStatus.MINED) {
-                return this.provider.getTransactionReceipt(status.hash);
-            }
-            yield new Promise((resolve) => setTimeout(resolve, 2000));
-            return this.wait(confirmations);
+            return this.provider.getTransactionReceipt(this.hash);
         });
     }
 }

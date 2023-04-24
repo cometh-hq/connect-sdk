@@ -13,6 +13,7 @@ exports.AlembicProvider = void 0;
 const providers_1 = require("@ethersproject/providers");
 const constants_1 = require("../constants");
 const AlembicSigner_1 = require("./AlembicSigner");
+const RelayTransactionResponse_1 = require("./RelayTransactionResponse");
 class AlembicProvider extends providers_1.BaseProvider {
     constructor(alembicWallet) {
         var _a;
@@ -39,17 +40,21 @@ class AlembicProvider extends providers_1.BaseProvider {
             return yield this.alembicWallet.getOwnerProvider().send(method, params);
         });
     }
-    getTransaction(transactionHash) {
+    getTransaction(encodedTransactionHash) {
+        const _super = Object.create(null, {
+            getTransaction: { get: () => super.getTransaction }
+        });
         return __awaiter(this, void 0, void 0, function* () {
-            const transactionReceipt = yield this.wait(transactionHash);
-            return transactionReceipt;
+            const txEvent = yield this.wait(encodedTransactionHash);
+            const txResponse = yield _super.getTransaction.call(this, txEvent.transactionHash);
+            return new RelayTransactionResponse_1.RelayTransactionResponse(txResponse, this);
         });
     }
     wait(transactionHash) {
         return __awaiter(this, void 0, void 0, function* () {
-            const status = yield this.getRelayStatus(transactionHash);
-            if (status.transaction) {
-                return status;
+            const txEvent = yield this.alembicWallet.getExecTransactionEvent(transactionHash);
+            if (txEvent.length > 0) {
+                return txEvent[0];
             }
             yield new Promise((resolve) => setTimeout(resolve, 2000));
             return this.wait(transactionHash);

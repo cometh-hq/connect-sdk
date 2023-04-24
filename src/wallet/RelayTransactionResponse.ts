@@ -6,7 +6,6 @@ import { BigNumber } from 'ethers'
 import { AccessList } from 'ethers/lib/utils'
 
 import { AlembicProvider } from './AlembicProvider'
-import { RelayStatus } from './types'
 
 export class RelayTransactionResponse implements TransactionResponse {
   hash: string
@@ -31,11 +30,7 @@ export class RelayTransactionResponse implements TransactionResponse {
   maxPriorityFeePerGas?: BigNumber | undefined
   maxFeePerGas?: BigNumber | undefined
 
-  constructor(
-    tx: TransactionResponse,
-    private relayID: string,
-    private provider: AlembicProvider
-  ) {
+  constructor(tx: TransactionResponse, private provider: AlembicProvider) {
     this.hash = tx.hash
     this.confirmations = tx.confirmations
     this.from = tx.from
@@ -46,16 +41,7 @@ export class RelayTransactionResponse implements TransactionResponse {
     this.chainId = tx.chainId
   }
 
-  public async wait(
-    confirmations?: number | undefined
-  ): Promise<TransactionReceipt> {
-    const status = await this.provider.getRelayStatus(this.relayID)
-
-    if (status.status == RelayStatus.MINED) {
-      return this.provider.getTransactionReceipt(status.hash)
-    }
-    await new Promise((resolve) => setTimeout(resolve, 2000))
-
-    return this.wait(confirmations)
+  public async wait(): Promise<TransactionReceipt> {
+    return this.provider.getTransactionReceipt(this.hash)
   }
 }

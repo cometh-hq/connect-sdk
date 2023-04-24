@@ -3,6 +3,7 @@ import { BigNumber, Bytes, ethers } from 'ethers'
 import { SiweMessage } from 'siwe'
 
 import {
+  BLOCK_EVENT_GAP,
   DEFAULT_BASE_GAS,
   DEFAULT_CHAIN_ID,
   DEFAULT_REWARD_PERCENTILE,
@@ -336,5 +337,21 @@ export class AlembicWallet {
       nonce
     )
     return ethers.utils.keccak256(hash)
+  }
+
+  public async getExecTransactionEvent(
+    transactionHash: string
+  ): Promise<any[]> {
+    const safeInstance = await Safe__factory.connect(
+      this.getAddress(),
+      this.getOwnerProvider()
+    )
+
+    const events = await safeInstance.queryFilter(
+      safeInstance.filters.ExecutionSuccess(),
+      BLOCK_EVENT_GAP
+    )
+
+    return events.filter((e) => e.args.txHash === transactionHash)
   }
 }
