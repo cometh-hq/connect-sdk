@@ -42,14 +42,9 @@ class AlembicProvider extends providers_1.BaseProvider {
     }
     getTransaction(transactionHash) {
         return __awaiter(this, void 0, void 0, function* () {
-            let txResponse = yield this.getRelayStatus(transactionHash);
-            console.log(txResponse);
-            // TODO: Remove this dirty quick fix
-            if (txResponse == null) {
-                yield new Promise((resolve) => setTimeout(resolve, 10000));
-                txResponse = yield this.getRelayStatus(transactionHash);
-            }
-            return new RelayTransactionResponse_1.RelayTransactionResponse(txResponse, transactionHash, this);
+            yield new Promise((resolve) => setTimeout(resolve, 5000));
+            const txResponse = yield this.getRelayStatus(transactionHash);
+            return new RelayTransactionResponse_1.RelayTransactionResponse(txResponse.transaction, transactionHash, this);
         });
     }
     getRelayStatus(transactionHash) {

@@ -24,7 +24,7 @@ class AlembicWallet {
         /**
          * Transaction Section
          */
-        this._signTransaction = (safeTxData) => __awaiter(this, void 0, void 0, function* () {
+        this._signTransaction = (safeTxData, nonce) => __awaiter(this, void 0, void 0, function* () {
             var _a;
             const signer = (_a = this.eoaAdapter.getEthProvider()) === null || _a === void 0 ? void 0 : _a.getSigner();
             if (!signer)
@@ -42,7 +42,7 @@ class AlembicWallet {
                 gasPrice: ethers_1.BigNumber.from(safeTxData.gasPrice).toString(),
                 gasToken: ethers_1.ethers.constants.AddressZero,
                 refundReceiver: ethers_1.ethers.constants.AddressZero,
-                nonce: ethers_1.BigNumber.from(yield this._getNonce()).toString()
+                nonce: ethers_1.BigNumber.from(nonce !== null && nonce !== void 0 ? nonce : (yield this._getNonce())).toString()
             });
         });
         this._getNonce = () => __awaiter(this, void 0, void 0, function* () {
@@ -207,6 +207,7 @@ class AlembicWallet {
     sendTransaction(safeTxData) {
         var _a;
         return __awaiter(this, void 0, void 0, function* () {
+            const nonce = yield this._getNonce();
             const safeTxDataTyped = {
                 to: safeTxData.to,
                 value: (_a = safeTxData.value) !== null && _a !== void 0 ? _a : 0,
@@ -216,7 +217,8 @@ class AlembicWallet {
                 baseGas: 0,
                 gasPrice: 0,
                 gasToken: ethers_1.ethers.constants.AddressZero,
-                refundReceiver: ethers_1.ethers.constants.AddressZero
+                refundReceiver: ethers_1.ethers.constants.AddressZero,
+                nonce
             };
             if (!this._toSponsoredAddress(safeTxDataTyped.to)) {
                 const { safeTxGas, baseGas, gasPrice } = yield this._estimateTransactionGas(safeTxDataTyped);
@@ -224,7 +226,7 @@ class AlembicWallet {
                 safeTxDataTyped.baseGas = baseGas;
                 safeTxDataTyped.gasPrice = +gasPrice;
             }
-            const signature = yield this._signTransaction(safeTxDataTyped);
+            const signature = yield this._signTransaction(safeTxDataTyped, nonce);
             const transactionHash = yield this.getTransactionHash(safeTxDataTyped, yield this._getNonce());
             yield this.API.relayTransaction({
                 safeTxData: safeTxDataTyped,

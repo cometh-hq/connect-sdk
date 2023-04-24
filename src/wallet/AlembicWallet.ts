@@ -190,7 +190,8 @@ export class AlembicWallet {
    */
 
   private _signTransaction = async (
-    safeTxData: SafeTransactionDataPartial
+    safeTxData: SafeTransactionDataPartial,
+    nonce?: number
   ): Promise<string> => {
     const signer = this.eoaAdapter.getEthProvider()?.getSigner()
     if (!signer) throw new Error('Sign message: missing signer')
@@ -211,7 +212,7 @@ export class AlembicWallet {
         gasPrice: BigNumber.from(safeTxData.gasPrice).toString(),
         gasToken: ethers.constants.AddressZero,
         refundReceiver: ethers.constants.AddressZero,
-        nonce: BigNumber.from(await this._getNonce()).toString()
+        nonce: BigNumber.from(nonce ?? (await this._getNonce())).toString()
       }
     )
   }
@@ -268,6 +269,8 @@ export class AlembicWallet {
   public async sendTransaction(
     safeTxData: MetaTransactionData
   ): Promise<SendTransactionResponse> {
+    const nonce = await this._getNonce()
+
     const safeTxDataTyped = {
       to: safeTxData.to,
       value: safeTxData.value ?? 0,
@@ -277,7 +280,8 @@ export class AlembicWallet {
       baseGas: 0,
       gasPrice: 0,
       gasToken: ethers.constants.AddressZero,
-      refundReceiver: ethers.constants.AddressZero
+      refundReceiver: ethers.constants.AddressZero,
+      nonce
     }
 
     if (!this._toSponsoredAddress(safeTxDataTyped.to)) {
@@ -289,7 +293,7 @@ export class AlembicWallet {
       safeTxDataTyped.gasPrice = +gasPrice
     }
 
-    const signature = await this._signTransaction(safeTxDataTyped)
+    const signature = await this._signTransaction(safeTxDataTyped, nonce)
 
     const transactionHash = await this.getTransactionHash(
       safeTxDataTyped,

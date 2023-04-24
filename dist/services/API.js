@@ -49,12 +49,12 @@ class API {
         });
     }
     relayTransaction({ walletAddress, safeTxData, signatures, transactionHash }) {
-        var _a, _b, _c, _d;
+        var _a, _b, _c, _d, _e;
         return __awaiter(this, void 0, void 0, function* () {
-            const body = Object.assign(Object.assign({}, safeTxData), { baseGas: (_a = safeTxData === null || safeTxData === void 0 ? void 0 : safeTxData.baseGas) === null || _a === void 0 ? void 0 : _a.toString(), gasPrice: (_b = safeTxData === null || safeTxData === void 0 ? void 0 : safeTxData.gasPrice) === null || _b === void 0 ? void 0 : _b.toString(), safeTxGas: (_c = safeTxData === null || safeTxData === void 0 ? void 0 : safeTxData.safeTxGas) === null || _c === void 0 ? void 0 : _c.toString(), signatures,
+            const body = Object.assign(Object.assign({}, safeTxData), { nonce: (_a = safeTxData === null || safeTxData === void 0 ? void 0 : safeTxData.nonce) === null || _a === void 0 ? void 0 : _a.toString(), baseGas: (_b = safeTxData === null || safeTxData === void 0 ? void 0 : safeTxData.baseGas) === null || _b === void 0 ? void 0 : _b.toString(), gasPrice: (_c = safeTxData === null || safeTxData === void 0 ? void 0 : safeTxData.gasPrice) === null || _c === void 0 ? void 0 : _c.toString(), safeTxGas: (_d = safeTxData === null || safeTxData === void 0 ? void 0 : safeTxData.safeTxGas) === null || _d === void 0 ? void 0 : _d.toString(), signatures,
                 transactionHash });
             const response = yield exports.api.post(`/wallets/${walletAddress}/relay`, body);
-            return (_d = response.data) === null || _d === void 0 ? void 0 : _d.transactionHash;
+            return (_e = response.data) === null || _e === void 0 ? void 0 : _e.transactionHash;
         });
     }
     getRelayTxStatus(walletAddress, transactionHash) {
