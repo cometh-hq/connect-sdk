@@ -1,11 +1,13 @@
 import {
   TransactionReceipt,
+  TransactionRequest,
   TransactionResponse
 } from '@ethersproject/abstract-provider'
 import { BigNumber } from 'ethers'
 import { AccessList } from 'ethers/lib/utils'
 
 import { AlembicProvider } from './AlembicProvider'
+import { AlembicWallet } from './AlembicWallet'
 
 export class RelayTransactionResponse implements TransactionResponse {
   hash: string
@@ -30,18 +32,39 @@ export class RelayTransactionResponse implements TransactionResponse {
   maxPriorityFeePerGas?: BigNumber | undefined
   maxFeePerGas?: BigNumber | undefined
 
-  constructor(tx: TransactionResponse, private provider: AlembicProvider) {
-    this.hash = tx.hash
-    this.confirmations = tx.confirmations
-    this.from = tx.from
-    this.nonce = tx.nonce
-    this.gasLimit = tx.gasLimit
-    this.value = tx.value
-    this.data = tx.data
-    this.chainId = tx.chainId
+  constructor(
+    private safeTxHash: string,
+    private provider: AlembicProvider,
+    private alembicWallet: AlembicWallet
+  ) {
+    this.hash = '0x'
+    this.confirmations = 0
+    this.from = this.alembicWallet.getAddress()
+    this.nonce = 0
+    this.gasLimit = BigNumber.from(0)
+    this.value = BigNumber.from(0)
+    this.data = '0x0'
+    this.chainId = 0
   }
 
   public async wait(): Promise<TransactionReceipt> {
-    return this.provider.getTransactionReceipt(this.hash)
+    const txEvent = await this.alembicWallet.getExecTransactionEvent(
+      this.safeTxHash
+    )
+
+    if (txEvent) {
+      const txResponse = await this.provider.getTransactionReceipt(
+        txEvent.transactionHash
+      )
+      this.hash = txResponse.transactionHash
+      this.confirmations = txResponse.confirmations
+      this.from = txResponse.from
+      this.data = txEvent.data
+      this.value = txEvent.args[1]
+
+      return this.provider.getTransactionReceipt(txEvent.transactionHash)
+    }
+    await new Promise((resolve) => setTimeout(resolve, 2000))
+    return this.wait()
   }
 }

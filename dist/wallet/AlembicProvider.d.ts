@@ -17,7 +17,6 @@ export declare class AlembicProvider extends BaseProvider {
   perform(method: string, params: any): Promise<any>
   send(method: string, params: any): Promise<any>
   getTransaction(safeTxHash: string): Promise<TransactionResponse>
-  wait(safeTxHash: string): Promise<TransactionReceipt>
   getRelayStatus(safeTxHash: string): Promise<TransactionStatus>
   getTransactionReceipt(
     transactionHash: string | Promise<string>

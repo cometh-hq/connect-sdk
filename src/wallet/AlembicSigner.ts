@@ -29,7 +29,9 @@ export class AlembicSigner extends Signer {
   async sendTransaction(
     transaction: Deferrable<TransactionRequest>
   ): Promise<TransactionResponse> {
-    const tx = await resolveProperties(this.checkTransaction(transaction))
+    const tx: TransactionRequest = await resolveProperties(
+      this.checkTransaction(transaction)
+    )
 
     const safeTx = {
       to: tx.to ?? '',

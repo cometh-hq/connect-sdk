@@ -41,23 +41,8 @@ class AlembicProvider extends providers_1.BaseProvider {
         });
     }
     getTransaction(safeTxHash) {
-        const _super = Object.create(null, {
-            getTransaction: { get: () => super.getTransaction }
-        });
         return __awaiter(this, void 0, void 0, function* () {
-            const txEvent = yield this.wait(safeTxHash);
-            const txResponse = yield _super.getTransaction.call(this, txEvent.transactionHash);
-            return new RelayTransactionResponse_1.RelayTransactionResponse(txResponse, this);
-        });
-    }
-    wait(safeTxHash) {
-        return __awaiter(this, void 0, void 0, function* () {
-            const txEvent = yield this.alembicWallet.getExecTransactionEvent(safeTxHash);
-            if (txEvent.length > 0) {
-                return txEvent[0];
-            }
-            yield new Promise((resolve) => setTimeout(resolve, 2000));
-            return this.wait(safeTxHash);
+            return new RelayTransactionResponse_1.RelayTransactionResponse(safeTxHash, this, this.alembicWallet);
         });
     }
     getRelayStatus(safeTxHash) {

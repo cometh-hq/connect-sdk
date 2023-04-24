@@ -2,9 +2,10 @@ import {
   BaseProvider,
   Network,
   TransactionReceipt,
+  TransactionRequest,
   TransactionResponse
 } from '@ethersproject/providers'
-import { Signer } from 'ethers'
+import { BigNumber, Signer } from 'ethers'
 
 import { DEFAULT_CHAIN_ID } from '../constants'
 import { TransactionStatus } from '../wallet/types'
@@ -39,20 +40,7 @@ export class AlembicProvider extends BaseProvider {
   }
 
   async getTransaction(safeTxHash: string): Promise<TransactionResponse> {
-    const txEvent = await this.wait(safeTxHash)
-    const txResponse = await super.getTransaction(txEvent.transactionHash)
-
-    return new RelayTransactionResponse(txResponse, this)
-  }
-
-  public async wait(safeTxHash: string): Promise<TransactionReceipt> {
-    const txEvent = await this.alembicWallet.getExecTransactionEvent(safeTxHash)
-
-    if (txEvent.length > 0) {
-      return txEvent[0]
-    }
-    await new Promise((resolve) => setTimeout(resolve, 2000))
-    return this.wait(safeTxHash)
+    return new RelayTransactionResponse(safeTxHash, this, this.alembicWallet)
   }
 
   async getRelayStatus(safeTxHash: string): Promise<TransactionStatus> {

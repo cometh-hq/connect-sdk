@@ -63,5 +63,5 @@ export declare class AlembicWallet {
     safeTxData: SafeTransactionDataPartial,
     nonce: number
   ): Promise<string>
-  getExecTransactionEvent(safeTxHash: string): Promise<any[]>
+  getExecTransactionEvent(safeTxHash: string): Promise<any>
 }

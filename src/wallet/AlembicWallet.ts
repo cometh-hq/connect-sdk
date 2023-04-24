@@ -339,7 +339,7 @@ export class AlembicWallet {
     return ethers.utils.keccak256(safeTxHash)
   }
 
-  public async getExecTransactionEvent(safeTxHash: string): Promise<any[]> {
+  public async getExecTransactionEvent(safeTxHash: string): Promise<any> {
     const safeInstance = await Safe__factory.connect(
       this.getAddress(),
       this.getOwnerProvider()
@@ -350,6 +350,8 @@ export class AlembicWallet {
       BLOCK_EVENT_GAP
     )
 
-    return events.filter((e) => e.args.txHash === safeTxHash)
+    const filteredEvent = events.filter((e) => e.args.txHash === safeTxHash)
+
+    return filteredEvent[0]
   }
 }
