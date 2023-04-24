@@ -1,8 +1,7 @@
 import {
   BaseProvider,
   Network,
-  TransactionReceipt,
-  TransactionResponse
+  TransactionReceipt
 } from '@ethersproject/providers'
 import { Signer } from 'ethers'
 
@@ -15,7 +14,8 @@ export declare class AlembicProvider extends BaseProvider {
   getSigner(): Signer
   perform(method: string, params: any): Promise<any>
   send(method: string, params: any): Promise<any>
-  getTransaction(transactionHash: string): Promise<TransactionResponse>
+  getTransaction(transactionHash: string): Promise<any>
+  wait(transactionHash: string): Promise<TransactionReceipt>
   getRelayStatus(transactionHash: string): Promise<any>
   getTransactionReceipt(
     transactionHash: string | Promise<string>
