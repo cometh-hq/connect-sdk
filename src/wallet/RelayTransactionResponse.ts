@@ -59,24 +59,17 @@ export class RelayTransactionResponse implements TransactionResponse {
       const txResponse = await this.provider.getTransactionReceipt(
         txEvent.transactionHash
       )
-
+      if (txResponse === null) {
+        await new Promise((resolve) => setTimeout(resolve, 1000))
+        return this.wait()
+      }
       this.hash = txResponse.transactionHash
       this.confirmations = txResponse.confirmations
       this.from = txResponse.from
       this.data = txEvent.data
       this.value = txEvent.args[1]
 
-      const isDeployed = await this.alembicWallet.isDeployed()
-
-      if (!isDeployed) {
-        return this.wait()
-      }
-
-      try {
-        return this.provider.getTransactionReceipt(txEvent.transactionHash)
-      } catch (error) {
-        return error
-      }
+      return txResponse
     }
     await new Promise((resolve) => setTimeout(resolve, 2000))
     return this.wait()

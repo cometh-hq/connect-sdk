@@ -33,21 +33,16 @@ class RelayTransactionResponse {
             const txEvent = yield this.alembicWallet.getExecTransactionEvent(this.getSafeTxHash());
             if (txEvent) {
                 const txResponse = yield this.provider.getTransactionReceipt(txEvent.transactionHash);
+                if (txResponse === null) {
+                    yield new Promise((resolve) => setTimeout(resolve, 1000));
+                    return this.wait();
+                }
                 this.hash = txResponse.transactionHash;
                 this.confirmations = txResponse.confirmations;
                 this.from = txResponse.from;
                 this.data = txEvent.data;
                 this.value = txEvent.args[1];
-                const isDeployed = yield this.alembicWallet.isDeployed();
-                if (!isDeployed) {
-                    return this.wait();
-                }
-                try {
-                    return this.provider.getTransactionReceipt(txEvent.transactionHash);
-                }
-                catch (error) {
-                    return error;
-                }
+                return txResponse;
             }
             yield new Promise((resolve) => setTimeout(resolve, 2000));
             return this.wait();
