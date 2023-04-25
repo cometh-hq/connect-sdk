@@ -37,7 +37,7 @@ export declare class AlembicWallet {
   getAddress(): string
   private _createMessage
   logout(): Promise<void>
-  addOwner(newOwner: string): Promise<void>
+  addOwner(newOwner: string): Promise<SendTransactionResponse>
   /**
    * Signing Message Section
    */
