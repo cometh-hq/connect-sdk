@@ -37,5 +37,6 @@ export declare class RelayTransactionResponse implements TransactionResponse {
     provider: AlembicProvider,
     alembicWallet: AlembicWallet
   )
+  getSafeTxHash(): string
   wait(): Promise<TransactionReceipt>
 }

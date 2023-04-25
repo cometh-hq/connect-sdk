@@ -46,22 +46,37 @@ export class RelayTransactionResponse implements TransactionResponse {
     this.chainId = 0
   }
 
+  public getSafeTxHash(): string {
+    return this.safeTxHash
+  }
+
   public async wait(): Promise<TransactionReceipt> {
     const txEvent = await this.alembicWallet.getExecTransactionEvent(
-      this.safeTxHash
+      this.getSafeTxHash()
     )
 
     if (txEvent) {
       const txResponse = await this.provider.getTransactionReceipt(
         txEvent.transactionHash
       )
+
       this.hash = txResponse.transactionHash
       this.confirmations = txResponse.confirmations
       this.from = txResponse.from
       this.data = txEvent.data
       this.value = txEvent.args[1]
 
-      return this.provider.getTransactionReceipt(txEvent.transactionHash)
+      const isDeployed = await this.alembicWallet.isDeployed()
+
+      if (!isDeployed) {
+        return this.wait()
+      }
+
+      try {
+        return this.provider.getTransactionReceipt(txEvent.transactionHash)
+      } catch (error) {
+        return error
+      }
     }
     await new Promise((resolve) => setTimeout(resolve, 2000))
     return this.wait()

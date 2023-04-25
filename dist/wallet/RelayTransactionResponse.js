@@ -25,9 +25,12 @@ class RelayTransactionResponse {
         this.data = '0x0';
         this.chainId = 0;
     }
+    getSafeTxHash() {
+        return this.safeTxHash;
+    }
     wait() {
         return __awaiter(this, void 0, void 0, function* () {
-            const txEvent = yield this.alembicWallet.getExecTransactionEvent(this.safeTxHash);
+            const txEvent = yield this.alembicWallet.getExecTransactionEvent(this.getSafeTxHash());
             if (txEvent) {
                 const txResponse = yield this.provider.getTransactionReceipt(txEvent.transactionHash);
                 this.hash = txResponse.transactionHash;
@@ -35,7 +38,16 @@ class RelayTransactionResponse {
                 this.from = txResponse.from;
                 this.data = txEvent.data;
                 this.value = txEvent.args[1];
-                return this.provider.getTransactionReceipt(txEvent.transactionHash);
+                const isDeployed = yield this.alembicWallet.isDeployed();
+                if (!isDeployed) {
+                    return this.wait();
+                }
+                try {
+                    return this.provider.getTransactionReceipt(txEvent.transactionHash);
+                }
+                catch (error) {
+                    return error;
+                }
             }
             yield new Promise((resolve) => setTimeout(resolve, 2000));
             return this.wait();
