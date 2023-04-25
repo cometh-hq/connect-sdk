@@ -11,8 +11,8 @@ import {
 } from './types'
 export interface AlembicWalletConfig {
   eoaAdapter?: EOAConstructor
-  chainId?: number
-  rpcTarget?: string
+  chainId: number
+  rpcTarget: string
   apiKey: string
 }
 export declare class AlembicWallet {

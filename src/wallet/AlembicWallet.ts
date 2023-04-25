@@ -9,7 +9,8 @@ import {
   DEFAULT_REWARD_PERCENTILE,
   DEFAULT_RPC_TARGET,
   EIP712_SAFE_MESSAGE_TYPE,
-  EIP712_SAFE_TX_TYPES
+  EIP712_SAFE_TX_TYPES,
+  networks
 } from '../constants'
 import { Safe__factory } from '../contracts/types/factories/Safe__factory'
 import { SafeInterface } from '../contracts/types/Safe'
@@ -25,8 +26,8 @@ import {
 
 export interface AlembicWalletConfig {
   eoaAdapter?: EOAConstructor
-  chainId?: number
-  rpcTarget?: string
+  chainId: number
+  rpcTarget: string
   apiKey: string
 }
 export class AlembicWallet {
@@ -45,8 +46,8 @@ export class AlembicWallet {
 
   constructor({
     eoaAdapter = Web3AuthAdapter,
-    chainId = DEFAULT_CHAIN_ID,
-    rpcTarget = DEFAULT_RPC_TARGET,
+    chainId,
+    rpcTarget,
     apiKey
   }: AlembicWalletConfig) {
     this.chainId = chainId
@@ -64,6 +65,8 @@ export class AlembicWallet {
   public async connect(): Promise<void> {
     // Return if does not match requirements
     if (!this.eoaAdapter) throw new Error('No EOA adapter found')
+    if (!networks[this.chainId])
+      throw new Error('This network is not supported')
     await this.eoaAdapter.init(this.chainId, this.rpcTarget)
     await this.eoaAdapter.connect()
 

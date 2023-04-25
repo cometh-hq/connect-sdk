@@ -3,6 +3,16 @@ export declare const WEB3AUTH_CLIENT_ID =
 export declare const API_URL = 'https://alembic-api.develop.cometh.tech'
 export declare const DEFAULT_CHAIN_ID = 137
 export declare const DEFAULT_RPC_TARGET = 'https://polygon-rpc.com'
+export declare const networks: {
+  137: {
+    RPCUrl: string
+    networkName: string
+  }
+  80001: {
+    RPCUrl: string
+    networkName: string
+  }
+}
 export declare const DEFAULT_BASE_GAS = 80000
 export declare const DEFAULT_REWARD_PERCENTILE = 80
 export declare const BLOCK_EVENT_GAP = -500

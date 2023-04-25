@@ -17,7 +17,7 @@ const Safe__factory_1 = require("../contracts/types/factories/Safe__factory");
 const services_1 = require("../services");
 const adapters_1 = require("./adapters");
 class AlembicWallet {
-    constructor({ eoaAdapter = adapters_1.Web3AuthAdapter, chainId = constants_1.DEFAULT_CHAIN_ID, rpcTarget = constants_1.DEFAULT_RPC_TARGET, apiKey }) {
+    constructor({ eoaAdapter = adapters_1.Web3AuthAdapter, chainId, rpcTarget, apiKey }) {
         this.connected = false;
         // Contract Interfaces
         this.SafeInterface = Safe__factory_1.Safe__factory.createInterface();
@@ -66,6 +66,8 @@ class AlembicWallet {
             // Return if does not match requirements
             if (!this.eoaAdapter)
                 throw new Error('No EOA adapter found');
+            if (!constants_1.networks[this.chainId])
+                throw new Error('This network is not supported');
             yield this.eoaAdapter.init(this.chainId, this.rpcTarget);
             yield this.eoaAdapter.connect();
             const signer = (_a = this.eoaAdapter.getEthProvider()) === null || _a === void 0 ? void 0 : _a.getSigner();
