@@ -1,6 +1,6 @@
 {
   "name": "alembic-sdk",
-  "version": "0.8.1",
+  "version": "0.8.3",
   "main": "dist/index.js",
   "types": "dist/index.d.ts",
   "description": "SDK Alembic tech",
