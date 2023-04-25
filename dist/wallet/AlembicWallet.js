@@ -53,7 +53,7 @@ class AlembicWallet {
         this.chainId = chainId;
         this.rpcTarget = rpcTarget;
         this.eoaAdapter = new eoaAdapter();
-        this.API = new services_1.API(apiKey);
+        this.API = new services_1.API(apiKey, chainId);
         this.BASE_GAS = constants_1.DEFAULT_BASE_GAS;
         this.REWARD_PERCENTILE = constants_1.DEFAULT_REWARD_PERCENTILE;
     }

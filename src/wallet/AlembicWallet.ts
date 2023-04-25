@@ -53,7 +53,7 @@ export class AlembicWallet {
     this.chainId = chainId
     this.rpcTarget = rpcTarget
     this.eoaAdapter = new eoaAdapter()
-    this.API = new API(apiKey)
+    this.API = new API(apiKey, chainId)
     this.BASE_GAS = DEFAULT_BASE_GAS
     this.REWARD_PERCENTILE = DEFAULT_REWARD_PERCENTILE
   }

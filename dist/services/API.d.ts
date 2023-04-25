@@ -7,7 +7,7 @@ import {
 } from '../wallet/types'
 export declare const api: import('axios').AxiosInstance
 export declare class API {
-  constructor(apiKey: string)
+  constructor(apiKey: string, chainId: number)
   getNonce(account: string): Promise<UserNonceType>
   getSponsoredAddresses(): Promise<SponsoredTransaction[]>
   connectToAlembicWallet({
