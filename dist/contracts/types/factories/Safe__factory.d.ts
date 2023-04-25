@@ -5,11 +5,6 @@ import type { Safe, SafeInterface } from '../Safe'
 export declare class Safe__factory {
   static readonly abi: readonly [
     {
-      readonly inputs: readonly []
-      readonly stateMutability: 'nonpayable'
-      readonly type: 'constructor'
-    },
-    {
       readonly anonymous: false
       readonly inputs: readonly [
         {
@@ -181,6 +176,116 @@ export declare class Safe__factory {
         }
       ]
       readonly name: 'RemovedOwner'
+      readonly type: 'event'
+    },
+    {
+      readonly anonymous: false
+      readonly inputs: readonly [
+        {
+          readonly indexed: false
+          readonly internalType: 'address'
+          readonly name: 'module'
+          readonly type: 'address'
+        },
+        {
+          readonly indexed: false
+          readonly internalType: 'address'
+          readonly name: 'to'
+          readonly type: 'address'
+        },
+        {
+          readonly indexed: false
+          readonly internalType: 'uint256'
+          readonly name: 'value'
+          readonly type: 'uint256'
+        },
+        {
+          readonly indexed: false
+          readonly internalType: 'bytes'
+          readonly name: 'data'
+          readonly type: 'bytes'
+        },
+        {
+          readonly indexed: false
+          readonly internalType: 'enum Enum.Operation'
+          readonly name: 'operation'
+          readonly type: 'uint8'
+        }
+      ]
+      readonly name: 'SafeModuleTransaction'
+      readonly type: 'event'
+    },
+    {
+      readonly anonymous: false
+      readonly inputs: readonly [
+        {
+          readonly indexed: false
+          readonly internalType: 'address'
+          readonly name: 'to'
+          readonly type: 'address'
+        },
+        {
+          readonly indexed: false
+          readonly internalType: 'uint256'
+          readonly name: 'value'
+          readonly type: 'uint256'
+        },
+        {
+          readonly indexed: false
+          readonly internalType: 'bytes'
+          readonly name: 'data'
+          readonly type: 'bytes'
+        },
+        {
+          readonly indexed: false
+          readonly internalType: 'enum Enum.Operation'
+          readonly name: 'operation'
+          readonly type: 'uint8'
+        },
+        {
+          readonly indexed: false
+          readonly internalType: 'uint256'
+          readonly name: 'safeTxGas'
+          readonly type: 'uint256'
+        },
+        {
+          readonly indexed: false
+          readonly internalType: 'uint256'
+          readonly name: 'baseGas'
+          readonly type: 'uint256'
+        },
+        {
+          readonly indexed: false
+          readonly internalType: 'uint256'
+          readonly name: 'gasPrice'
+          readonly type: 'uint256'
+        },
+        {
+          readonly indexed: false
+          readonly internalType: 'address'
+          readonly name: 'gasToken'
+          readonly type: 'address'
+        },
+        {
+          readonly indexed: false
+          readonly internalType: 'address payable'
+          readonly name: 'refundReceiver'
+          readonly type: 'address'
+        },
+        {
+          readonly indexed: false
+          readonly internalType: 'bytes'
+          readonly name: 'signatures'
+          readonly type: 'bytes'
+        },
+        {
+          readonly indexed: false
+          readonly internalType: 'bytes'
+          readonly name: 'additionalInfo'
+          readonly type: 'bytes'
+        }
+      ]
+      readonly name: 'SafeMultiSigTransaction'
       readonly type: 'event'
     },
     {
@@ -553,7 +658,7 @@ export declare class Safe__factory {
       readonly outputs: readonly [
         {
           readonly internalType: 'bool'
-          readonly name: 'success'
+          readonly name: ''
           readonly type: 'bool'
         }
       ]
