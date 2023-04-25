@@ -16,7 +16,7 @@ class RelayTransactionResponse {
         this.safeTxHash = safeTxHash;
         this.provider = provider;
         this.alembicWallet = alembicWallet;
-        this.hash = '0x';
+        this.hash = '0x0';
         this.confirmations = 0;
         this.from = this.alembicWallet.getAddress();
         this.nonce = 0;

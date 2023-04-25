@@ -43,10 +43,6 @@ export class AlembicProvider extends BaseProvider {
     return new RelayTransactionResponse(safeTxHash, this, this.alembicWallet)
   }
 
-  async getRelayStatus(safeTxHash: string): Promise<TransactionStatus> {
-    return await this.alembicWallet.getRelayTxStatus(safeTxHash)
-  }
-
   async getTransactionReceipt(
     transactionHash: string | Promise<string>
   ): Promise<TransactionReceipt> {

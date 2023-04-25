@@ -1,6 +1,5 @@
 import {
   TransactionReceipt,
-  TransactionRequest,
   TransactionResponse
 } from '@ethersproject/abstract-provider'
 import { BigNumber } from 'ethers'
@@ -37,7 +36,7 @@ export class RelayTransactionResponse implements TransactionResponse {
     private provider: AlembicProvider,
     private alembicWallet: AlembicWallet
   ) {
-    this.hash = '0x'
+    this.hash = '0x0'
     this.confirmations = 0
     this.from = this.alembicWallet.getAddress()
     this.nonce = 0

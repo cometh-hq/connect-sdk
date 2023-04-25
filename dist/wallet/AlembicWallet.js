@@ -227,33 +227,20 @@ class AlembicWallet {
                 safeTxDataTyped.gasPrice = +gasPrice;
             }
             const signature = yield this._signTransaction(safeTxDataTyped, nonce);
-            const safeTxHash = yield this.getSafeTransactionHash(safeTxDataTyped, yield this._getNonce());
-            yield this.API.relayTransaction({
+            const safeTxHash = yield this.API.relayTransaction({
                 safeTxData: safeTxDataTyped,
                 signatures: signature,
-                walletAddress: this.getAddress(),
-                safeTxHash
+                walletAddress: this.getAddress()
             });
             return { safeTxHash };
-        });
-    }
-    getRelayTxStatus(safeTxHash) {
-        return __awaiter(this, void 0, void 0, function* () {
-            return yield this.API.getRelayTxStatus(this.getAddress(), safeTxHash);
-        });
-    }
-    getSafeTransactionHash(safeTxData, nonce) {
-        return __awaiter(this, void 0, void 0, function* () {
-            const safeTxHash = yield Safe__factory_1.Safe__factory.connect(this.getAddress(), this.getOwnerProvider()).encodeTransactionData(safeTxData.to, ethers_1.BigNumber.from(safeTxData.value).toString(), safeTxData.data, 0, ethers_1.BigNumber.from(safeTxData.safeTxGas).toString(), ethers_1.BigNumber.from(safeTxData.baseGas).toString(), ethers_1.BigNumber.from(safeTxData.gasPrice).toString(), ethers_1.ethers.constants.AddressZero, ethers_1.ethers.constants.AddressZero, nonce);
-            return ethers_1.ethers.utils.keccak256(safeTxHash);
         });
     }
     getExecTransactionEvent(safeTxHash) {
         return __awaiter(this, void 0, void 0, function* () {
             const safeInstance = yield Safe__factory_1.Safe__factory.connect(this.getAddress(), this.getOwnerProvider());
-            const events = yield safeInstance.queryFilter(safeInstance.filters.ExecutionSuccess(), constants_1.BLOCK_EVENT_GAP);
-            const filteredEvent = events.filter((e) => e.args.txHash === safeTxHash);
-            return filteredEvent[0];
+            const transactionEvents = yield safeInstance.queryFilter(safeInstance.filters.ExecutionSuccess(), constants_1.BLOCK_EVENT_GAP);
+            const filteredTransactionEvent = transactionEvents.filter((e) => e.args.txHash === safeTxHash);
+            return filteredTransactionEvent[0];
         });
     }
 }

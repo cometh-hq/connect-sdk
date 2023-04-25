@@ -6,7 +6,6 @@ import {
 } from '@ethersproject/providers'
 import { Signer } from 'ethers'
 
-import { TransactionStatus } from '../wallet/types'
 import { AlembicSigner } from './AlembicSigner'
 import { AlembicWallet } from './AlembicWallet'
 export declare class AlembicProvider extends BaseProvider {
@@ -17,7 +16,6 @@ export declare class AlembicProvider extends BaseProvider {
   perform(method: string, params: any): Promise<any>
   send(method: string, params: any): Promise<any>
   getTransaction(safeTxHash: string): Promise<TransactionResponse>
-  getRelayStatus(safeTxHash: string): Promise<TransactionStatus>
   getTransactionReceipt(
     transactionHash: string | Promise<string>
   ): Promise<TransactionReceipt>

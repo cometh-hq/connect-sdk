@@ -7,7 +7,6 @@ import {
   MetaTransactionData,
   SafeTransactionDataPartial,
   SendTransactionResponse,
-  TransactionStatus,
   UserInfos
 } from './types'
 export interface AlembicWalletConfig {
@@ -58,10 +57,5 @@ export declare class AlembicWallet {
   sendTransaction(
     safeTxData: MetaTransactionData
   ): Promise<SendTransactionResponse>
-  getRelayTxStatus(safeTxHash: string): Promise<TransactionStatus>
-  getSafeTransactionHash(
-    safeTxData: SafeTransactionDataPartial,
-    nonce: number
-  ): Promise<string>
   getExecTransactionEvent(safeTxHash: string): Promise<any>
 }

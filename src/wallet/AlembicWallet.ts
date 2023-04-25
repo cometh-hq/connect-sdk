@@ -20,7 +20,6 @@ import {
   SafeTransactionDataPartial,
   SendTransactionResponse,
   SponsoredTransaction,
-  TransactionStatus,
   UserInfos
 } from './types'
 
@@ -296,47 +295,13 @@ export class AlembicWallet {
 
     const signature = await this._signTransaction(safeTxDataTyped, nonce)
 
-    const safeTxHash = await this.getSafeTransactionHash(
-      safeTxDataTyped,
-      await this._getNonce()
-    )
-
-    await this.API.relayTransaction({
+    const safeTxHash = await this.API.relayTransaction({
       safeTxData: safeTxDataTyped,
       signatures: signature,
-      walletAddress: this.getAddress(),
-      safeTxHash
+      walletAddress: this.getAddress()
     })
 
     return { safeTxHash }
-  }
-
-  public async getRelayTxStatus(
-    safeTxHash: string
-  ): Promise<TransactionStatus> {
-    return await this.API.getRelayTxStatus(this.getAddress(), safeTxHash)
-  }
-
-  public async getSafeTransactionHash(
-    safeTxData: SafeTransactionDataPartial,
-    nonce: number
-  ): Promise<string> {
-    const safeTxHash = await Safe__factory.connect(
-      this.getAddress(),
-      this.getOwnerProvider()
-    ).encodeTransactionData(
-      safeTxData.to,
-      BigNumber.from(safeTxData.value).toString(),
-      safeTxData.data,
-      0,
-      BigNumber.from(safeTxData.safeTxGas).toString(),
-      BigNumber.from(safeTxData.baseGas).toString(),
-      BigNumber.from(safeTxData.gasPrice).toString(),
-      ethers.constants.AddressZero,
-      ethers.constants.AddressZero,
-      nonce
-    )
-    return ethers.utils.keccak256(safeTxHash)
   }
 
   public async getExecTransactionEvent(safeTxHash: string): Promise<any> {
@@ -345,13 +310,14 @@ export class AlembicWallet {
       this.getOwnerProvider()
     )
 
-    const events = await safeInstance.queryFilter(
+    const transactionEvents = await safeInstance.queryFilter(
       safeInstance.filters.ExecutionSuccess(),
       BLOCK_EVENT_GAP
     )
+    const filteredTransactionEvent = transactionEvents.filter(
+      (e) => e.args.txHash === safeTxHash
+    )
 
-    const filteredEvent = events.filter((e) => e.args.txHash === safeTxHash)
-
-    return filteredEvent[0]
+    return filteredTransactionEvent[0]
   }
 }
