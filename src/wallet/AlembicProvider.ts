@@ -2,13 +2,11 @@ import {
   BaseProvider,
   Network,
   TransactionReceipt,
-  TransactionRequest,
   TransactionResponse
 } from '@ethersproject/providers'
-import { BigNumber, Signer } from 'ethers'
+import { Signer } from 'ethers'
 
 import { DEFAULT_CHAIN_ID } from '../constants'
-import { TransactionStatus } from '../wallet/types'
 import { AlembicSigner } from './AlembicSigner'
 import { AlembicWallet } from './AlembicWallet'
 import { RelayTransactionResponse } from './RelayTransactionResponse'
