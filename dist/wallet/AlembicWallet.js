@@ -149,7 +149,7 @@ class AlembicWallet {
                     1
                 ])
             };
-            this.sendTransaction(tx);
+            return yield this.sendTransaction(tx);
         });
     }
     /**

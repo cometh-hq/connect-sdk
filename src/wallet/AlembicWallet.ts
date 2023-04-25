@@ -145,7 +145,7 @@ export class AlembicWallet {
     this.connected = false
   }
 
-  public async addOwner(newOwner: string): Promise<void> {
+  public async addOwner(newOwner: string): Promise<SendTransactionResponse> {
     const tx = {
       to: this.getAddress(),
       value: '0x0',
@@ -155,7 +155,7 @@ export class AlembicWallet {
       ])
     }
 
-    this.sendTransaction(tx)
+    return await this.sendTransaction(tx)
   }
 
   /**
