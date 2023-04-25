@@ -6,9 +6,11 @@ import { BigNumber } from 'ethers'
 import { AccessList } from 'ethers/lib/utils'
 
 import { AlembicProvider } from './AlembicProvider'
+import { AlembicWallet } from './AlembicWallet'
 export declare class RelayTransactionResponse implements TransactionResponse {
-  private relayID
+  private safeTxHash
   private provider
+  private alembicWallet
   hash: string
   blockNumber?: number | undefined
   blockHash?: string | undefined
@@ -31,9 +33,10 @@ export declare class RelayTransactionResponse implements TransactionResponse {
   maxPriorityFeePerGas?: BigNumber | undefined
   maxFeePerGas?: BigNumber | undefined
   constructor(
-    tx: TransactionResponse,
-    relayID: string,
-    provider: AlembicProvider
+    safeTxHash: string,
+    provider: AlembicProvider,
+    alembicWallet: AlembicWallet
   )
-  wait(confirmations?: number | undefined): Promise<TransactionReceipt>
+  getSafeTxHash(): string
+  wait(): Promise<TransactionReceipt>
 }

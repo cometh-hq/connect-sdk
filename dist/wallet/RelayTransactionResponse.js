@@ -10,28 +10,42 @@ var __awaiter = (this && this.__awaiter) || function (thisArg, _arguments, P, ge
 };
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.RelayTransactionResponse = void 0;
-const types_1 = require("./types");
+const ethers_1 = require("ethers");
 class RelayTransactionResponse {
-    constructor(tx, relayID, provider) {
-        this.relayID = relayID;
+    constructor(safeTxHash, provider, alembicWallet) {
+        this.safeTxHash = safeTxHash;
         this.provider = provider;
-        this.hash = tx.hash;
-        this.confirmations = tx.confirmations;
-        this.from = tx.from;
-        this.nonce = tx.nonce;
-        this.gasLimit = tx.gasLimit;
-        this.value = tx.value;
-        this.data = tx.data;
-        this.chainId = tx.chainId;
+        this.alembicWallet = alembicWallet;
+        this.hash = '0x0';
+        this.confirmations = 0;
+        this.from = this.alembicWallet.getAddress();
+        this.nonce = 0;
+        this.gasLimit = ethers_1.BigNumber.from(0);
+        this.value = ethers_1.BigNumber.from(0);
+        this.data = '0x0';
+        this.chainId = 0;
     }
-    wait(confirmations) {
+    getSafeTxHash() {
+        return this.safeTxHash;
+    }
+    wait() {
         return __awaiter(this, void 0, void 0, function* () {
-            const status = yield this.provider.getRelayStatus(this.relayID);
-            if (status.status == types_1.RelayStatus.MINED) {
-                return this.provider.getTransactionReceipt(status.hash);
+            const txEvent = yield this.alembicWallet.getExecTransactionEvent(this.getSafeTxHash());
+            if (txEvent) {
+                const txResponse = yield this.provider.getTransactionReceipt(txEvent.transactionHash);
+                if (txResponse === null) {
+                    yield new Promise((resolve) => setTimeout(resolve, 1000));
+                    return this.wait();
+                }
+                this.hash = txResponse.transactionHash;
+                this.confirmations = txResponse.confirmations;
+                this.from = txResponse.from;
+                this.data = txEvent.data;
+                this.value = txEvent.args[1];
+                return txResponse;
             }
             yield new Promise((resolve) => setTimeout(resolve, 2000));
-            return this.wait(confirmations);
+            return this.wait();
         });
     }
 }

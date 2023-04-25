@@ -109,7 +109,7 @@ class AlembicWallet {
             if (!this.eoaAdapter)
                 throw new Error('Cannot provide user infos');
             const userInfos = yield this.eoaAdapter.getUserInfos();
-            return Object.assign(Object.assign({}, userInfos), { ownerAddress: yield ((_a = this.eoaAdapter.getSigner()) === null || _a === void 0 ? void 0 : _a.getAddress()), smartWalletAddress: this.getAddress() });
+            return Object.assign(Object.assign({}, userInfos), { ownerAddress: yield ((_a = this.eoaAdapter.getSigner()) === null || _a === void 0 ? void 0 : _a.getAddress()), walletAddress: this.getAddress() });
         });
     }
     getAddress() {
@@ -227,23 +227,20 @@ class AlembicWallet {
                 safeTxDataTyped.gasPrice = +gasPrice;
             }
             const signature = yield this._signTransaction(safeTxDataTyped, nonce);
-            const relayId = yield this.API.relayTransaction({
+            const safeTxHash = yield this.API.relayTransaction({
                 safeTxData: safeTxDataTyped,
                 signatures: signature,
-                smartWalletAddress: this.getAddress()
+                walletAddress: this.getAddress()
             });
-            return { relayId };
+            return { safeTxHash };
         });
     }
-    getRelayTxStatus(relayId) {
+    getExecTransactionEvent(safeTxHash) {
         return __awaiter(this, void 0, void 0, function* () {
-            return yield this.API.getRelayTxStatus(relayId);
-        });
-    }
-    getTransactionHash(safeTxData, nonce) {
-        return __awaiter(this, void 0, void 0, function* () {
-            const hash = yield Safe__factory_1.Safe__factory.connect(this.getAddress(), this.getOwnerProvider()).encodeTransactionData(safeTxData.to, ethers_1.BigNumber.from(safeTxData.value).toString(), safeTxData.data, 0, ethers_1.BigNumber.from(safeTxData.safeTxGas).toString(), ethers_1.BigNumber.from(safeTxData.baseGas).toString(), ethers_1.BigNumber.from(safeTxData.gasPrice).toString(), ethers_1.ethers.constants.AddressZero, ethers_1.ethers.constants.AddressZero, nonce);
-            return ethers_1.ethers.utils.keccak256(hash);
+            const safeInstance = yield Safe__factory_1.Safe__factory.connect(this.getAddress(), this.getOwnerProvider());
+            const transactionEvents = yield safeInstance.queryFilter(safeInstance.filters.ExecutionSuccess(), constants_1.BLOCK_EVENT_GAP);
+            const filteredTransactionEvent = transactionEvents.filter((e) => e.args.txHash === safeTxHash);
+            return filteredTransactionEvent[0];
         });
     }
 }

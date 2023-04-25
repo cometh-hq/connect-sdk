@@ -48,18 +48,12 @@ class API {
             return data.walletAddress;
         });
     }
-    relayTransaction({ smartWalletAddress, safeTxData, signatures }) {
+    relayTransaction({ walletAddress, safeTxData, signatures }) {
         var _a, _b, _c, _d, _e;
         return __awaiter(this, void 0, void 0, function* () {
             const body = Object.assign(Object.assign({}, safeTxData), { nonce: (_a = safeTxData === null || safeTxData === void 0 ? void 0 : safeTxData.nonce) === null || _a === void 0 ? void 0 : _a.toString(), baseGas: (_b = safeTxData === null || safeTxData === void 0 ? void 0 : safeTxData.baseGas) === null || _b === void 0 ? void 0 : _b.toString(), gasPrice: (_c = safeTxData === null || safeTxData === void 0 ? void 0 : safeTxData.gasPrice) === null || _c === void 0 ? void 0 : _c.toString(), safeTxGas: (_d = safeTxData === null || safeTxData === void 0 ? void 0 : safeTxData.safeTxGas) === null || _d === void 0 ? void 0 : _d.toString(), signatures });
-            const response = yield exports.api.post(`/wallets/${smartWalletAddress}/relay`, body);
-            return (_e = response.data) === null || _e === void 0 ? void 0 : _e.relayId;
-        });
-    }
-    getRelayTxStatus(relayId) {
-        return __awaiter(this, void 0, void 0, function* () {
-            const response = yield exports.api.get(`/wallets/relay/${relayId}`);
-            return response.data;
+            const response = yield exports.api.post(`/wallets/${walletAddress}/relay`, body);
+            return (_e = response.data) === null || _e === void 0 ? void 0 : _e.safeTxHash;
         });
     }
 }

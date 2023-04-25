@@ -5,7 +5,6 @@ import { API_URL } from '../constants'
 import {
   RelayTransactionType,
   SponsoredTransaction,
-  TransactionStatus,
   UserNonceType
 } from '../wallet/types'
 
@@ -50,7 +49,7 @@ export class API {
   }
 
   async relayTransaction({
-    smartWalletAddress,
+    walletAddress,
     safeTxData,
     signatures
   }: RelayTransactionType): Promise<string> {
@@ -62,15 +61,7 @@ export class API {
       safeTxGas: safeTxData?.safeTxGas?.toString(),
       signatures
     }
-    const response = await api.post(
-      `/wallets/${smartWalletAddress}/relay`,
-      body
-    )
-    return response.data?.relayId
-  }
-
-  async getRelayTxStatus(relayId: string): Promise<TransactionStatus> {
-    const response = await api.get(`/wallets/relay/${relayId}`)
-    return response.data
+    const response = await api.post(`/wallets/${walletAddress}/relay`, body)
+    return response.data?.safeTxHash
   }
 }

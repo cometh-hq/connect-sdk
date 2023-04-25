@@ -6,7 +6,7 @@ import { BigNumber } from 'ethers'
 import { AccessList } from 'ethers/lib/utils'
 
 import { AlembicProvider } from './AlembicProvider'
-import { RelayStatus } from './types'
+import { AlembicWallet } from './AlembicWallet'
 
 export class RelayTransactionResponse implements TransactionResponse {
   hash: string
@@ -32,30 +32,46 @@ export class RelayTransactionResponse implements TransactionResponse {
   maxFeePerGas?: BigNumber | undefined
 
   constructor(
-    tx: TransactionResponse,
-    private relayID: string,
-    private provider: AlembicProvider
+    private safeTxHash: string,
+    private provider: AlembicProvider,
+    private alembicWallet: AlembicWallet
   ) {
-    this.hash = tx.hash
-    this.confirmations = tx.confirmations
-    this.from = tx.from
-    this.nonce = tx.nonce
-    this.gasLimit = tx.gasLimit
-    this.value = tx.value
-    this.data = tx.data
-    this.chainId = tx.chainId
+    this.hash = '0x0'
+    this.confirmations = 0
+    this.from = this.alembicWallet.getAddress()
+    this.nonce = 0
+    this.gasLimit = BigNumber.from(0)
+    this.value = BigNumber.from(0)
+    this.data = '0x0'
+    this.chainId = 0
   }
 
-  public async wait(
-    confirmations?: number | undefined
-  ): Promise<TransactionReceipt> {
-    const status = await this.provider.getRelayStatus(this.relayID)
+  public getSafeTxHash(): string {
+    return this.safeTxHash
+  }
 
-    if (status.status == RelayStatus.MINED) {
-      return this.provider.getTransactionReceipt(status.hash)
+  public async wait(): Promise<TransactionReceipt> {
+    const txEvent = await this.alembicWallet.getExecTransactionEvent(
+      this.getSafeTxHash()
+    )
+
+    if (txEvent) {
+      const txResponse = await this.provider.getTransactionReceipt(
+        txEvent.transactionHash
+      )
+      if (txResponse === null) {
+        await new Promise((resolve) => setTimeout(resolve, 1000))
+        return this.wait()
+      }
+      this.hash = txResponse.transactionHash
+      this.confirmations = txResponse.confirmations
+      this.from = txResponse.from
+      this.data = txEvent.data
+      this.value = txEvent.args[1]
+
+      return txResponse
     }
     await new Promise((resolve) => setTimeout(resolve, 2000))
-
-    return this.wait(confirmations)
+    return this.wait()
   }
 }

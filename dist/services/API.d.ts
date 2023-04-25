@@ -3,7 +3,6 @@ import { SiweMessage } from 'siwe'
 import {
   RelayTransactionType,
   SponsoredTransaction,
-  TransactionStatus,
   UserNonceType
 } from '../wallet/types'
 export declare const api: import('axios').AxiosInstance
@@ -21,9 +20,8 @@ export declare class API {
     ownerAddress: string
   }): Promise<string>
   relayTransaction({
-    smartWalletAddress,
+    walletAddress,
     safeTxData,
     signatures
   }: RelayTransactionType): Promise<string>
-  getRelayTxStatus(relayId: string): Promise<TransactionStatus>
 }

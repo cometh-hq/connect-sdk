@@ -7,7 +7,6 @@ import {
 import { Signer } from 'ethers'
 
 import { DEFAULT_CHAIN_ID } from '../constants'
-import { TransactionStatus } from '../wallet/types'
 import { AlembicSigner } from './AlembicSigner'
 import { AlembicWallet } from './AlembicWallet'
 import { RelayTransactionResponse } from './RelayTransactionResponse'
@@ -38,24 +37,8 @@ export class AlembicProvider extends BaseProvider {
     return await this.alembicWallet.getOwnerProvider().send(method, params)
   }
 
-  async getTransaction(
-    relayId: string | Promise<string>
-  ): Promise<TransactionResponse> {
-    const status = await this.getRelayStatus(await relayId)
-
-    let txResponse = await super.getTransaction(status.hash)
-
-    // TODO: Remove this dirty quick fix
-    if (txResponse == null) {
-      await new Promise((resolve) => setTimeout(resolve, 5000))
-      txResponse = await super.getTransaction(status.hash)
-    }
-
-    return new RelayTransactionResponse(txResponse, await relayId, this)
-  }
-
-  async getRelayStatus(relayId: string): Promise<TransactionStatus> {
-    return await this.alembicWallet.getRelayTxStatus(relayId)
+  async getTransaction(safeTxHash: string): Promise<TransactionResponse> {
+    return new RelayTransactionResponse(safeTxHash, this, this.alembicWallet)
   }
 
   async getTransactionReceipt(

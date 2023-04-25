@@ -3,6 +3,7 @@ import { BigNumber, Bytes, ethers } from 'ethers'
 import { SiweMessage } from 'siwe'
 
 import {
+  BLOCK_EVENT_GAP,
   DEFAULT_BASE_GAS,
   DEFAULT_CHAIN_ID,
   DEFAULT_REWARD_PERCENTILE,
@@ -19,7 +20,6 @@ import {
   SafeTransactionDataPartial,
   SendTransactionResponse,
   SponsoredTransaction,
-  TransactionStatus,
   UserInfos
 } from './types'
 
@@ -114,7 +114,7 @@ export class AlembicWallet {
     return {
       ...userInfos,
       ownerAddress: await this.eoaAdapter.getSigner()?.getAddress(),
-      smartWalletAddress: this.getAddress()
+      walletAddress: this.getAddress()
     }
   }
 
@@ -295,38 +295,29 @@ export class AlembicWallet {
 
     const signature = await this._signTransaction(safeTxDataTyped, nonce)
 
-    const relayId = await this.API.relayTransaction({
+    const safeTxHash = await this.API.relayTransaction({
       safeTxData: safeTxDataTyped,
       signatures: signature,
-      smartWalletAddress: this.getAddress()
+      walletAddress: this.getAddress()
     })
 
-    return { relayId }
+    return { safeTxHash }
   }
 
-  public async getRelayTxStatus(relayId: string): Promise<TransactionStatus> {
-    return await this.API.getRelayTxStatus(relayId)
-  }
-
-  public async getTransactionHash(
-    safeTxData: SafeTransactionDataPartial,
-    nonce: number
-  ): Promise<string> {
-    const hash = await Safe__factory.connect(
+  public async getExecTransactionEvent(safeTxHash: string): Promise<any> {
+    const safeInstance = await Safe__factory.connect(
       this.getAddress(),
       this.getOwnerProvider()
-    ).encodeTransactionData(
-      safeTxData.to,
-      BigNumber.from(safeTxData.value).toString(),
-      safeTxData.data,
-      0,
-      BigNumber.from(safeTxData.safeTxGas).toString(),
-      BigNumber.from(safeTxData.baseGas).toString(),
-      BigNumber.from(safeTxData.gasPrice).toString(),
-      ethers.constants.AddressZero,
-      ethers.constants.AddressZero,
-      nonce
     )
-    return ethers.utils.keccak256(hash)
+
+    const transactionEvents = await safeInstance.queryFilter(
+      safeInstance.filters.ExecutionSuccess(),
+      BLOCK_EVENT_GAP
+    )
+    const filteredTransactionEvent = transactionEvents.filter(
+      (e) => e.args.txHash === safeTxHash
+    )
+
+    return filteredTransactionEvent[0]
   }
 }

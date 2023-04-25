@@ -29,7 +29,9 @@ export class AlembicSigner extends Signer {
   async sendTransaction(
     transaction: Deferrable<TransactionRequest>
   ): Promise<TransactionResponse> {
-    const tx = await resolveProperties(this.checkTransaction(transaction))
+    const tx: TransactionRequest = await resolveProperties(
+      this.checkTransaction(transaction)
+    )
 
     const safeTx = {
       to: tx.to ?? '',
@@ -41,7 +43,7 @@ export class AlembicSigner extends Signer {
 
     if (!this.provider) throw new Error('missing provider')
 
-    return await this.provider.getTransaction(transactionResponse.relayId)
+    return await this.provider.getTransaction(transactionResponse.safeTxHash)
   }
 
   signTransaction(
