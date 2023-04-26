@@ -17,7 +17,7 @@ const Safe__factory_1 = require("../contracts/types/factories/Safe__factory");
 const services_1 = require("../services");
 const adapters_1 = require("./adapters");
 class AlembicWallet {
-    constructor({ eoaAdapter = adapters_1.Web3AuthAdapter, chainId = constants_1.DEFAULT_CHAIN_ID, rpcTarget = constants_1.DEFAULT_RPC_TARGET, apiKey }) {
+    constructor({ eoaAdapter = adapters_1.Web3AuthAdapter, chainId, rpcTarget, apiKey }) {
         this.connected = false;
         // Contract Interfaces
         this.SafeInterface = Safe__factory_1.Safe__factory.createInterface();
@@ -53,7 +53,7 @@ class AlembicWallet {
         this.chainId = chainId;
         this.rpcTarget = rpcTarget;
         this.eoaAdapter = new eoaAdapter();
-        this.API = new services_1.API(apiKey);
+        this.API = new services_1.API(apiKey, chainId);
         this.BASE_GAS = constants_1.DEFAULT_BASE_GAS;
         this.REWARD_PERCENTILE = constants_1.DEFAULT_REWARD_PERCENTILE;
     }
@@ -66,6 +66,8 @@ class AlembicWallet {
             // Return if does not match requirements
             if (!this.eoaAdapter)
                 throw new Error('No EOA adapter found');
+            if (!constants_1.networks[this.chainId])
+                throw new Error('This network is not supported');
             yield this.eoaAdapter.init(this.chainId, this.rpcTarget);
             yield this.eoaAdapter.connect();
             const signer = (_a = this.eoaAdapter.getEthProvider()) === null || _a === void 0 ? void 0 : _a.getSigner();
@@ -235,10 +237,18 @@ class AlembicWallet {
             return { safeTxHash };
         });
     }
-    getExecTransactionEvent(safeTxHash) {
+    getSuccessExecTransactionEvent(safeTxHash) {
         return __awaiter(this, void 0, void 0, function* () {
             const safeInstance = yield Safe__factory_1.Safe__factory.connect(this.getAddress(), this.getOwnerProvider());
             const transactionEvents = yield safeInstance.queryFilter(safeInstance.filters.ExecutionSuccess(), constants_1.BLOCK_EVENT_GAP);
+            const filteredTransactionEvent = transactionEvents.filter((e) => e.args.txHash === safeTxHash);
+            return filteredTransactionEvent[0];
+        });
+    }
+    getFailedExecTransactionEvent(safeTxHash) {
+        return __awaiter(this, void 0, void 0, function* () {
+            const safeInstance = yield Safe__factory_1.Safe__factory.connect(this.getAddress(), this.getOwnerProvider());
+            const transactionEvents = yield safeInstance.queryFilter(safeInstance.filters.ExecutionFailure(), constants_1.BLOCK_EVENT_GAP);
             const filteredTransactionEvent = transactionEvents.filter((e) => e.args.txHash === safeTxHash);
             return filteredTransactionEvent[0];
         });

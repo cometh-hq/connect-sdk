@@ -11,8 +11,8 @@ import {
 } from './types'
 export interface AlembicWalletConfig {
   eoaAdapter?: EOAConstructor
-  chainId?: number
-  rpcTarget?: string
+  chainId: number
+  rpcTarget: string
   apiKey: string
 }
 export declare class AlembicWallet {
@@ -57,5 +57,6 @@ export declare class AlembicWallet {
   sendTransaction(
     safeTxData: MetaTransactionData
   ): Promise<SendTransactionResponse>
-  getExecTransactionEvent(safeTxHash: string): Promise<any>
+  getSuccessExecTransactionEvent(safeTxHash: string): Promise<any>
+  getFailedExecTransactionEvent(safeTxHash: string): Promise<any>
 }

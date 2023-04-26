@@ -51,13 +51,14 @@ export class RelayTransactionResponse implements TransactionResponse {
   }
 
   public async wait(): Promise<TransactionReceipt> {
-    const txEvent = await this.alembicWallet.getExecTransactionEvent(
-      this.getSafeTxHash()
-    )
+    const [txSuccessEvent, txFailureEvent] = await Promise.all([
+      this.alembicWallet.getSuccessExecTransactionEvent(this.getSafeTxHash()),
+      this.alembicWallet.getFailedExecTransactionEvent(this.getSafeTxHash())
+    ])
 
-    if (txEvent) {
+    if (txSuccessEvent) {
       const txResponse = await this.provider.getTransactionReceipt(
-        txEvent.transactionHash
+        txSuccessEvent.transactionHash
       )
       if (txResponse === null) {
         await new Promise((resolve) => setTimeout(resolve, 1000))
@@ -66,11 +67,29 @@ export class RelayTransactionResponse implements TransactionResponse {
       this.hash = txResponse.transactionHash
       this.confirmations = txResponse.confirmations
       this.from = txResponse.from
-      this.data = txEvent.data
-      this.value = txEvent.args[1]
+      this.data = txSuccessEvent.data
+      this.value = txSuccessEvent.args[1]
 
       return txResponse
     }
+    if (txFailureEvent) {
+      const txResponse = await this.provider.getTransactionReceipt(
+        txFailureEvent.transactionHash
+      )
+
+      if (txResponse === null) {
+        await new Promise((resolve) => setTimeout(resolve, 1000))
+        return this.wait()
+      }
+      this.hash = txResponse.transactionHash
+      this.confirmations = txResponse.confirmations
+      this.from = txResponse.from
+      this.data = txFailureEvent.data
+      this.value = txFailureEvent.args[1]
+
+      return txResponse
+    }
+
     await new Promise((resolve) => setTimeout(resolve, 2000))
     return this.wait()
   }

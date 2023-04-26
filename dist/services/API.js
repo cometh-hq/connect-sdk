@@ -19,8 +19,9 @@ exports.api = axios_1.default.create({
     baseURL: constants_1.API_URL
 });
 class API {
-    constructor(apiKey) {
+    constructor(apiKey, chainId) {
         exports.api.defaults.headers.common['apikey'] = apiKey;
+        exports.api.defaults.headers.common['chainId'] = chainId;
     }
     getNonce(account) {
         var _a;

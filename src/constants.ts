@@ -3,6 +3,17 @@ export const WEB3AUTH_CLIENT_ID =
 export const API_URL = 'https://alembic-api.develop.cometh.tech'
 export const DEFAULT_CHAIN_ID = 137
 export const DEFAULT_RPC_TARGET = 'https://polygon-rpc.com'
+export const networks = {
+  // Default network: Polygon
+  137: {
+    RPCUrl: process.env.RPC_URL_POLYGON || 'https://polygon-rpc.com',
+    networkName: 'Polygon'
+  },
+  80001: {
+    RPCUrl: process.env.RPC_URL_MUMBAI || 'https://rpc-mumbai.maticvigil.com',
+    networkName: 'Mumbai'
+  }
+}
 export const DEFAULT_BASE_GAS = 80000
 export const DEFAULT_REWARD_PERCENTILE = 80
 export const BLOCK_EVENT_GAP = -500

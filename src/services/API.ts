@@ -13,8 +13,9 @@ export const api = axios.create({
 })
 
 export class API {
-  constructor(apiKey: string) {
+  constructor(apiKey: string, chainId: number) {
     api.defaults.headers.common['apikey'] = apiKey
+    api.defaults.headers.common['chainId'] = chainId
   }
 
   async getNonce(account: string): Promise<UserNonceType> {

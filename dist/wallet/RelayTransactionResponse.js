@@ -30,9 +30,12 @@ class RelayTransactionResponse {
     }
     wait() {
         return __awaiter(this, void 0, void 0, function* () {
-            const txEvent = yield this.alembicWallet.getExecTransactionEvent(this.getSafeTxHash());
-            if (txEvent) {
-                const txResponse = yield this.provider.getTransactionReceipt(txEvent.transactionHash);
+            const [txSuccessEvent, txFailureEvent] = yield Promise.all([
+                this.alembicWallet.getSuccessExecTransactionEvent(this.getSafeTxHash()),
+                this.alembicWallet.getFailedExecTransactionEvent(this.getSafeTxHash())
+            ]);
+            if (txSuccessEvent) {
+                const txResponse = yield this.provider.getTransactionReceipt(txSuccessEvent.transactionHash);
                 if (txResponse === null) {
                     yield new Promise((resolve) => setTimeout(resolve, 1000));
                     return this.wait();
@@ -40,8 +43,21 @@ class RelayTransactionResponse {
                 this.hash = txResponse.transactionHash;
                 this.confirmations = txResponse.confirmations;
                 this.from = txResponse.from;
-                this.data = txEvent.data;
-                this.value = txEvent.args[1];
+                this.data = txSuccessEvent.data;
+                this.value = txSuccessEvent.args[1];
+                return txResponse;
+            }
+            if (txFailureEvent) {
+                const txResponse = yield this.provider.getTransactionReceipt(txFailureEvent.transactionHash);
+                if (txResponse === null) {
+                    yield new Promise((resolve) => setTimeout(resolve, 1000));
+                    return this.wait();
+                }
+                this.hash = txResponse.transactionHash;
+                this.confirmations = txResponse.confirmations;
+                this.from = txResponse.from;
+                this.data = txFailureEvent.data;
+                this.value = txFailureEvent.args[1];
                 return txResponse;
             }
             yield new Promise((resolve) => setTimeout(resolve, 2000));

@@ -8,7 +8,11 @@ import { ethers } from 'ethers'
 import { AlembicProvider } from '../AlembicProvider'
 import { AlembicWallet } from '../AlembicWallet'
 
-export function AlembicWalletOnboardConnector(apiKey: string): WalletInit {
+export function AlembicWalletOnboardConnector(
+  apiKey: string,
+  chainId: number,
+  rpcTarget: string
+): WalletInit {
   return (): WalletModule => {
     return {
       label: 'alembicWallet',
@@ -16,7 +20,7 @@ export function AlembicWalletOnboardConnector(apiKey: string): WalletInit {
       getInterface: async (): Promise<WalletInterface> => {
         const { createEIP1193Provider } = await import('@web3-onboard/common')
 
-        const instance = new AlembicWallet({ apiKey })
+        const instance = new AlembicWallet({ apiKey, chainId, rpcTarget })
         const instanceProvider = new AlembicProvider(instance)
         await instance.connect()
 
