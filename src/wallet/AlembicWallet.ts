@@ -307,7 +307,9 @@ export class AlembicWallet {
     return { safeTxHash }
   }
 
-  public async getExecTransactionEvent(safeTxHash: string): Promise<any> {
+  public async getSuccessExecTransactionEvent(
+    safeTxHash: string
+  ): Promise<any> {
     const safeInstance = await Safe__factory.connect(
       this.getAddress(),
       this.getOwnerProvider()
@@ -315,6 +317,23 @@ export class AlembicWallet {
 
     const transactionEvents = await safeInstance.queryFilter(
       safeInstance.filters.ExecutionSuccess(),
+      BLOCK_EVENT_GAP
+    )
+    const filteredTransactionEvent = transactionEvents.filter(
+      (e) => e.args.txHash === safeTxHash
+    )
+
+    return filteredTransactionEvent[0]
+  }
+
+  public async getFailedExecTransactionEvent(safeTxHash: string): Promise<any> {
+    const safeInstance = await Safe__factory.connect(
+      this.getAddress(),
+      this.getOwnerProvider()
+    )
+
+    const transactionEvents = await safeInstance.queryFilter(
+      safeInstance.filters.ExecutionFailure(),
       BLOCK_EVENT_GAP
     )
     const filteredTransactionEvent = transactionEvents.filter(

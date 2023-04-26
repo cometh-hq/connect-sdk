@@ -237,10 +237,18 @@ class AlembicWallet {
             return { safeTxHash };
         });
     }
-    getExecTransactionEvent(safeTxHash) {
+    getSuccessExecTransactionEvent(safeTxHash) {
         return __awaiter(this, void 0, void 0, function* () {
             const safeInstance = yield Safe__factory_1.Safe__factory.connect(this.getAddress(), this.getOwnerProvider());
             const transactionEvents = yield safeInstance.queryFilter(safeInstance.filters.ExecutionSuccess(), constants_1.BLOCK_EVENT_GAP);
+            const filteredTransactionEvent = transactionEvents.filter((e) => e.args.txHash === safeTxHash);
+            return filteredTransactionEvent[0];
+        });
+    }
+    getFailedExecTransactionEvent(safeTxHash) {
+        return __awaiter(this, void 0, void 0, function* () {
+            const safeInstance = yield Safe__factory_1.Safe__factory.connect(this.getAddress(), this.getOwnerProvider());
+            const transactionEvents = yield safeInstance.queryFilter(safeInstance.filters.ExecutionFailure(), constants_1.BLOCK_EVENT_GAP);
             const filteredTransactionEvent = transactionEvents.filter((e) => e.args.txHash === safeTxHash);
             return filteredTransactionEvent[0];
         });

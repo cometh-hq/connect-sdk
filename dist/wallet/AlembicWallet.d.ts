@@ -57,5 +57,6 @@ export declare class AlembicWallet {
   sendTransaction(
     safeTxData: MetaTransactionData
   ): Promise<SendTransactionResponse>
-  getExecTransactionEvent(safeTxHash: string): Promise<any>
+  getSuccessExecTransactionEvent(safeTxHash: string): Promise<any>
+  getFailedExecTransactionEvent(safeTxHash: string): Promise<any>
 }
