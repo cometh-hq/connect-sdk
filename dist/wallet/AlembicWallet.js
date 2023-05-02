@@ -8,6 +8,9 @@ var __awaiter = (this && this.__awaiter) || function (thisArg, _arguments, P, ge
         step((generator = generator.apply(thisArg, _arguments || [])).next());
     });
 };
+var __importDefault = (this && this.__importDefault) || function (mod) {
+    return (mod && mod.__esModule) ? mod : { "default": mod };
+};
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.AlembicWallet = void 0;
 const ethers_1 = require("ethers");
@@ -16,6 +19,7 @@ const constants_1 = require("../constants");
 const factories_1 = require("../contracts/types/factories");
 const services_1 = require("../services");
 const adapters_1 = require("./adapters");
+const WebAutn_1 = __importDefault(require("./WebAutn"));
 class AlembicWallet {
     constructor({ eoaAdapter = adapters_1.Web3AuthAdapter, chainId, rpcTarget, apiKey }) {
         this.connected = false;
@@ -253,6 +257,45 @@ class AlembicWallet {
             const transactionEvents = yield safeInstance.queryFilter(safeInstance.filters.ExecutionFailure(), constants_1.BLOCK_EVENT_GAP);
             const filteredTransactionEvent = transactionEvents.filter((e) => e.args.txHash === safeTxHash);
             return filteredTransactionEvent[0];
+        });
+    }
+    /**
+     * WebAutn Section
+     */
+    addWebAuthnOwner() {
+        return __awaiter(this, void 0, void 0, function* () {
+            const point = yield WebAutn_1.default.addOwner(this.getAddress());
+            console.log({ point });
+            const messageToSign = `${point.getX().toString(16)},${point
+                .getY()
+                .toString(16)}`;
+            const signature = yield this.signMessage(messageToSign);
+            console.log(signature);
+            /*  await this.API.addWebAuthnOwner(
+              this.getAddress(),
+              credentialId,
+              publicKey,
+              signature,
+              undefined
+            )
+        
+            const signerAddress = await this.getWebAuthnSigner(point) */
+            /*  await this.API.addWebAuthnOwner(
+              this.getAddress(),
+              credentialId,
+              publicKey,
+              signature,
+              signerAddress
+            ) */
+        });
+    }
+    getWebAuthnSigner(point) {
+        return __awaiter(this, void 0, void 0, function* () {
+            const P256FactoryInstance = yield factories_1.P256SignerFactory__factory.connect('0xdF51EE1ab0f0Ee8A128a7BCA2d7641636A1a7EC4', this.getOwnerProvider());
+            const signerDeploymentEvent = yield P256FactoryInstance.queryFilter(P256FactoryInstance.filters.NewSignerCreated(point.getX().toString(16), point.getY().toString(16)), constants_1.BLOCK_EVENT_GAP);
+            console.log(signerDeploymentEvent);
+            console.log(signerDeploymentEvent.args.signer);
+            return signerDeploymentEvent.args.signer;
         });
     }
 }

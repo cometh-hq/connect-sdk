@@ -1,1 +1,1 @@
-export declare const hexArrayStr: (array: any) => string
+export declare const hexArrayStr: (array: any) => any

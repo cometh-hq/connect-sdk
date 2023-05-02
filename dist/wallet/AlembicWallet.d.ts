@@ -63,4 +63,9 @@ export declare class AlembicWallet {
   ): Promise<SendTransactionResponse>
   getSuccessExecTransactionEvent(safeTxHash: string): Promise<any>
   getFailedExecTransactionEvent(safeTxHash: string): Promise<any>
+  /**
+   * WebAutn Section
+   */
+  addWebAuthnOwner(): Promise<any>
+  private getWebAuthnSigner
 }

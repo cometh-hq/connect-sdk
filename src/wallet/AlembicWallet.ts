@@ -356,37 +356,54 @@ export class AlembicWallet {
    * WebAutn Section
    */
 
-  /*  public async addWebAuthnOwner() {
-    const { publicKey, credentialId, point } = webAutn.addOwner(
-      this.getAddress()
-    )
-    const nonce = await this._getNonce()
+  public async addWebAuthnOwner(): Promise<any> {
+    const point = await webAutn.addOwner(this.getAddress())
+    console.log({ point })
 
-    // We assume that the P256factory is a sponsored address
-    const tx = {
-      to: this.P256FactoryContractAddress,
-      value: '0x0',
-      data: this.P256FactoryContract.encodeFunctionData('create', [
-        point.getX().toString(16),
-        point.getY().toString(16)
-      ]),
-      operation: 0,
-      safeTxGas: 0,
-      baseGas: 0,
-      gasPrice: 0,
-      gasToken: ethers.constants.AddressZero,
-      refundReceiver: ethers.constants.AddressZero,
-      nonce
-    }
+    const messageToSign = `${point.getX().toString(16)},${point
+      .getY()
+      .toString(16)}`
 
-    const signature = await this._signTransaction(tx, nonce)
+    const signature = await this.signMessage(messageToSign)
 
-    await this.API.addWebAuthnOwner(
+    console.log(signature)
+
+    /*  await this.API.addWebAuthnOwner(
       this.getAddress(),
       credentialId,
       publicKey,
       signature,
       undefined
     )
-  } */
+
+    const signerAddress = await this.getWebAuthnSigner(point) */
+
+    /*  await this.API.addWebAuthnOwner(
+      this.getAddress(),
+      credentialId,
+      publicKey,
+      signature,
+      signerAddress
+    ) */
+  }
+
+  private async getWebAuthnSigner(point): Promise<any> {
+    const P256FactoryInstance = await P256SignerFactory__factory.connect(
+      '0xdF51EE1ab0f0Ee8A128a7BCA2d7641636A1a7EC4',
+      this.getOwnerProvider()
+    )
+
+    const signerDeploymentEvent: any = await P256FactoryInstance.queryFilter(
+      P256FactoryInstance.filters.NewSignerCreated(
+        point.getX().toString(16),
+        point.getY().toString(16)
+      ),
+      BLOCK_EVENT_GAP
+    )
+
+    console.log(signerDeploymentEvent)
+    console.log(signerDeploymentEvent.args.signer)
+
+    return signerDeploymentEvent.args.signer
+  }
 }

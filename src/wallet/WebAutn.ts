@@ -8,6 +8,7 @@ const curve = new EC('p256')
 
 const addOwner = (walletAddress: string): any => {
   const challenge = new TextEncoder().encode('connection')
+  let point: any
   navigator.credentials
     .create({
       publicKey: {
@@ -34,10 +35,14 @@ const addOwner = (walletAddress: string): any => {
 
       const x = publicKey[-2]
       const y = publicKey[-3]
-      const point = curve.curve.point(x, y)
-      return { publicKey, credentialId, point }
+      point = curve.curve.point(x, y)
+      console.log({ point })
     })
     .catch(console.error)
+
+  console.log(point)
+
+  return point
 }
 
 export default {

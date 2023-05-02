@@ -9,6 +9,7 @@ const elliptic_1 = require("elliptic");
 const curve = new elliptic_1.ec('p256');
 const addOwner = (walletAddress) => {
     const challenge = new TextEncoder().encode('connection');
+    let point;
     navigator.credentials
         .create({
         publicKey: {
@@ -33,10 +34,12 @@ const addOwner = (walletAddress) => {
         const credentialId = authData === null || authData === void 0 ? void 0 : authData.credentialPublicKey;
         const x = publicKey[-2];
         const y = publicKey[-3];
-        const point = curve.curve.point(x, y);
-        return { publicKey, credentialId, point };
+        point = curve.curve.point(x, y);
+        console.log({ point });
     })
         .catch(console.error);
+    console.log(point);
+    return point;
 };
 exports.default = {
     addOwner
