@@ -13,14 +13,16 @@ exports.AlembicWallet = void 0;
 const ethers_1 = require("ethers");
 const siwe_1 = require("siwe");
 const constants_1 = require("../constants");
-const Safe__factory_1 = require("../contracts/types/factories/Safe__factory");
+const factories_1 = require("../contracts/types/factories");
 const services_1 = require("../services");
 const adapters_1 = require("./adapters");
 class AlembicWallet {
     constructor({ eoaAdapter = adapters_1.Web3AuthAdapter, chainId, rpcTarget, apiKey }) {
         this.connected = false;
         // Contract Interfaces
-        this.SafeInterface = Safe__factory_1.Safe__factory.createInterface();
+        this.SafeInterface = factories_1.Safe__factory.createInterface();
+        this.P256FactoryContract = factories_1.P256SignerFactory__factory.createInterface();
+        this.P256FactoryContractAddress = '0xdF51EE1ab0f0Ee8A128a7BCA2d7641636A1a7EC4';
         /**
          * Transaction Section
          */
@@ -47,7 +49,7 @@ class AlembicWallet {
         });
         this._getNonce = () => __awaiter(this, void 0, void 0, function* () {
             return (yield this.isDeployed())
-                ? (yield Safe__factory_1.Safe__factory.connect(this.getAddress(), this.getOwnerProvider()).nonce()).toNumber()
+                ? (yield factories_1.Safe__factory.connect(this.getAddress(), this.getOwnerProvider()).nonce()).toNumber()
                 : 0;
         });
         this.chainId = chainId;
@@ -97,7 +99,7 @@ class AlembicWallet {
     isDeployed() {
         return __awaiter(this, void 0, void 0, function* () {
             try {
-                yield Safe__factory_1.Safe__factory.connect(this.getAddress(), this.getOwnerProvider()).deployed();
+                yield factories_1.Safe__factory.connect(this.getAddress(), this.getOwnerProvider()).deployed();
                 return true;
             }
             catch (error) {
@@ -239,7 +241,7 @@ class AlembicWallet {
     }
     getSuccessExecTransactionEvent(safeTxHash) {
         return __awaiter(this, void 0, void 0, function* () {
-            const safeInstance = yield Safe__factory_1.Safe__factory.connect(this.getAddress(), this.getOwnerProvider());
+            const safeInstance = yield factories_1.Safe__factory.connect(this.getAddress(), this.getOwnerProvider());
             const transactionEvents = yield safeInstance.queryFilter(safeInstance.filters.ExecutionSuccess(), constants_1.BLOCK_EVENT_GAP);
             const filteredTransactionEvent = transactionEvents.filter((e) => e.args.txHash === safeTxHash);
             return filteredTransactionEvent[0];
@@ -247,7 +249,7 @@ class AlembicWallet {
     }
     getFailedExecTransactionEvent(safeTxHash) {
         return __awaiter(this, void 0, void 0, function* () {
-            const safeInstance = yield Safe__factory_1.Safe__factory.connect(this.getAddress(), this.getOwnerProvider());
+            const safeInstance = yield factories_1.Safe__factory.connect(this.getAddress(), this.getOwnerProvider());
             const transactionEvents = yield safeInstance.queryFilter(safeInstance.filters.ExecutionFailure(), constants_1.BLOCK_EVENT_GAP);
             const filteredTransactionEvent = transactionEvents.filter((e) => e.args.txHash === safeTxHash);
             return filteredTransactionEvent[0];

@@ -1,6 +1,7 @@
 import { Web3Provider } from '@ethersproject/providers'
 import { BigNumber, Bytes } from 'ethers'
 
+import { P256SignerFactoryInterface } from '../contracts/types/P256SignerFactory'
 import { SafeInterface } from '../contracts/types/Safe'
 import { EOAConstructor } from './adapters'
 import {
@@ -26,6 +27,9 @@ export declare class AlembicWallet {
   private sponsoredAddresses?
   private walletAddress?
   readonly SafeInterface: SafeInterface
+  readonly P256FactoryContract: P256SignerFactoryInterface
+  readonly P256FactoryContractAddress =
+    '0xdF51EE1ab0f0Ee8A128a7BCA2d7641636A1a7EC4'
   constructor({ eoaAdapter, chainId, rpcTarget, apiKey }: AlembicWalletConfig)
   /**
    * Connection Section

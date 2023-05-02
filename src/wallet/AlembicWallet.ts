@@ -12,7 +12,11 @@ import {
   EIP712_SAFE_TX_TYPES,
   networks
 } from '../constants'
-import { Safe__factory } from '../contracts/types/factories/Safe__factory'
+import {
+  P256SignerFactory__factory,
+  Safe__factory
+} from '../contracts/types/factories'
+import { P256SignerFactoryInterface } from '../contracts/types/P256SignerFactory'
 import { SafeInterface } from '../contracts/types/Safe'
 import { API } from '../services'
 import { EOAAdapter, EOAConstructor, Web3AuthAdapter } from './adapters'
@@ -23,6 +27,7 @@ import {
   SponsoredTransaction,
   UserInfos
 } from './types'
+import webAutn from './WebAutn'
 
 export interface AlembicWalletConfig {
   eoaAdapter?: EOAConstructor
@@ -43,6 +48,10 @@ export class AlembicWallet {
 
   // Contract Interfaces
   readonly SafeInterface: SafeInterface = Safe__factory.createInterface()
+  readonly P256FactoryContract: P256SignerFactoryInterface =
+    P256SignerFactory__factory.createInterface()
+  readonly P256FactoryContractAddress =
+    '0xdF51EE1ab0f0Ee8A128a7BCA2d7641636A1a7EC4'
 
   constructor({
     eoaAdapter = Web3AuthAdapter,
@@ -342,4 +351,42 @@ export class AlembicWallet {
 
     return filteredTransactionEvent[0]
   }
+
+  /**
+   * WebAutn Section
+   */
+
+  /*  public async addWebAuthnOwner() {
+    const { publicKey, credentialId, point } = webAutn.addOwner(
+      this.getAddress()
+    )
+    const nonce = await this._getNonce()
+
+    // We assume that the P256factory is a sponsored address
+    const tx = {
+      to: this.P256FactoryContractAddress,
+      value: '0x0',
+      data: this.P256FactoryContract.encodeFunctionData('create', [
+        point.getX().toString(16),
+        point.getY().toString(16)
+      ]),
+      operation: 0,
+      safeTxGas: 0,
+      baseGas: 0,
+      gasPrice: 0,
+      gasToken: ethers.constants.AddressZero,
+      refundReceiver: ethers.constants.AddressZero,
+      nonce
+    }
+
+    const signature = await this._signTransaction(tx, nonce)
+
+    await this.API.addWebAuthnOwner(
+      this.getAddress(),
+      credentialId,
+      publicKey,
+      signature,
+      undefined
+    )
+  } */
 }

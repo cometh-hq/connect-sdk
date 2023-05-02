@@ -24,4 +24,11 @@ export declare class API {
     safeTxData,
     signatures
   }: RelayTransactionType): Promise<string>
+  addWebAuthnOwner(
+    walletAddress: any,
+    credentialId: any,
+    publicKey: any,
+    signature: any,
+    signerAddress: any
+  ): Promise<string>
 }

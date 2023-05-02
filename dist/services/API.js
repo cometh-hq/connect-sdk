@@ -57,5 +57,18 @@ class API {
             return (_e = response.data) === null || _e === void 0 ? void 0 : _e.safeTxHash;
         });
     }
+    addWebAuthnOwner(walletAddress, credentialId, publicKey, signature, signerAddress) {
+        var _a;
+        return __awaiter(this, void 0, void 0, function* () {
+            const body = {
+                credentialId,
+                publicKey,
+                signature,
+                signerAddress
+            };
+            const response = yield exports.api.post(`/wallets/${walletAddress}/webAuthnOwner`, body);
+            return (_a = response.data) === null || _a === void 0 ? void 0 : _a.webAuthnOwner;
+        });
+    }
 }
 exports.API = API;

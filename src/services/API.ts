@@ -65,4 +65,24 @@ export class API {
     const response = await api.post(`/wallets/${walletAddress}/relay`, body)
     return response.data?.safeTxHash
   }
+
+  async addWebAuthnOwner(
+    walletAddress,
+    credentialId,
+    publicKey,
+    signature,
+    signerAddress
+  ): Promise<string> {
+    const body = {
+      credentialId,
+      publicKey,
+      signature,
+      signerAddress
+    }
+    const response = await api.post(
+      `/wallets/${walletAddress}/webAuthnOwner`,
+      body
+    )
+    return response.data?.webAuthnOwner
+  }
 }
