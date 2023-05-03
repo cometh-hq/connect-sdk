@@ -5,9 +5,7 @@ import { SiweMessage } from 'siwe'
 import {
   BLOCK_EVENT_GAP,
   DEFAULT_BASE_GAS,
-  DEFAULT_CHAIN_ID,
   DEFAULT_REWARD_PERCENTILE,
-  DEFAULT_RPC_TARGET,
   EIP712_SAFE_MESSAGE_TYPE,
   EIP712_SAFE_TX_TYPES,
   networks
@@ -15,7 +13,7 @@ import {
 import { Safe__factory } from '../contracts/types/factories/Safe__factory'
 import { SafeInterface } from '../contracts/types/Safe'
 import { API } from '../services'
-import { EOAAdapter, EOAConstructor, Web3AuthAdapter } from './adapters'
+import { AUTHAdapter } from './adapters'
 import {
   MetaTransactionData,
   SafeTransactionDataPartial,
@@ -25,15 +23,12 @@ import {
 } from './types'
 
 export interface AlembicWalletConfig {
-  eoaAdapter?: EOAConstructor
-  chainId: number
-  rpcTarget: string
+  authAdapter: AUTHAdapter
   apiKey: string
 }
 export class AlembicWallet {
-  private eoaAdapter: EOAAdapter
+  private authAdapter: AUTHAdapter
   readonly chainId: number
-  private rpcTarget: string
   private connected = false
   private BASE_GAS: number
   private REWARD_PERCENTILE: number
@@ -44,16 +39,10 @@ export class AlembicWallet {
   // Contract Interfaces
   readonly SafeInterface: SafeInterface = Safe__factory.createInterface()
 
-  constructor({
-    eoaAdapter = Web3AuthAdapter,
-    chainId,
-    rpcTarget,
-    apiKey
-  }: AlembicWalletConfig) {
-    this.chainId = chainId
-    this.rpcTarget = rpcTarget
-    this.eoaAdapter = new eoaAdapter()
-    this.API = new API(apiKey, chainId)
+  constructor({ authAdapter, apiKey }: AlembicWalletConfig) {
+    this.authAdapter = authAdapter
+    this.chainId = +authAdapter.chaindId
+    this.API = new API(apiKey, this.chainId)
     this.BASE_GAS = DEFAULT_BASE_GAS
     this.REWARD_PERCENTILE = DEFAULT_REWARD_PERCENTILE
   }
@@ -64,13 +53,13 @@ export class AlembicWallet {
 
   public async connect(): Promise<void> {
     // Return if does not match requirements
-    if (!this.eoaAdapter) throw new Error('No EOA adapter found')
+    if (!this.authAdapter) throw new Error('No EOA adapter found')
     if (!networks[this.chainId])
       throw new Error('This network is not supported')
-    await this.eoaAdapter.init(this.chainId, this.rpcTarget)
-    await this.eoaAdapter.connect()
+    await this.authAdapter.init()
+    await this.authAdapter.connect()
 
-    const signer = this.eoaAdapter.getEthProvider()?.getSigner()
+    const signer = this.authAdapter.getEthProvider()?.getSigner()
     if (!signer) throw new Error('No signer found')
 
     const ownerAddress = await signer.getAddress()
@@ -111,12 +100,12 @@ export class AlembicWallet {
   }
 
   public async getUserInfos(): Promise<UserInfos> {
-    if (!this.eoaAdapter) throw new Error('Cannot provide user infos')
-    const userInfos = await this.eoaAdapter.getUserInfos()
+    if (!this.authAdapter) throw new Error('Cannot provide user infos')
+    const userInfos = await this.authAdapter.getUserInfos()
 
     return {
       ...userInfos,
-      ownerAddress: await this.eoaAdapter.getSigner()?.getAddress(),
+      ownerAddress: await this.authAdapter.getSigner()?.getAddress(),
       walletAddress: this.getAddress()
     }
   }
@@ -143,8 +132,8 @@ export class AlembicWallet {
   }
 
   public async logout(): Promise<void> {
-    if (!this.eoaAdapter) throw new Error('No EOA adapter found')
-    await this.eoaAdapter.logout()
+    if (!this.authAdapter) throw new Error('No EOA adapter found')
+    await this.authAdapter.logout()
     this.connected = false
   }
 
@@ -166,13 +155,13 @@ export class AlembicWallet {
    */
 
   public getOwnerProvider(): Web3Provider {
-    const provider = this.eoaAdapter.getEthProvider()
+    const provider = this.authAdapter.getEthProvider()
     if (!provider) throw new Error('getOwnerProvider: missing provider')
     return provider
   }
 
   public async signMessage(messageToSign: string | Bytes): Promise<string> {
-    const signer = this.eoaAdapter.getEthProvider()?.getSigner()
+    const signer = this.authAdapter.getEthProvider()?.getSigner()
     if (!signer) throw new Error('Sign message: missing signer')
     const messageHash = ethers.utils.hashMessage(messageToSign)
 
@@ -196,7 +185,7 @@ export class AlembicWallet {
     safeTxData: SafeTransactionDataPartial,
     nonce?: number
   ): Promise<string> => {
-    const signer = this.eoaAdapter.getEthProvider()?.getSigner()
+    const signer = this.authAdapter.getEthProvider()?.getSigner()
     if (!signer) throw new Error('Sign message: missing signer')
 
     return await signer._signTypedData(

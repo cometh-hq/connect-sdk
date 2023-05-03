@@ -1,11 +1,15 @@
 import { UserInfo } from '@web3auth/base'
+import { Web3AuthCoreOptions } from '@web3auth/core'
 import { ethers } from 'ethers'
 
-import { EOAAdapter } from './types'
-export declare class Web3AuthAdapter implements EOAAdapter {
+import { AUTHAdapter } from './types'
+export declare class Web3AuthAdapter implements AUTHAdapter {
   private web3auth
   private ethProvider
-  init(chainId: any, rpcTarget: any): Promise<void>
+  private web3authConfig
+  readonly chaindId: string
+  constructor(web3authConfig: Web3AuthCoreOptions)
+  init(): Promise<void>
   connect(): Promise<void>
   logout(): Promise<void>
   getAccount(): Promise<string | null>
