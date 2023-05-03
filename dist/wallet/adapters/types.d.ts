@@ -1,7 +1,7 @@
 import { UserInfo } from '@web3auth/base'
 import { ethers } from 'ethers'
 export interface EOAAdapter {
-  init(chainId: number, rpcTarget: string): Promise<void>
+  init(): Promise<void>
   logout(): Promise<void>
   connect(): Promise<void>
   getAccount(): Promise<string | null>

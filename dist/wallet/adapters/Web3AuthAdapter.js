@@ -10,30 +10,19 @@ var __awaiter = (this && this.__awaiter) || function (thisArg, _arguments, P, ge
 };
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.Web3AuthAdapter = void 0;
-const base_1 = require("@web3auth/base");
 const modal_1 = require("@web3auth/modal");
 const ethers_1 = require("ethers");
-const constants_1 = require("../../constants");
 class Web3AuthAdapter {
-    constructor() {
+    constructor({ web3authConfig }) {
         this.web3auth = null;
         this.ethProvider = null;
+        this.web3authConfig = web3authConfig;
     }
-    init(chainId, rpcTarget) {
+    init() {
         return __awaiter(this, void 0, void 0, function* () {
-            if (!chainId)
-                throw new Error('Missing chainId parameter');
-            if (!rpcTarget)
-                throw new Error('Missing rpcUrl parameter');
-            const web3auth = new modal_1.Web3Auth({
-                clientId: constants_1.WEB3AUTH_CLIENT_ID,
-                web3AuthNetwork: 'testnet',
-                chainConfig: {
-                    chainId: ethers_1.ethers.utils.hexlify(chainId),
-                    chainNamespace: base_1.CHAIN_NAMESPACES.EIP155,
-                    rpcTarget
-                }
-            });
+            if (!this.web3authConfig)
+                throw new Error('Missing config for web3Auth');
+            const web3auth = new modal_1.Web3Auth(this.web3authConfig);
             if (!web3auth)
                 throw new Error('No Web3Auth created');
             yield web3auth.initModal();

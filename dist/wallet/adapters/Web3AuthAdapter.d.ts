@@ -5,7 +5,9 @@ import { EOAAdapter } from './types'
 export declare class Web3AuthAdapter implements EOAAdapter {
   private web3auth
   private ethProvider
-  init(chainId: any, rpcTarget: any): Promise<void>
+  private web3authConfig
+  constructor({ web3authConfig }: { web3authConfig: any })
+  init(): Promise<void>
   connect(): Promise<void>
   logout(): Promise<void>
   getAccount(): Promise<string | null>

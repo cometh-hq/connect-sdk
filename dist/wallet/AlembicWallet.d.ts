@@ -2,7 +2,7 @@ import { Web3Provider } from '@ethersproject/providers'
 import { BigNumber, Bytes } from 'ethers'
 
 import { SafeInterface } from '../contracts/types/Safe'
-import { EOAConstructor } from './adapters'
+import { EOAAdapter } from './adapters'
 import {
   MetaTransactionData,
   SafeTransactionDataPartial,
@@ -10,7 +10,7 @@ import {
   UserInfos
 } from './types'
 export interface AlembicWalletConfig {
-  eoaAdapter?: EOAConstructor
+  eoaAdapter?: EOAAdapter
   chainId: number
   rpcTarget: string
   apiKey: string

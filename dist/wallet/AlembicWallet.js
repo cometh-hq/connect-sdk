@@ -10,6 +10,7 @@ var __awaiter = (this && this.__awaiter) || function (thisArg, _arguments, P, ge
 };
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.AlembicWallet = void 0;
+const base_1 = require("@web3auth/base");
 const ethers_1 = require("ethers");
 const siwe_1 = require("siwe");
 const constants_1 = require("../constants");
@@ -17,7 +18,7 @@ const Safe__factory_1 = require("../contracts/types/factories/Safe__factory");
 const services_1 = require("../services");
 const adapters_1 = require("./adapters");
 class AlembicWallet {
-    constructor({ eoaAdapter = adapters_1.Web3AuthAdapter, chainId, rpcTarget, apiKey }) {
+    constructor({ eoaAdapter, chainId, rpcTarget, apiKey }) {
         this.connected = false;
         // Contract Interfaces
         this.SafeInterface = Safe__factory_1.Safe__factory.createInterface();
@@ -50,9 +51,21 @@ class AlembicWallet {
                 ? (yield Safe__factory_1.Safe__factory.connect(this.getAddress(), this.getOwnerProvider()).nonce()).toNumber()
                 : 0;
         });
+        // if no adapter is provided, use Web3AuthAdapter with our default config
+        this.eoaAdapter =
+            eoaAdapter !== null && eoaAdapter !== void 0 ? eoaAdapter : new adapters_1.Web3AuthAdapter({
+                web3authConfig: {
+                    clientId: constants_1.WEB3AUTH_CLIENT_ID,
+                    web3AuthNetwork: 'testnet',
+                    chainConfig: {
+                        chainId: ethers_1.ethers.utils.hexlify(chainId),
+                        chainNamespace: base_1.CHAIN_NAMESPACES.EIP155,
+                        rpcTarget
+                    }
+                }
+            });
         this.chainId = chainId;
         this.rpcTarget = rpcTarget;
-        this.eoaAdapter = new eoaAdapter();
         this.API = new services_1.API(apiKey, chainId);
         this.BASE_GAS = constants_1.DEFAULT_BASE_GAS;
         this.REWARD_PERCENTILE = constants_1.DEFAULT_REWARD_PERCENTILE;
@@ -68,7 +81,7 @@ class AlembicWallet {
                 throw new Error('No EOA adapter found');
             if (!constants_1.networks[this.chainId])
                 throw new Error('This network is not supported');
-            yield this.eoaAdapter.init(this.chainId, this.rpcTarget);
+            yield this.eoaAdapter.init();
             yield this.eoaAdapter.connect();
             const signer = (_a = this.eoaAdapter.getEthProvider()) === null || _a === void 0 ? void 0 : _a.getSigner();
             if (!signer)

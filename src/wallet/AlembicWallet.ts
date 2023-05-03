@@ -1,21 +1,21 @@
 import { Web3Provider } from '@ethersproject/providers'
+import { CHAIN_NAMESPACES } from '@web3auth/base'
 import { BigNumber, Bytes, ethers } from 'ethers'
 import { SiweMessage } from 'siwe'
 
 import {
   BLOCK_EVENT_GAP,
   DEFAULT_BASE_GAS,
-  DEFAULT_CHAIN_ID,
   DEFAULT_REWARD_PERCENTILE,
-  DEFAULT_RPC_TARGET,
   EIP712_SAFE_MESSAGE_TYPE,
   EIP712_SAFE_TX_TYPES,
-  networks
+  networks,
+  WEB3AUTH_CLIENT_ID
 } from '../constants'
 import { Safe__factory } from '../contracts/types/factories/Safe__factory'
 import { SafeInterface } from '../contracts/types/Safe'
 import { API } from '../services'
-import { EOAAdapter, EOAConstructor, Web3AuthAdapter } from './adapters'
+import { EOAAdapter, Web3AuthAdapter } from './adapters'
 import {
   MetaTransactionData,
   SafeTransactionDataPartial,
@@ -25,7 +25,7 @@ import {
 } from './types'
 
 export interface AlembicWalletConfig {
-  eoaAdapter?: EOAConstructor
+  eoaAdapter?: EOAAdapter
   chainId: number
   rpcTarget: string
   apiKey: string
@@ -44,15 +44,23 @@ export class AlembicWallet {
   // Contract Interfaces
   readonly SafeInterface: SafeInterface = Safe__factory.createInterface()
 
-  constructor({
-    eoaAdapter = Web3AuthAdapter,
-    chainId,
-    rpcTarget,
-    apiKey
-  }: AlembicWalletConfig) {
+  constructor({ eoaAdapter, chainId, rpcTarget, apiKey }: AlembicWalletConfig) {
+    // if no adapter is provided, use Web3AuthAdapter with our default config
+    this.eoaAdapter =
+      eoaAdapter ??
+      new Web3AuthAdapter({
+        web3authConfig: {
+          clientId: WEB3AUTH_CLIENT_ID,
+          web3AuthNetwork: 'testnet',
+          chainConfig: {
+            chainId: ethers.utils.hexlify(chainId),
+            chainNamespace: CHAIN_NAMESPACES.EIP155,
+            rpcTarget
+          }
+        }
+      })
     this.chainId = chainId
     this.rpcTarget = rpcTarget
-    this.eoaAdapter = new eoaAdapter()
     this.API = new API(apiKey, chainId)
     this.BASE_GAS = DEFAULT_BASE_GAS
     this.REWARD_PERCENTILE = DEFAULT_REWARD_PERCENTILE
@@ -67,7 +75,7 @@ export class AlembicWallet {
     if (!this.eoaAdapter) throw new Error('No EOA adapter found')
     if (!networks[this.chainId])
       throw new Error('This network is not supported')
-    await this.eoaAdapter.init(this.chainId, this.rpcTarget)
+    await this.eoaAdapter.init()
     await this.eoaAdapter.connect()
 
     const signer = this.eoaAdapter.getEthProvider()?.getSigner()
