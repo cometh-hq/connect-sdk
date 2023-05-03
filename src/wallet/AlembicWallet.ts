@@ -15,6 +15,7 @@ import {
 import { Safe__factory } from '../contracts/types/factories/Safe__factory'
 import { SafeInterface } from '../contracts/types/Safe'
 import { API } from '../services'
+import { GasModal } from '../ui'
 import { EOAAdapter, EOAConstructor, Web3AuthAdapter } from './adapters'
 import {
   MetaTransactionData,
@@ -63,6 +64,9 @@ export class AlembicWallet {
    */
 
   public async connect(): Promise<void> {
+    const modal = new GasModal({})
+    modal.initModal()
+
     // Return if does not match requirements
     if (!this.eoaAdapter) throw new Error('No EOA adapter found')
     if (!networks[this.chainId])
