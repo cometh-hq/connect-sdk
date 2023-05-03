@@ -3,7 +3,7 @@ import { BigNumber, Bytes } from 'ethers'
 
 import { P256SignerFactoryInterface } from '../contracts/types/P256SignerFactory'
 import { SafeInterface } from '../contracts/types/Safe'
-import { EOAConstructor } from './adapters'
+import { AUTHAdapter } from './adapters'
 import {
   MetaTransactionData,
   SafeTransactionDataPartial,
@@ -11,15 +11,12 @@ import {
   UserInfos
 } from './types'
 export interface AlembicWalletConfig {
-  eoaAdapter?: EOAConstructor
-  chainId: number
-  rpcTarget: string
+  authAdapter: AUTHAdapter
   apiKey: string
 }
 export declare class AlembicWallet {
-  private eoaAdapter
+  private authAdapter
   readonly chainId: number
-  private rpcTarget
   private connected
   private BASE_GAS
   private REWARD_PERCENTILE
@@ -30,7 +27,7 @@ export declare class AlembicWallet {
   readonly P256FactoryContract: P256SignerFactoryInterface
   readonly P256FactoryContractAddress =
     '0xdF51EE1ab0f0Ee8A128a7BCA2d7641636A1a7EC4'
-  constructor({ eoaAdapter, chainId, rpcTarget, apiKey }: AlembicWalletConfig)
+  constructor({ authAdapter, apiKey }: AlembicWalletConfig)
   /**
    * Connection Section
    */
