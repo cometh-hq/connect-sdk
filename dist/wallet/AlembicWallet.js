@@ -263,39 +263,32 @@ class AlembicWallet {
      * WebAutn Section
      */
     addWebAuthnOwner() {
+        var _a;
         return __awaiter(this, void 0, void 0, function* () {
-            const point = yield WebAutn_1.default.addOwner(this.getAddress());
-            console.log({ point });
-            const messageToSign = `${point.getX().toString(16)},${point
-                .getY()
-                .toString(16)}`;
-            const signature = yield this.signMessage(messageToSign);
-            console.log(signature);
-            /*  await this.API.addWebAuthnOwner(
-              this.getAddress(),
-              credentialId,
-              publicKey,
-              signature,
-              undefined
-            )
-        
-            const signerAddress = await this.getWebAuthnSigner(point) */
-            /*  await this.API.addWebAuthnOwner(
-              this.getAddress(),
-              credentialId,
-              publicKey,
-              signature,
-              signerAddress
-            ) */
+            const signer = (_a = this.eoaAdapter.getEthProvider()) === null || _a === void 0 ? void 0 : _a.getSigner();
+            if (!signer)
+                throw new Error('No signer found');
+            const webAuthnCredentials = yield WebAutn_1.default.addOwner(this.getAddress());
+            const x = `0x${webAuthnCredentials.point.getX().toString(16)}`;
+            const y = `0x${webAuthnCredentials.point.getY().toString(16)}`;
+            const publicKeyId = webAuthnCredentials.id;
+            const message = `${x},${y},${publicKeyId}`;
+            const signature = yield this.signMessage(ethers_1.ethers.utils.hexlify(ethers_1.ethers.utils.toUtf8Bytes(message)));
+            yield this.API.addWebAuthnOwner(this.getAddress(), publicKeyId, x, y, signature, message, undefined);
+            const signerAddress = yield this.getWebAuthnSigner(x, y);
+            yield this.API.addWebAuthnOwner(this.getAddress(), publicKeyId, x, y, signature, message, signerAddress);
+            yield this.addOwner(signerAddress);
         });
     }
-    getWebAuthnSigner(point) {
+    getWebAuthnSigner(x, y) {
         return __awaiter(this, void 0, void 0, function* () {
-            const P256FactoryInstance = yield factories_1.P256SignerFactory__factory.connect('0xdF51EE1ab0f0Ee8A128a7BCA2d7641636A1a7EC4', this.getOwnerProvider());
-            const signerDeploymentEvent = yield P256FactoryInstance.queryFilter(P256FactoryInstance.filters.NewSignerCreated(point.getX().toString(16), point.getY().toString(16)), constants_1.BLOCK_EVENT_GAP);
-            console.log(signerDeploymentEvent);
-            console.log(signerDeploymentEvent.args.signer);
-            return signerDeploymentEvent.args.signer;
+            const P256FactoryInstance = yield factories_1.P256SignerFactory__factory.connect(this.P256FactoryContractAddress, this.getOwnerProvider());
+            let signerDeploymentEvent = [];
+            while (signerDeploymentEvent.length === 0) {
+                yield new Promise((resolve) => setTimeout(resolve, 2000));
+                signerDeploymentEvent = yield P256FactoryInstance.queryFilter(P256FactoryInstance.filters.NewSignerCreated(x, y), constants_1.BLOCK_EVENT_GAP);
+            }
+            return signerDeploymentEvent[0].args.signer;
         });
     }
 }

@@ -2,12 +2,12 @@
 /* tslint:disable */
 /* eslint-disable */
 
-import { Contract, Signer, utils } from "ethers";
-import type { Provider } from "@ethersproject/providers";
+import { Contract, Signer, utils } from 'ethers'
+import type { Provider } from '@ethersproject/providers'
 import type {
   P256SignerFactory,
-  P256SignerFactoryInterface,
-} from "../P256SignerFactory";
+  P256SignerFactoryInterface
+} from '../P256SignerFactory'
 
 const _abi = [
   {
@@ -15,55 +15,55 @@ const _abi = [
     inputs: [
       {
         indexed: true,
-        internalType: "uint256",
-        name: "x",
-        type: "uint256",
+        internalType: 'uint256',
+        name: 'x',
+        type: 'uint256'
       },
       {
         indexed: true,
-        internalType: "uint256",
-        name: "y",
-        type: "uint256",
+        internalType: 'uint256',
+        name: 'y',
+        type: 'uint256'
       },
       {
         indexed: false,
-        internalType: "address",
-        name: "signer",
-        type: "address",
-      },
+        internalType: 'address',
+        name: 'signer',
+        type: 'address'
+      }
     ],
-    name: "NewSignerCreated",
-    type: "event",
+    name: 'NewSignerCreated',
+    type: 'event'
   },
   {
     inputs: [
       {
-        internalType: "uint256",
-        name: "x",
-        type: "uint256",
+        internalType: 'uint256',
+        name: 'x',
+        type: 'uint256'
       },
       {
-        internalType: "uint256",
-        name: "y",
-        type: "uint256",
-      },
+        internalType: 'uint256',
+        name: 'y',
+        type: 'uint256'
+      }
     ],
-    name: "create",
+    name: 'create',
     outputs: [],
-    stateMutability: "nonpayable",
-    type: "function",
-  },
-] as const;
+    stateMutability: 'nonpayable',
+    type: 'function'
+  }
+] as const
 
 export class P256SignerFactory__factory {
-  static readonly abi = _abi;
+  static readonly abi = _abi
   static createInterface(): P256SignerFactoryInterface {
-    return new utils.Interface(_abi) as P256SignerFactoryInterface;
+    return new utils.Interface(_abi) as P256SignerFactoryInterface
   }
   static connect(
     address: string,
     signerOrProvider: Signer | Provider
   ): P256SignerFactory {
-    return new Contract(address, _abi, signerOrProvider) as P256SignerFactory;
+    return new Contract(address, _abi, signerOrProvider) as P256SignerFactory
   }
 }

@@ -1,4 +1,13 @@
 "use strict";
+var __awaiter = (this && this.__awaiter) || function (thisArg, _arguments, P, generator) {
+    function adopt(value) { return value instanceof P ? value : new P(function (resolve) { resolve(value); }); }
+    return new (P || (P = Promise))(function (resolve, reject) {
+        function fulfilled(value) { try { step(generator.next(value)); } catch (e) { reject(e); } }
+        function rejected(value) { try { step(generator["throw"](value)); } catch (e) { reject(e); } }
+        function step(result) { result.done ? resolve(result.value) : adopt(result.value).then(fulfilled, rejected); }
+        step((generator = generator.apply(thisArg, _arguments || [])).next());
+    });
+};
 var __importDefault = (this && this.__importDefault) || function (mod) {
     return (mod && mod.__esModule) ? mod : { "default": mod };
 };
@@ -6,11 +15,14 @@ Object.defineProperty(exports, "__esModule", { value: true });
 const helpers_1 = require("@simplewebauthn/server/helpers");
 const cbor_js_1 = __importDefault(require("cbor-js"));
 const elliptic_1 = require("elliptic");
+const utils_1 = require("../utils/utils");
 const curve = new elliptic_1.ec('p256');
-const addOwner = (walletAddress) => {
+const PUBLIC_KEY_X = 'public-key-x';
+const PUBLIC_KEY_Y = 'public-key-y';
+const PUBLIC_KEY_ID_KEY = 'public-key-id';
+const addOwner = (walletAddress) => __awaiter(void 0, void 0, void 0, function* () {
     const challenge = new TextEncoder().encode('connection');
-    let point;
-    navigator.credentials
+    const webAuthnCredentials = yield navigator.credentials
         .create({
         publicKey: {
             rp: {
@@ -27,20 +39,23 @@ const addOwner = (walletAddress) => {
     })
         .then((attestationPayload) => {
         var _a, _b;
-        console.log(attestationPayload);
         const attestation = cbor_js_1.default.decode((_a = attestationPayload === null || attestationPayload === void 0 ? void 0 : attestationPayload.response) === null || _a === void 0 ? void 0 : _a.attestationObject);
         const authData = (0, helpers_1.parseAuthenticatorData)(attestation.authData);
         const publicKey = cbor_js_1.default.decode((_b = authData === null || authData === void 0 ? void 0 : authData.credentialPublicKey) === null || _b === void 0 ? void 0 : _b.buffer);
-        const credentialId = authData === null || authData === void 0 ? void 0 : authData.credentialPublicKey;
         const x = publicKey[-2];
         const y = publicKey[-3];
-        point = curve.curve.point(x, y);
-        console.log({ point });
+        const point = curve.curve.point(x, y);
+        window.localStorage.setItem(PUBLIC_KEY_X, point.getX().toString(16));
+        window.localStorage.setItem(PUBLIC_KEY_Y, point.getY().toString(16));
+        window.localStorage.setItem(PUBLIC_KEY_ID_KEY, (0, utils_1.hexArrayStr)(attestationPayload.id));
+        return {
+            point,
+            id: attestationPayload.id
+        };
     })
         .catch(console.error);
-    console.log(point);
-    return point;
-};
+    return webAuthnCredentials;
+});
 exports.default = {
     addOwner
 };

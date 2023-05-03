@@ -68,17 +68,22 @@ export class API {
 
   async addWebAuthnOwner(
     walletAddress,
-    credentialId,
-    publicKey,
+    publicKeyId,
+    x,
+    y,
     signature,
+    message,
     signerAddress
   ): Promise<string> {
     const body = {
-      credentialId,
-      publicKey,
+      publicKeyId,
+      x,
+      y,
       signature,
+      message,
       signerAddress
     }
+
     const response = await api.post(
       `/wallets/${walletAddress}/webAuthnOwner`,
       body

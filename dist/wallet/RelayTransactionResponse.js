@@ -30,15 +30,18 @@ class RelayTransactionResponse {
     }
     wait() {
         return __awaiter(this, void 0, void 0, function* () {
-            const [txSuccessEvent, txFailureEvent] = yield Promise.all([
-                this.alembicWallet.getSuccessExecTransactionEvent(this.getSafeTxHash()),
-                this.alembicWallet.getFailedExecTransactionEvent(this.getSafeTxHash())
-            ]);
+            let txSuccessEvent = undefined;
+            let txFailureEvent = undefined;
+            while (!txSuccessEvent && !txFailureEvent) {
+                yield new Promise((resolve) => setTimeout(resolve, 2000));
+                txSuccessEvent = yield this.alembicWallet.getSuccessExecTransactionEvent(this.safeTxHash);
+                txFailureEvent = yield this.alembicWallet.getFailedExecTransactionEvent(this.safeTxHash);
+            }
             if (txSuccessEvent) {
-                const txResponse = yield this.provider.getTransactionReceipt(txSuccessEvent.transactionHash);
-                if (txResponse === null) {
+                let txResponse = null;
+                while (txResponse === null) {
+                    txResponse = yield this.provider.getTransactionReceipt(txSuccessEvent.transactionHash);
                     yield new Promise((resolve) => setTimeout(resolve, 1000));
-                    return this.wait();
                 }
                 this.hash = txResponse.transactionHash;
                 this.confirmations = txResponse.confirmations;
@@ -48,10 +51,10 @@ class RelayTransactionResponse {
                 return txResponse;
             }
             if (txFailureEvent) {
-                const txResponse = yield this.provider.getTransactionReceipt(txFailureEvent.transactionHash);
-                if (txResponse === null) {
+                let txResponse = null;
+                while (txResponse === null) {
+                    txResponse = yield this.provider.getTransactionReceipt(txFailureEvent.transactionHash);
                     yield new Promise((resolve) => setTimeout(resolve, 1000));
-                    return this.wait();
                 }
                 this.hash = txResponse.transactionHash;
                 this.confirmations = txResponse.confirmations;

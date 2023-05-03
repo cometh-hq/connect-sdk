@@ -357,53 +357,61 @@ export class AlembicWallet {
    */
 
   public async addWebAuthnOwner(): Promise<any> {
-    const point = await webAutn.addOwner(this.getAddress())
-    console.log({ point })
+    const signer = this.eoaAdapter.getEthProvider()?.getSigner()
+    if (!signer) throw new Error('No signer found')
 
-    const messageToSign = `${point.getX().toString(16)},${point
-      .getY()
-      .toString(16)}`
+    const webAuthnCredentials = await webAutn.addOwner(this.getAddress())
 
-    const signature = await this.signMessage(messageToSign)
+    const x = `0x${webAuthnCredentials.point.getX().toString(16)}`
+    const y = `0x${webAuthnCredentials.point.getY().toString(16)}`
+    const publicKeyId = webAuthnCredentials.id
 
-    console.log(signature)
+    const message = `${x},${y},${publicKeyId}`
+    const signature = await this.signMessage(
+      ethers.utils.hexlify(ethers.utils.toUtf8Bytes(message))
+    )
 
-    /*  await this.API.addWebAuthnOwner(
+    await this.API.addWebAuthnOwner(
       this.getAddress(),
-      credentialId,
-      publicKey,
+      publicKeyId,
+      x,
+      y,
       signature,
+      message,
       undefined
     )
 
-    const signerAddress = await this.getWebAuthnSigner(point) */
+    const signerAddress = await this.getWebAuthnSigner(x, y)
 
-    /*  await this.API.addWebAuthnOwner(
+    await this.API.addWebAuthnOwner(
       this.getAddress(),
-      credentialId,
-      publicKey,
+      publicKeyId,
+      x,
+      y,
       signature,
+      message,
       signerAddress
-    ) */
+    )
+
+    await this.addOwner(signerAddress)
   }
 
-  private async getWebAuthnSigner(point): Promise<any> {
+  private async getWebAuthnSigner(x: string, y: string): Promise<string> {
     const P256FactoryInstance = await P256SignerFactory__factory.connect(
-      '0xdF51EE1ab0f0Ee8A128a7BCA2d7641636A1a7EC4',
+      this.P256FactoryContractAddress,
       this.getOwnerProvider()
     )
 
-    const signerDeploymentEvent: any = await P256FactoryInstance.queryFilter(
-      P256FactoryInstance.filters.NewSignerCreated(
-        point.getX().toString(16),
-        point.getY().toString(16)
-      ),
-      BLOCK_EVENT_GAP
-    )
+    let signerDeploymentEvent: any = []
 
-    console.log(signerDeploymentEvent)
-    console.log(signerDeploymentEvent.args.signer)
+    while (signerDeploymentEvent.length === 0) {
+      await new Promise((resolve) => setTimeout(resolve, 2000))
+      signerDeploymentEvent = await P256FactoryInstance.queryFilter(
+        P256FactoryInstance.filters.NewSignerCreated(x, y),
+        BLOCK_EVENT_GAP
+      )
+    }
 
-    return signerDeploymentEvent.args.signer
+    return signerDeploymentEvent[0].args.signer
   }
 }

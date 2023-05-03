@@ -5,11 +5,14 @@ import { ec as EC } from 'elliptic'
 import { hexArrayStr } from '../utils/utils'
 
 const curve = new EC('p256')
+const PUBLIC_KEY_X = 'public-key-x'
+const PUBLIC_KEY_Y = 'public-key-y'
+const PUBLIC_KEY_ID_KEY = 'public-key-id'
 
-const addOwner = (walletAddress: string): any => {
+const addOwner = async (walletAddress: string): Promise<any> => {
   const challenge = new TextEncoder().encode('connection')
-  let point: any
-  navigator.credentials
+
+  const webAuthnCredentials = await navigator.credentials
     .create({
       publicKey: {
         rp: {
@@ -25,24 +28,30 @@ const addOwner = (walletAddress: string): any => {
       }
     })
     .then((attestationPayload: any) => {
-      console.log(attestationPayload)
       const attestation = CBOR.decode(
         attestationPayload?.response?.attestationObject
       )
       const authData = parseAuthenticatorData(attestation.authData)
       const publicKey = CBOR.decode(authData?.credentialPublicKey?.buffer)
-      const credentialId = authData?.credentialPublicKey
-
       const x = publicKey[-2]
       const y = publicKey[-3]
-      point = curve.curve.point(x, y)
-      console.log({ point })
+      const point = curve.curve.point(x, y)
+
+      window.localStorage.setItem(PUBLIC_KEY_X, point.getX().toString(16))
+      window.localStorage.setItem(PUBLIC_KEY_Y, point.getY().toString(16))
+      window.localStorage.setItem(
+        PUBLIC_KEY_ID_KEY,
+        hexArrayStr(attestationPayload.id)
+      )
+
+      return {
+        point,
+        id: attestationPayload.id
+      }
     })
     .catch(console.error)
 
-  console.log(point)
-
-  return point
+  return webAuthnCredentials
 }
 
 export default {
