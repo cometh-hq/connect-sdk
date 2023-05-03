@@ -13,10 +13,11 @@ exports.Web3AuthAdapter = void 0;
 const modal_1 = require("@web3auth/modal");
 const ethers_1 = require("ethers");
 class Web3AuthAdapter {
-    constructor({ web3authConfig }) {
+    constructor(web3authConfig) {
         this.web3auth = null;
         this.ethProvider = null;
         this.web3authConfig = web3authConfig;
+        this.chaindId = web3authConfig.chainConfig.chainId;
     }
     init() {
         return __awaiter(this, void 0, void 0, function* () {

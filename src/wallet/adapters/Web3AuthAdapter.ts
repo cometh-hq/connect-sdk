@@ -1,16 +1,19 @@
 import { UserInfo } from '@web3auth/base'
+import { Web3AuthCoreOptions } from '@web3auth/core'
 import { Web3Auth, Web3AuthOptions } from '@web3auth/modal'
 import { ethers } from 'ethers'
 
-import { EOAAdapter } from './types'
+import { AUTHAdapter } from './types'
 
-export class Web3AuthAdapter implements EOAAdapter {
+export class Web3AuthAdapter implements AUTHAdapter {
   private web3auth: Web3Auth | null = null
   private ethProvider: ethers.providers.Web3Provider | null = null
   private web3authConfig: Web3AuthOptions
+  readonly chaindId: string
 
-  constructor({ web3authConfig }) {
+  constructor(web3authConfig: Web3AuthCoreOptions) {
     this.web3authConfig = web3authConfig
+    this.chaindId = web3authConfig.chainConfig.chainId!
   }
 
   async init(): Promise<void> {

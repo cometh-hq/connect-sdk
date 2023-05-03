@@ -5,16 +5,17 @@ import type {
 } from '@web3-onboard/common'
 import { ethers } from 'ethers'
 
-import { EOAAdapter } from '../adapters'
+import { AUTHAdapter } from '../adapters'
 import { AlembicProvider } from '../AlembicProvider'
 import { AlembicWallet } from '../AlembicWallet'
 
-export function AlembicWalletOnboardConnector(
-  apiKey: string,
-  chainId: number,
-  rpcTarget: string,
-  eoaAdapter?: EOAAdapter
-): WalletInit {
+export function AlembicWalletOnboardConnector({
+  apiKey,
+  authAdapter
+}: {
+  apiKey: string
+  authAdapter: AUTHAdapter
+}): WalletInit {
   return (): WalletModule => {
     return {
       label: 'alembicWallet',
@@ -23,10 +24,8 @@ export function AlembicWalletOnboardConnector(
         const { createEIP1193Provider } = await import('@web3-onboard/common')
 
         const instance = new AlembicWallet({
-          eoaAdapter,
-          apiKey,
-          chainId,
-          rpcTarget
+          authAdapter,
+          apiKey
         })
         const instanceProvider = new AlembicProvider(instance)
         await instance.connect()

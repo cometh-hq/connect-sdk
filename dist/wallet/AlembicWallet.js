@@ -10,15 +10,13 @@ var __awaiter = (this && this.__awaiter) || function (thisArg, _arguments, P, ge
 };
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.AlembicWallet = void 0;
-const base_1 = require("@web3auth/base");
 const ethers_1 = require("ethers");
 const siwe_1 = require("siwe");
 const constants_1 = require("../constants");
 const Safe__factory_1 = require("../contracts/types/factories/Safe__factory");
 const services_1 = require("../services");
-const adapters_1 = require("./adapters");
 class AlembicWallet {
-    constructor({ eoaAdapter, chainId, rpcTarget, apiKey }) {
+    constructor({ authAdapter, apiKey }) {
         this.connected = false;
         // Contract Interfaces
         this.SafeInterface = Safe__factory_1.Safe__factory.createInterface();
@@ -27,7 +25,7 @@ class AlembicWallet {
          */
         this._signTransaction = (safeTxData, nonce) => __awaiter(this, void 0, void 0, function* () {
             var _a;
-            const signer = (_a = this.eoaAdapter.getEthProvider()) === null || _a === void 0 ? void 0 : _a.getSigner();
+            const signer = (_a = this.authAdapter.getEthProvider()) === null || _a === void 0 ? void 0 : _a.getSigner();
             if (!signer)
                 throw new Error('Sign message: missing signer');
             return yield signer._signTypedData({
@@ -51,22 +49,9 @@ class AlembicWallet {
                 ? (yield Safe__factory_1.Safe__factory.connect(this.getAddress(), this.getOwnerProvider()).nonce()).toNumber()
                 : 0;
         });
-        // if no adapter is provided, use Web3AuthAdapter with our default config
-        this.eoaAdapter =
-            eoaAdapter !== null && eoaAdapter !== void 0 ? eoaAdapter : new adapters_1.Web3AuthAdapter({
-                web3authConfig: {
-                    clientId: constants_1.WEB3AUTH_CLIENT_ID,
-                    web3AuthNetwork: 'testnet',
-                    chainConfig: {
-                        chainId: ethers_1.ethers.utils.hexlify(chainId),
-                        chainNamespace: base_1.CHAIN_NAMESPACES.EIP155,
-                        rpcTarget
-                    }
-                }
-            });
-        this.chainId = chainId;
-        this.rpcTarget = rpcTarget;
-        this.API = new services_1.API(apiKey, chainId);
+        this.authAdapter = authAdapter;
+        this.chainId = +authAdapter.chaindId;
+        this.API = new services_1.API(apiKey, this.chainId);
         this.BASE_GAS = constants_1.DEFAULT_BASE_GAS;
         this.REWARD_PERCENTILE = constants_1.DEFAULT_REWARD_PERCENTILE;
     }
@@ -77,13 +62,13 @@ class AlembicWallet {
         var _a, _b;
         return __awaiter(this, void 0, void 0, function* () {
             // Return if does not match requirements
-            if (!this.eoaAdapter)
+            if (!this.authAdapter)
                 throw new Error('No EOA adapter found');
             if (!constants_1.networks[this.chainId])
                 throw new Error('This network is not supported');
-            yield this.eoaAdapter.init();
-            yield this.eoaAdapter.connect();
-            const signer = (_a = this.eoaAdapter.getEthProvider()) === null || _a === void 0 ? void 0 : _a.getSigner();
+            yield this.authAdapter.init();
+            yield this.authAdapter.connect();
+            const signer = (_a = this.authAdapter.getEthProvider()) === null || _a === void 0 ? void 0 : _a.getSigner();
             if (!signer)
                 throw new Error('No signer found');
             const ownerAddress = yield signer.getAddress();
@@ -121,10 +106,10 @@ class AlembicWallet {
     getUserInfos() {
         var _a;
         return __awaiter(this, void 0, void 0, function* () {
-            if (!this.eoaAdapter)
+            if (!this.authAdapter)
                 throw new Error('Cannot provide user infos');
-            const userInfos = yield this.eoaAdapter.getUserInfos();
-            return Object.assign(Object.assign({}, userInfos), { ownerAddress: yield ((_a = this.eoaAdapter.getSigner()) === null || _a === void 0 ? void 0 : _a.getAddress()), walletAddress: this.getAddress() });
+            const userInfos = yield this.authAdapter.getUserInfos();
+            return Object.assign(Object.assign({}, userInfos), { ownerAddress: yield ((_a = this.authAdapter.getSigner()) === null || _a === void 0 ? void 0 : _a.getAddress()), walletAddress: this.getAddress() });
         });
     }
     getAddress() {
@@ -148,9 +133,9 @@ class AlembicWallet {
     }
     logout() {
         return __awaiter(this, void 0, void 0, function* () {
-            if (!this.eoaAdapter)
+            if (!this.authAdapter)
                 throw new Error('No EOA adapter found');
-            yield this.eoaAdapter.logout();
+            yield this.authAdapter.logout();
             this.connected = false;
         });
     }
@@ -171,7 +156,7 @@ class AlembicWallet {
      * Signing Message Section
      */
     getOwnerProvider() {
-        const provider = this.eoaAdapter.getEthProvider();
+        const provider = this.authAdapter.getEthProvider();
         if (!provider)
             throw new Error('getOwnerProvider: missing provider');
         return provider;
@@ -179,7 +164,7 @@ class AlembicWallet {
     signMessage(messageToSign) {
         var _a;
         return __awaiter(this, void 0, void 0, function* () {
-            const signer = (_a = this.eoaAdapter.getEthProvider()) === null || _a === void 0 ? void 0 : _a.getSigner();
+            const signer = (_a = this.authAdapter.getEthProvider()) === null || _a === void 0 ? void 0 : _a.getSigner();
             if (!signer)
                 throw new Error('Sign message: missing signer');
             const messageHash = ethers_1.ethers.utils.hashMessage(messageToSign);

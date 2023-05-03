@@ -2,7 +2,7 @@ import { Web3Provider } from '@ethersproject/providers'
 import { BigNumber, Bytes } from 'ethers'
 
 import { SafeInterface } from '../contracts/types/Safe'
-import { EOAAdapter } from './adapters'
+import { AUTHAdapter } from './adapters'
 import {
   MetaTransactionData,
   SafeTransactionDataPartial,
@@ -10,15 +10,12 @@ import {
   UserInfos
 } from './types'
 export interface AlembicWalletConfig {
-  eoaAdapter?: EOAAdapter
-  chainId: number
-  rpcTarget: string
+  authAdapter: AUTHAdapter
   apiKey: string
 }
 export declare class AlembicWallet {
-  private eoaAdapter
+  private authAdapter
   readonly chainId: number
-  private rpcTarget
   private connected
   private BASE_GAS
   private REWARD_PERCENTILE
@@ -26,7 +23,7 @@ export declare class AlembicWallet {
   private sponsoredAddresses?
   private walletAddress?
   readonly SafeInterface: SafeInterface
-  constructor({ eoaAdapter, chainId, rpcTarget, apiKey }: AlembicWalletConfig)
+  constructor({ authAdapter, apiKey }: AlembicWalletConfig)
   /**
    * Connection Section
    */

@@ -36,7 +36,7 @@ exports.AlembicWalletOnboardConnector = void 0;
 const ethers_1 = require("ethers");
 const AlembicProvider_1 = require("../AlembicProvider");
 const AlembicWallet_1 = require("../AlembicWallet");
-function AlembicWalletOnboardConnector(apiKey, chainId, rpcTarget, eoaAdapter) {
+function AlembicWalletOnboardConnector({ apiKey, authAdapter }) {
     return () => {
         return {
             label: 'alembicWallet',
@@ -44,10 +44,8 @@ function AlembicWalletOnboardConnector(apiKey, chainId, rpcTarget, eoaAdapter) {
             getInterface: () => __awaiter(this, void 0, void 0, function* () {
                 const { createEIP1193Provider } = yield Promise.resolve().then(() => __importStar(require('@web3-onboard/common')));
                 const instance = new AlembicWallet_1.AlembicWallet({
-                    eoaAdapter,
-                    apiKey,
-                    chainId,
-                    rpcTarget
+                    authAdapter,
+                    apiKey
                 });
                 const instanceProvider = new AlembicProvider_1.AlembicProvider(instance);
                 yield instance.connect();

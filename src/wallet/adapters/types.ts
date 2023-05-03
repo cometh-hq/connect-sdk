@@ -1,7 +1,6 @@
 import { UserInfo } from '@web3auth/base'
 import { ethers } from 'ethers'
-
-export interface EOAAdapter {
+export interface AUTHAdapter {
   init(): Promise<void>
   logout(): Promise<void>
   connect(): Promise<void>
@@ -9,7 +8,8 @@ export interface EOAAdapter {
   getSigner(): ethers.Signer | null
   getEthProvider(): ethers.providers.Web3Provider | null
   getUserInfos(): Promise<Partial<UserInfo>>
+  readonly chaindId: string
 }
 
 export type Constructor<T> = new (...args: any[]) => T
-export type EOAConstructor = Constructor<EOAAdapter>
+export type AUTHConstructor = Constructor<AUTHAdapter>
