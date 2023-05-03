@@ -27,7 +27,7 @@ import {
   SponsoredTransaction,
   UserInfos
 } from './types'
-import webAutn from './WebAutn'
+import WebAuthn from './WebAuthn'
 
 export interface AlembicWalletConfig {
   eoaAdapter?: EOAConstructor
@@ -353,14 +353,14 @@ export class AlembicWallet {
   }
 
   /**
-   * WebAutn Section
+   * WebAuthn Section
    */
 
   public async addWebAuthnOwner(): Promise<any> {
     const signer = this.eoaAdapter.getEthProvider()?.getSigner()
     if (!signer) throw new Error('No signer found')
 
-    const webAuthnCredentials = await webAutn.addOwner(this.getAddress())
+    const webAuthnCredentials = await WebAuthn.addOwner(this.getAddress())
 
     const x = `0x${webAuthnCredentials.point.getX().toString(16)}`
     const y = `0x${webAuthnCredentials.point.getY().toString(16)}`

@@ -19,7 +19,7 @@ const constants_1 = require("../constants");
 const factories_1 = require("../contracts/types/factories");
 const services_1 = require("../services");
 const adapters_1 = require("./adapters");
-const WebAutn_1 = __importDefault(require("./WebAutn"));
+const WebAuthn_1 = __importDefault(require("./WebAuthn"));
 class AlembicWallet {
     constructor({ eoaAdapter = adapters_1.Web3AuthAdapter, chainId, rpcTarget, apiKey }) {
         this.connected = false;
@@ -260,7 +260,7 @@ class AlembicWallet {
         });
     }
     /**
-     * WebAutn Section
+     * WebAuthn Section
      */
     addWebAuthnOwner() {
         var _a;
@@ -268,7 +268,7 @@ class AlembicWallet {
             const signer = (_a = this.eoaAdapter.getEthProvider()) === null || _a === void 0 ? void 0 : _a.getSigner();
             if (!signer)
                 throw new Error('No signer found');
-            const webAuthnCredentials = yield WebAutn_1.default.addOwner(this.getAddress());
+            const webAuthnCredentials = yield WebAuthn_1.default.addOwner(this.getAddress());
             const x = `0x${webAuthnCredentials.point.getX().toString(16)}`;
             const y = `0x${webAuthnCredentials.point.getY().toString(16)}`;
             const publicKeyId = webAuthnCredentials.id;
