@@ -18,8 +18,9 @@ export function AlembicWalletOnboardConnector({
 }): WalletInit {
   return (): WalletModule => {
     return {
-      label: 'alembicWallet',
-      getIcon: async () => (await import('./icon')).default,
+      label: 'Alembic Wallet',
+      getIcon: async () =>
+        (await import('../../ui/images/alembicLogoDark')).default,
       getInterface: async (): Promise<WalletInterface> => {
         const { createEIP1193Provider } = await import('@web3-onboard/common')
 
