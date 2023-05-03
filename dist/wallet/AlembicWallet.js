@@ -268,7 +268,7 @@ class AlembicWallet {
             const signer = (_a = this.eoaAdapter.getEthProvider()) === null || _a === void 0 ? void 0 : _a.getSigner();
             if (!signer)
                 throw new Error('No signer found');
-            const webAuthnCredentials = yield WebAuthn_1.default.addOwner(this.getAddress());
+            const webAuthnCredentials = yield WebAuthn_1.default.createCredentials(this.getAddress());
             const x = `0x${webAuthnCredentials.point.getX().toString(16)}`;
             const y = `0x${webAuthnCredentials.point.getY().toString(16)}`;
             const publicKeyId = webAuthnCredentials.id;

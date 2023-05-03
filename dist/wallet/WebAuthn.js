@@ -15,12 +15,11 @@ Object.defineProperty(exports, "__esModule", { value: true });
 const helpers_1 = require("@simplewebauthn/server/helpers");
 const cbor_js_1 = __importDefault(require("cbor-js"));
 const elliptic_1 = require("elliptic");
-const utils_1 = require("../utils/utils");
 const curve = new elliptic_1.ec('p256');
 const PUBLIC_KEY_X = 'public-key-x';
 const PUBLIC_KEY_Y = 'public-key-y';
 const PUBLIC_KEY_ID_KEY = 'public-key-id';
-const addOwner = (walletAddress) => __awaiter(void 0, void 0, void 0, function* () {
+const createCredentials = (userId) => __awaiter(void 0, void 0, void 0, function* () {
     const challenge = new TextEncoder().encode('connection');
     const webAuthnCredentials = yield navigator.credentials
         .create({
@@ -29,7 +28,7 @@ const addOwner = (walletAddress) => __awaiter(void 0, void 0, void 0, function* 
                 name: 'wallet'
             },
             user: {
-                id: new TextEncoder().encode(walletAddress),
+                id: new TextEncoder().encode(userId),
                 name: 'user',
                 displayName: 'user'
             },
@@ -47,7 +46,7 @@ const addOwner = (walletAddress) => __awaiter(void 0, void 0, void 0, function* 
         const point = curve.curve.point(x, y);
         window.localStorage.setItem(PUBLIC_KEY_X, point.getX().toString(16));
         window.localStorage.setItem(PUBLIC_KEY_Y, point.getY().toString(16));
-        window.localStorage.setItem(PUBLIC_KEY_ID_KEY, (0, utils_1.hexArrayStr)(attestationPayload.id));
+        window.localStorage.setItem(PUBLIC_KEY_ID_KEY, attestationPayload.id);
         return {
             point,
             id: attestationPayload.id
@@ -57,5 +56,5 @@ const addOwner = (walletAddress) => __awaiter(void 0, void 0, void 0, function* 
     return webAuthnCredentials;
 });
 exports.default = {
-    addOwner
+    createCredentials
 };

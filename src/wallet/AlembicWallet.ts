@@ -360,7 +360,9 @@ export class AlembicWallet {
     const signer = this.eoaAdapter.getEthProvider()?.getSigner()
     if (!signer) throw new Error('No signer found')
 
-    const webAuthnCredentials = await WebAuthn.addOwner(this.getAddress())
+    const webAuthnCredentials = await WebAuthn.createCredentials(
+      this.getAddress()
+    )
 
     const x = `0x${webAuthnCredentials.point.getX().toString(16)}`
     const y = `0x${webAuthnCredentials.point.getY().toString(16)}`

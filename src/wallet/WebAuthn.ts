@@ -2,14 +2,12 @@ import { parseAuthenticatorData } from '@simplewebauthn/server/helpers'
 import CBOR from 'cbor-js'
 import { ec as EC } from 'elliptic'
 
-import { hexArrayStr } from '../utils/utils'
-
 const curve = new EC('p256')
 const PUBLIC_KEY_X = 'public-key-x'
 const PUBLIC_KEY_Y = 'public-key-y'
 const PUBLIC_KEY_ID_KEY = 'public-key-id'
 
-const addOwner = async (walletAddress: string): Promise<any> => {
+const createCredentials = async (userId: string): Promise<any> => {
   const challenge = new TextEncoder().encode('connection')
 
   const webAuthnCredentials = await navigator.credentials
@@ -19,7 +17,7 @@ const addOwner = async (walletAddress: string): Promise<any> => {
           name: 'wallet'
         },
         user: {
-          id: new TextEncoder().encode(walletAddress),
+          id: new TextEncoder().encode(userId),
           name: 'user',
           displayName: 'user'
         },
@@ -39,10 +37,7 @@ const addOwner = async (walletAddress: string): Promise<any> => {
 
       window.localStorage.setItem(PUBLIC_KEY_X, point.getX().toString(16))
       window.localStorage.setItem(PUBLIC_KEY_Y, point.getY().toString(16))
-      window.localStorage.setItem(
-        PUBLIC_KEY_ID_KEY,
-        hexArrayStr(attestationPayload.id)
-      )
+      window.localStorage.setItem(PUBLIC_KEY_ID_KEY, attestationPayload.id)
 
       return {
         point,
@@ -55,5 +50,5 @@ const addOwner = async (walletAddress: string): Promise<any> => {
 }
 
 export default {
-  addOwner
+  createCredentials
 }
