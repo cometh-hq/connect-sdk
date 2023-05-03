@@ -1,27 +1,25 @@
-import { CHAIN_NAMESPACES, UserInfo } from '@web3auth/base'
-import { Web3Auth } from '@web3auth/modal'
-import { BigNumber, ethers } from 'ethers'
+import { UserInfo } from '@web3auth/base'
+import { Web3AuthCoreOptions } from '@web3auth/core'
+import { Web3Auth, Web3AuthOptions } from '@web3auth/modal'
+import { ethers } from 'ethers'
 
-import { WEB3AUTH_CLIENT_ID } from '../../constants'
-import { EOAAdapter } from './types'
+import { AUTHAdapter } from './types'
 
-export class Web3AuthAdapter implements EOAAdapter {
+export class Web3AuthAdapter implements AUTHAdapter {
   private web3auth: Web3Auth | null = null
   private ethProvider: ethers.providers.Web3Provider | null = null
+  private web3authConfig: Web3AuthOptions
+  readonly chaindId: string
 
-  async init(chainId, rpcTarget): Promise<void> {
-    if (!chainId) throw new Error('Missing chainId parameter')
-    if (!rpcTarget) throw new Error('Missing rpcUrl parameter')
+  constructor(web3authConfig: Web3AuthCoreOptions) {
+    this.web3authConfig = web3authConfig
+    this.chaindId = web3authConfig.chainConfig.chainId!
+  }
 
-    const web3auth = new Web3Auth({
-      clientId: WEB3AUTH_CLIENT_ID,
-      web3AuthNetwork: 'testnet',
-      chainConfig: {
-        chainId: ethers.utils.hexlify(chainId),
-        chainNamespace: CHAIN_NAMESPACES.EIP155,
-        rpcTarget
-      }
-    })
+  async init(): Promise<void> {
+    if (!this.web3authConfig) throw new Error('Missing config for web3Auth')
+
+    const web3auth = new Web3Auth(this.web3authConfig)
 
     if (!web3auth) throw new Error('No Web3Auth created')
     await web3auth.initModal()

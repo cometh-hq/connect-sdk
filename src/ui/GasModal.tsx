@@ -1,7 +1,6 @@
 import React from 'react'
 import { createRoot } from 'react-dom/client'
 import { Modal } from './components/Modal'
-import 'alembic-sdk/dist/ui/main.css'
 
 interface GasModalConfig {
   zIndex?: string

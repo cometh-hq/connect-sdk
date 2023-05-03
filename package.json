@@ -1,6 +1,6 @@
 {
   "name": "alembic-sdk",
-  "version": "0.8.5",
+  "version": "0.8.6",
   "main": "dist/index.js",
   "types": "dist/index.d.ts",
   "description": "SDK Alembic tech",
@@ -8,9 +8,8 @@
     "dist/**/*"
   ],
   "scripts": {
-    "copy:css": "cp src/ui/*.css dist/ui",
     "build:ts": "tsc",
-    "build": "rimraf dist && yarn build:ts && yarn copy:css",
+    "build": "rimraf dist && yarn build:ts",
     "prettier-format": "prettier --config .prettierrc 'src/**/*.ts' --write",
     "lint": "eslint . --ext .ts",
     "test": "jest --passWithNoTests",
