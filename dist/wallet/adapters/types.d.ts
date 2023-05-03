@@ -11,4 +11,3 @@ export interface AUTHAdapter {
   readonly chaindId: string
 }
 export type Constructor<T> = new (...args: any[]) => T
-export type AUTHConstructor = Constructor<AUTHAdapter>
