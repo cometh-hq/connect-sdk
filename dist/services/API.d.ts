@@ -3,7 +3,8 @@ import { SiweMessage } from 'siwe'
 import {
   RelayTransactionType,
   SponsoredTransaction,
-  UserNonceType
+  UserNonceType,
+  WebAuthnOwner
 } from '../wallet/types'
 export declare const api: import('axios').AxiosInstance
 export declare class API {
@@ -32,5 +33,6 @@ export declare class API {
     signature: any,
     message: any,
     signerAddress: any
-  ): Promise<string>
+  ): Promise<WebAuthnOwner>
+  getWebAuthnOwners(walletAddress: string): Promise<WebAuthnOwner[]>
 }
