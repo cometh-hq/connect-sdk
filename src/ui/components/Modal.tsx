@@ -44,7 +44,7 @@ export function Modal({ onDeny, onAccept, txGasFees }) {
 
   return (
     <div style={style}>
-      <p style={textStyle}>This tx is gonna cost: {txGasFees}</p>
+      <p style={textStyle}>This tx is gonna cost: {txGasFees} MATIC</p>
       <button style={acceptBtnStyle} onClick={onAccept}>
         Continue
       </button>

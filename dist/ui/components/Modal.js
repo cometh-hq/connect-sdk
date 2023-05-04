@@ -39,7 +39,8 @@ function Modal({ onDeny, onAccept, txGasFees }) {
     return (react_1.default.createElement("div", { style: style },
         react_1.default.createElement("p", { style: textStyle },
             "This tx is gonna cost: ",
-            txGasFees),
+            txGasFees,
+            " MATIC"),
         react_1.default.createElement("button", { style: acceptBtnStyle, onClick: onAccept }, "Continue"),
         react_1.default.createElement("button", { style: denyBtnStyle, onClick: onDeny }, "Cancel")));
 }

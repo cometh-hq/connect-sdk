@@ -36,16 +36,6 @@ class GasModal {
         display: flex;
         justify-content: center;
         align-items: center;
-        animation: alembic-gas-modal-fade-in 0.3s ease-out forwards;
-
-        @keyframes alembic-gas-modal-fade-in {
-          from {
-            opactiy: 0;
-          }
-          to {
-            opacity: 1;
-          }
-        }
       `);
         wrapper.setAttribute('id', 'alembic-gas-modal-wrapper');
         document.body.appendChild(wrapper);
@@ -63,7 +53,6 @@ class GasModal {
             const root = (0, client_1.createRoot)(modalWrapper);
             const self = this;
             return new Promise((resolve) => {
-                console.log('ici');
                 function accept() {
                     self.closeModal();
                     resolve(true);

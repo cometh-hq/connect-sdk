@@ -223,13 +223,13 @@ class AlembicWallet {
             };
             if (!this._toSponsoredAddress(safeTxDataTyped.to)) {
                 const { safeTxGas, baseGas, gasPrice } = yield this._estimateTransactionGas(safeTxDataTyped);
-                safeTxDataTyped.safeTxGas = +safeTxGas;
-                safeTxDataTyped.baseGas = baseGas;
-                safeTxDataTyped.gasPrice = +gasPrice;
-            }
-            const isUserAccepting = yield new ui_1.GasModal().initModal(safeTxDataTyped.safeTxGas.toString());
-            if (!isUserAccepting) {
-                throw new Error('Transaction denied');
+                safeTxDataTyped.safeTxGas = +safeTxGas; // gwei
+                safeTxDataTyped.baseGas = baseGas; // gwei
+                safeTxDataTyped.gasPrice = +gasPrice; // wei
+                const totalFees = ethers_1.ethers.utils.formatEther(ethers_1.ethers.utils.parseUnits(ethers_1.BigNumber.from(safeTxGas).add(baseGas).mul(gasPrice).toString(), 'wei'));
+                if (!(yield new ui_1.GasModal().initModal(totalFees))) {
+                    throw new Error('Transaction denied');
+                }
             }
             const signature = yield this._signTransaction(safeTxDataTyped, nonce);
             const safeTxHash = yield this.API.relayTransaction({

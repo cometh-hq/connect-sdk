@@ -281,15 +281,18 @@ export class AlembicWallet {
       const { safeTxGas, baseGas, gasPrice } =
         await this._estimateTransactionGas(safeTxDataTyped)
 
-      safeTxDataTyped.safeTxGas = +safeTxGas
-      safeTxDataTyped.baseGas = baseGas
-      safeTxDataTyped.gasPrice = +gasPrice
+      safeTxDataTyped.safeTxGas = +safeTxGas // gwei
+      safeTxDataTyped.baseGas = baseGas // gwei
+      safeTxDataTyped.gasPrice = +gasPrice // wei
 
-      const isUserAccepting = await new GasModal().initModal(
-        safeTxDataTyped.safeTxGas.toString()
+      const totalFees = ethers.utils.formatEther(
+        ethers.utils.parseUnits(
+          BigNumber.from(safeTxGas).add(baseGas).mul(gasPrice).toString(),
+          'wei'
+        )
       )
 
-      if (!isUserAccepting) {
+      if (!(await new GasModal().initModal(totalFees))) {
         throw new Error('Transaction denied')
       }
     }
