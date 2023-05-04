@@ -353,32 +353,32 @@ export class AlembicWallet {
       this.getAddress()
     )
 
-    const x = `0x${webAuthnCredentials.point.getX().toString(16)}`
-    const y = `0x${webAuthnCredentials.point.getY().toString(16)}`
-    const publicKeyId = webAuthnCredentials.id
+    const publicKey_X = `0x${webAuthnCredentials.point.getX().toString(16)}`
+    const publicKey_Y = `0x${webAuthnCredentials.point.getY().toString(16)}`
+    const publicKey_Id = webAuthnCredentials.id
 
-    const message = `${x},${y},${publicKeyId}`
+    const message = `${publicKey_X},${publicKey_Y},${publicKey_Id}`
     const signature = await this.signMessage(
       ethers.utils.hexlify(ethers.utils.toUtf8Bytes(message))
     )
 
     await this.API.addWebAuthnOwner(
       this.getAddress(),
-      publicKeyId,
-      x,
-      y,
+      publicKey_Id,
+      publicKey_X,
+      publicKey_Y,
       signature,
       message,
       undefined
     )
 
-    const signerAddress = await this.getWebAuthnSigner(x, y)
+    const signerAddress = await this.getWebAuthnSigner(publicKey_X, publicKey_Y)
 
     await this.API.addWebAuthnOwner(
       this.getAddress(),
-      publicKeyId,
-      x,
-      y,
+      publicKey_Id,
+      publicKey_X,
+      publicKey_Y,
       signature,
       message,
       signerAddress
@@ -387,7 +387,10 @@ export class AlembicWallet {
     await this.addOwner(signerAddress)
   }
 
-  private async getWebAuthnSigner(x: string, y: string): Promise<string> {
+  private async getWebAuthnSigner(
+    publicKey_X: string,
+    publicKey_Y: string
+  ): Promise<string> {
     const P256FactoryInstance = await P256SignerFactory__factory.connect(
       this.P256FactoryContractAddress,
       this.getOwnerProvider()
@@ -398,7 +401,7 @@ export class AlembicWallet {
     while (signerDeploymentEvent.length === 0) {
       await new Promise((resolve) => setTimeout(resolve, 2000))
       signerDeploymentEvent = await P256FactoryInstance.queryFilter(
-        P256FactoryInstance.filters.NewSignerCreated(x, y),
+        P256FactoryInstance.filters.NewSignerCreated(publicKey_X, publicKey_Y),
         BLOCK_EVENT_GAP
       )
     }

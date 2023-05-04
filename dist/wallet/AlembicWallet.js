@@ -267,24 +267,24 @@ class AlembicWallet {
             if (!signer)
                 throw new Error('No signer found');
             const webAuthnCredentials = yield WebAuthn_1.default.createCredentials(this.getAddress());
-            const x = `0x${webAuthnCredentials.point.getX().toString(16)}`;
-            const y = `0x${webAuthnCredentials.point.getY().toString(16)}`;
-            const publicKeyId = webAuthnCredentials.id;
-            const message = `${x},${y},${publicKeyId}`;
+            const publicKey_X = `0x${webAuthnCredentials.point.getX().toString(16)}`;
+            const publicKey_Y = `0x${webAuthnCredentials.point.getY().toString(16)}`;
+            const publicKey_Id = webAuthnCredentials.id;
+            const message = `${publicKey_X},${publicKey_Y},${publicKey_Id}`;
             const signature = yield this.signMessage(ethers_1.ethers.utils.hexlify(ethers_1.ethers.utils.toUtf8Bytes(message)));
-            yield this.API.addWebAuthnOwner(this.getAddress(), publicKeyId, x, y, signature, message, undefined);
-            const signerAddress = yield this.getWebAuthnSigner(x, y);
-            yield this.API.addWebAuthnOwner(this.getAddress(), publicKeyId, x, y, signature, message, signerAddress);
+            yield this.API.addWebAuthnOwner(this.getAddress(), publicKey_Id, publicKey_X, publicKey_Y, signature, message, undefined);
+            const signerAddress = yield this.getWebAuthnSigner(publicKey_X, publicKey_Y);
+            yield this.API.addWebAuthnOwner(this.getAddress(), publicKey_Id, publicKey_X, publicKey_Y, signature, message, signerAddress);
             yield this.addOwner(signerAddress);
         });
     }
-    getWebAuthnSigner(x, y) {
+    getWebAuthnSigner(publicKey_X, publicKey_Y) {
         return __awaiter(this, void 0, void 0, function* () {
             const P256FactoryInstance = yield factories_1.P256SignerFactory__factory.connect(this.P256FactoryContractAddress, this.getOwnerProvider());
             let signerDeploymentEvent = [];
             while (signerDeploymentEvent.length === 0) {
                 yield new Promise((resolve) => setTimeout(resolve, 2000));
-                signerDeploymentEvent = yield P256FactoryInstance.queryFilter(P256FactoryInstance.filters.NewSignerCreated(x, y), constants_1.BLOCK_EVENT_GAP);
+                signerDeploymentEvent = yield P256FactoryInstance.queryFilter(P256FactoryInstance.filters.NewSignerCreated(publicKey_X, publicKey_Y), constants_1.BLOCK_EVENT_GAP);
             }
             return signerDeploymentEvent[0].args.signer;
         });

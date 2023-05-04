@@ -57,13 +57,13 @@ class API {
             return (_e = response.data) === null || _e === void 0 ? void 0 : _e.safeTxHash;
         });
     }
-    addWebAuthnOwner(walletAddress, publicKeyId, x, y, signature, message, signerAddress) {
+    addWebAuthnOwner(walletAddress, publicKey_Id, publicKey_X, publicKey_Y, signature, message, signerAddress) {
         var _a;
         return __awaiter(this, void 0, void 0, function* () {
             const body = {
-                publicKeyId,
-                x,
-                y,
+                publicKey_Id,
+                publicKey_X,
+                publicKey_Y,
                 signature,
                 message,
                 signerAddress

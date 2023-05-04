@@ -68,17 +68,17 @@ export class API {
 
   async addWebAuthnOwner(
     walletAddress,
-    publicKeyId,
-    x,
-    y,
+    publicKey_Id,
+    publicKey_X,
+    publicKey_Y,
     signature,
     message,
     signerAddress
   ): Promise<string> {
     const body = {
-      publicKeyId,
-      x,
-      y,
+      publicKey_Id,
+      publicKey_X,
+      publicKey_Y,
       signature,
       message,
       signerAddress
