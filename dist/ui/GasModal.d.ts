@@ -3,9 +3,9 @@ interface GasModalConfig {
 }
 export declare class GasModal {
   readonly modalConfig: GasModalConfig
-  constructor({ modalConfig }: { modalConfig?: GasModalConfig })
+  constructor(modalConfig?: GasModalConfig)
   private createModalWrapper
   closeModal(): void
-  initModal(): void
+  initModal(txGasFees: string): Promise<boolean>
 }
 export {}

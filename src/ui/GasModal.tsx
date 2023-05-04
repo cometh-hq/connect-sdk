@@ -9,17 +9,11 @@ interface GasModalConfig {
 export class GasModal {
   readonly modalConfig: GasModalConfig
 
-  constructor({ modalConfig = {} }: { modalConfig?: GasModalConfig }) {
-    this.modalConfig = modalConfig
+  constructor(modalConfig?: GasModalConfig) {
+    this.modalConfig = modalConfig || {}
   }
 
   private createModalWrapper(): HTMLElement {
-    const root: HTMLElement | null = document.querySelector(':root')
-    root?.style.setProperty(
-      '--z-index-modal',
-      this.modalConfig.zIndex || '1000'
-    )
-
     const existingWrapper: HTMLElement | null = document.getElementById(
       'alembic-gas-modal-wrapper'
     )
@@ -28,13 +22,36 @@ export class GasModal {
     }
 
     const wrapper: HTMLElement = document.createElement('section')
-    wrapper.classList.add('modalWrapper')
+    wrapper.setAttribute(
+      'style',
+      ` position: fixed;
+        top: 0;
+        left: 0;
+        width: 100vw;
+        height: 100vh;
+        z-index: ${this.modalConfig.zIndex || '9999'};
+        background-color: rgba(0,0,0,0.5);
+        display: flex;
+        justify-content: center;
+        align-items: center;
+        animation: alembic-gas-modal-fade-in 0.3s ease-out forwards;
+
+        @keyframes alembic-gas-modal-fade-in {
+          from {
+            opactiy: 0;
+          }
+          to {
+            opacity: 1;
+          }
+        }
+      `
+    )
     wrapper.setAttribute('id', 'alembic-gas-modal-wrapper')
     document.body.appendChild(wrapper)
     return wrapper
   }
 
-  closeModal(): void {
+  closeModal() {
     const existingWrapper: HTMLElement | null = document.getElementById(
       'alembic-gas-modal-wrapper'
     )
@@ -43,14 +60,28 @@ export class GasModal {
     }
   }
 
-  initModal(): void {
+  async initModal(txGasFees: string): Promise<boolean> {
     const modalWrapper = this.createModalWrapper()
     const root = createRoot(modalWrapper)
+    const self = this
 
-    root.render(
-      <>
-        <Modal onClose={this.closeModal} />
-      </>
-    )
+    return new Promise((resolve) => {
+      console.log('ici')
+      function accept() {
+        self.closeModal()
+        resolve(true)
+      }
+
+      function deny() {
+        self.closeModal()
+        resolve(false)
+      }
+
+      root.render(
+        <>
+          <Modal onDeny={deny} onAccept={accept} txGasFees={txGasFees} />
+        </>
+      )
+    })
   }
 }

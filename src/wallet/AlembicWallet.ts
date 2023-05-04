@@ -53,9 +53,6 @@ export class AlembicWallet {
    */
 
   public async connect(): Promise<void> {
-    const modal = new GasModal({})
-    modal.initModal()
-
     // Return if does not match requirements
     if (!this.authAdapter) throw new Error('No EOA adapter found')
     if (!networks[this.chainId])
@@ -287,6 +284,14 @@ export class AlembicWallet {
       safeTxDataTyped.safeTxGas = +safeTxGas
       safeTxDataTyped.baseGas = baseGas
       safeTxDataTyped.gasPrice = +gasPrice
+
+      const isUserAccepting = await new GasModal().initModal(
+        safeTxDataTyped.safeTxGas.toString()
+      )
+
+      if (!isUserAccepting) {
+        throw new Error('Transaction denied')
+      }
     }
 
     const signature = await this._signTransaction(safeTxDataTyped, nonce)

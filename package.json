@@ -26,6 +26,7 @@
   },
   "homepage": "https://github.com/cometh-game/alembic-sdk#readme",
   "devDependencies": {
+    "@rollup/plugin-typescript": "^11.1.0",
     "@tsconfig/recommended": "^1.0.2",
     "@types/jest": "^29.4.0",
     "@typescript-eslint/eslint-plugin": "^5.53.0",
@@ -50,6 +51,7 @@
     "prettier": "2.8.4",
     "react": "^18.0.0",
     "react-dom": "^18.0.0",
+    "rollup": "^3.21.3",
     "style-loader": "^3.3.2",
     "ts-jest": "^29.0.3",
     "ts-loader": "^9.4.2",

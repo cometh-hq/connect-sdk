@@ -1,37 +1,16 @@
 "use strict";
-var __createBinding = (this && this.__createBinding) || (Object.create ? (function(o, m, k, k2) {
-    if (k2 === undefined) k2 = k;
-    var desc = Object.getOwnPropertyDescriptor(m, k);
-    if (!desc || ("get" in desc ? !m.__esModule : desc.writable || desc.configurable)) {
-      desc = { enumerable: true, get: function() { return m[k]; } };
-    }
-    Object.defineProperty(o, k2, desc);
-}) : (function(o, m, k, k2) {
-    if (k2 === undefined) k2 = k;
-    o[k2] = m[k];
-}));
-var __setModuleDefault = (this && this.__setModuleDefault) || (Object.create ? (function(o, v) {
-    Object.defineProperty(o, "default", { enumerable: true, value: v });
-}) : function(o, v) {
-    o["default"] = v;
-});
-var __importStar = (this && this.__importStar) || function (mod) {
-    if (mod && mod.__esModule) return mod;
-    var result = {};
-    if (mod != null) for (var k in mod) if (k !== "default" && Object.prototype.hasOwnProperty.call(mod, k)) __createBinding(result, mod, k);
-    __setModuleDefault(result, mod);
-    return result;
+var __importDefault = (this && this.__importDefault) || function (mod) {
+    return (mod && mod.__esModule) ? mod : { "default": mod };
 };
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.Modal = void 0;
-const react_1 = __importStar(require("react"));
-function Modal({ onClose }) {
-    const [count, setCount] = (0, react_1.useState)(0);
-    console.log({ onClose });
+const react_1 = __importDefault(require("react"));
+function Modal({ onDeny, onAccept, txGasFees }) {
     const style = {
         margin: 'auto',
+        padding: '16px',
         width: '50%',
-        height: '50%',
+        height: 'auto',
         borderRadius: '16px',
         backgroundColor: 'white',
         display: 'flex',
@@ -40,16 +19,28 @@ function Modal({ onClose }) {
         justifyContent: 'center',
         alignItems: 'center'
     };
-    function handleClose() {
-        console.log('CLOSING...');
-        onClose();
-    }
+    const buttonStyle = {
+        padding: '8px 16px',
+        borderRadius: '8px',
+        backgroundColor: '#101010',
+        color: 'white',
+        fontFamily: 'sans-serif',
+        fontSize: '16px',
+        margin: '0 8px'
+    };
+    const acceptBtnStyle = Object.assign(Object.assign({}, buttonStyle), { backgroundColor: '#00ff00' });
+    const denyBtnStyle = Object.assign(Object.assign({}, buttonStyle), { backgroundColor: '#ff0000' });
+    const textStyle = {
+        fontFamily: 'sans-serif',
+        fontSize: '24px',
+        color: '#101010',
+        marginBottom: '24px'
+    };
     return (react_1.default.createElement("div", { style: style },
-        react_1.default.createElement("p", null,
-            "Count: ",
-            count),
-        react_1.default.createElement("button", { onClick: () => setCount(count + 1) }, "Increment"),
-        react_1.default.createElement("button", { onClick: () => setCount(count - 1) }, "Decrement"),
-        react_1.default.createElement("button", { onClick: handleClose }, "Close")));
+        react_1.default.createElement("p", { style: textStyle },
+            "This tx is gonna cost: ",
+            txGasFees),
+        react_1.default.createElement("button", { style: acceptBtnStyle, onClick: onAccept }, "Continue"),
+        react_1.default.createElement("button", { style: denyBtnStyle, onClick: onDeny }, "Cancel")));
 }
 exports.Modal = Modal;

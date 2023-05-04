@@ -62,8 +62,6 @@ class AlembicWallet {
     connect() {
         var _a, _b;
         return __awaiter(this, void 0, void 0, function* () {
-            const modal = new ui_1.GasModal({});
-            modal.initModal();
             // Return if does not match requirements
             if (!this.authAdapter)
                 throw new Error('No EOA adapter found');
@@ -228,6 +226,10 @@ class AlembicWallet {
                 safeTxDataTyped.safeTxGas = +safeTxGas;
                 safeTxDataTyped.baseGas = baseGas;
                 safeTxDataTyped.gasPrice = +gasPrice;
+            }
+            const isUserAccepting = yield new ui_1.GasModal().initModal(safeTxDataTyped.safeTxGas.toString());
+            if (!isUserAccepting) {
+                throw new Error('Transaction denied');
             }
             const signature = yield this._signTransaction(safeTxDataTyped, nonce);
             const safeTxHash = yield this.API.relayTransaction({
