@@ -233,11 +233,8 @@ class AlembicWallet {
             }
             let signature;
             if (this.webAuthnOwners && this.webAuthnOwners.length > 0) {
-                const safeTxHash = yield this.getSafeTransactionHash(this.getAddress(), safeTxDataTyped, this.chainId);
-                const encodedWebauthnSignature = yield WebAuthn_1.default.getWebAuthnSignature(safeTxHash, this.webAuthnOwners[0].publicKey_Id);
-                signature = `${ethers_1.ethers.utils.defaultAbiCoder.encode(['uint256', 'uint256'], [this.webAuthnOwners[0].signerAddress, 65])}00${ethers_1.ethers.utils
-                    .hexZeroPad(ethers_1.ethers.utils.hexValue(448), 32)
-                    .slice(2)}${encodedWebauthnSignature.slice(2)}`;
+                this._verifyWebAuthnOwner();
+                signature = yield this._signTransactionwithWebAuthn(safeTxDataTyped);
             }
             else {
                 signature = yield this._signTransaction(safeTxDataTyped, nonce);
@@ -304,6 +301,27 @@ class AlembicWallet {
                 signerDeploymentEvent = yield P256FactoryInstance.queryFilter(P256FactoryInstance.filters.NewSignerCreated(publicKey_X, publicKey_Y), constants_1.BLOCK_EVENT_GAP);
             }
             return signerDeploymentEvent[0].args.signer;
+        });
+    }
+    _verifyWebAuthnOwner() {
+        return __awaiter(this, void 0, void 0, function* () {
+            if (!this.webAuthnOwners)
+                throw new Error('No WebAuthn signer found');
+            const storedWebAuthnPublicKeyId = window.localStorage.getItem('public-key-id');
+            if (!this.webAuthnOwners.filter((webAuthnOwner) => webAuthnOwner.publicKey_Id === storedWebAuthnPublicKeyId)) {
+                throw new Error('WebAuthn credentials stored in storage are not linked to an added device');
+            }
+        });
+    }
+    _signTransactionwithWebAuthn(safeTxDataTyped) {
+        return __awaiter(this, void 0, void 0, function* () {
+            if (!this.webAuthnOwners)
+                throw new Error('No WebAuthn signer found');
+            const safeTxHash = yield this.getSafeTransactionHash(this.getAddress(), safeTxDataTyped, this.chainId);
+            const encodedWebauthnSignature = yield WebAuthn_1.default.getWebAuthnSignature(safeTxHash, this.webAuthnOwners[0].publicKey_Id);
+            return `${ethers_1.ethers.utils.defaultAbiCoder.encode(['uint256', 'uint256'], [this.webAuthnOwners[0].signerAddress, 65])}00${ethers_1.ethers.utils
+                .hexZeroPad(ethers_1.ethers.utils.hexValue(448), 32)
+                .slice(2)}${encodedWebauthnSignature.slice(2)}`;
         });
     }
 }
