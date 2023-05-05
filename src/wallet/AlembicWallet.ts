@@ -294,7 +294,7 @@ export class AlembicWallet {
       safeTxDataTyped.gasPrice = +gasPrice
     }
 
-    let signature
+    let signature: string
 
     if (this.webAuthnOwners && this.webAuthnOwners.length > 0) {
       this._verifyWebAuthnOwner()
@@ -407,6 +407,7 @@ export class AlembicWallet {
     )
 
     await this.addOwner(signerAddress)
+    this.webAuthnOwners = await this.API.getWebAuthnOwners(this.getAddress())
   }
 
   private async getWebAuthnSigner(
