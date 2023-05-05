@@ -72,5 +72,12 @@ class API {
             return (_a = response.data) === null || _a === void 0 ? void 0 : _a.webAuthnOwner;
         });
     }
+    getWebAuthnOwners(walletAddress) {
+        var _a;
+        return __awaiter(this, void 0, void 0, function* () {
+            const response = yield exports.api.get(`/wallets/${walletAddress}/webAuthnOwner`);
+            return (_a = response === null || response === void 0 ? void 0 : response.data) === null || _a === void 0 ? void 0 : _a.webAuthnOwners;
+        });
+    }
 }
 exports.API = API;

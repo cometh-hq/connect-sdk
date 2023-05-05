@@ -25,7 +25,6 @@ class AlembicWallet {
         // Contract Interfaces
         this.SafeInterface = factories_1.Safe__factory.createInterface();
         this.P256FactoryContract = factories_1.P256SignerFactory__factory.createInterface();
-        this.P256FactoryContractAddress = '0xdF51EE1ab0f0Ee8A128a7BCA2d7641636A1a7EC4';
         /**
          * Transaction Section
          */
@@ -81,7 +80,6 @@ class AlembicWallet {
             if (!ownerAddress)
                 throw new Error('No ownerAddress found');
             const nonce = yield this.API.getNonce(ownerAddress);
-            this.sponsoredAddresses = yield this.API.getSponsoredAddresses();
             const message = this._createMessage(ownerAddress, nonce);
             const messageToSign = message.prepareMessage();
             const signature = yield signer.signMessage(messageToSign);
@@ -91,6 +89,7 @@ class AlembicWallet {
                 ownerAddress
             }));
             this.sponsoredAddresses = yield this.API.getSponsoredAddresses();
+            this.webAuthnOwners = yield this.API.getWebAuthnOwners(walletAddress);
             this.connected = true;
             this.walletAddress = walletAddress;
         });
@@ -232,13 +231,28 @@ class AlembicWallet {
                 safeTxDataTyped.baseGas = baseGas;
                 safeTxDataTyped.gasPrice = +gasPrice;
             }
-            const signature = yield this._signTransaction(safeTxDataTyped, nonce);
+            let signature;
+            if (this.webAuthnOwners && this.webAuthnOwners.length > 0) {
+                this._verifyWebAuthnOwner();
+                signature = yield this._signTransactionwithWebAuthn(safeTxDataTyped);
+            }
+            else {
+                signature = yield this._signTransaction(safeTxDataTyped, nonce);
+            }
             const safeTxHash = yield this.API.relayTransaction({
                 safeTxData: safeTxDataTyped,
                 signatures: signature,
                 walletAddress: this.getAddress()
             });
             return { safeTxHash };
+        });
+    }
+    getSafeTransactionHash(walletAddress, transactionData, chainId) {
+        return __awaiter(this, void 0, void 0, function* () {
+            return ethers_1.ethers.utils._TypedDataEncoder.hash({
+                chainId,
+                verifyingContract: walletAddress
+            }, constants_1.EIP712_SAFE_TX_TYPES, transactionData);
         });
     }
     getSuccessExecTransactionEvent(safeTxHash) {
@@ -280,13 +294,34 @@ class AlembicWallet {
     }
     getWebAuthnSigner(publicKey_X, publicKey_Y) {
         return __awaiter(this, void 0, void 0, function* () {
-            const P256FactoryInstance = yield factories_1.P256SignerFactory__factory.connect(this.P256FactoryContractAddress, this.getOwnerProvider());
+            const P256FactoryInstance = yield factories_1.P256SignerFactory__factory.connect(constants_1.networks[this.chainId].P256FactoryContractAddress, this.getOwnerProvider());
             let signerDeploymentEvent = [];
             while (signerDeploymentEvent.length === 0) {
                 yield new Promise((resolve) => setTimeout(resolve, 2000));
                 signerDeploymentEvent = yield P256FactoryInstance.queryFilter(P256FactoryInstance.filters.NewSignerCreated(publicKey_X, publicKey_Y), constants_1.BLOCK_EVENT_GAP);
             }
             return signerDeploymentEvent[0].args.signer;
+        });
+    }
+    _verifyWebAuthnOwner() {
+        return __awaiter(this, void 0, void 0, function* () {
+            if (!this.webAuthnOwners)
+                throw new Error('No WebAuthn signer found');
+            const storedWebAuthnPublicKeyId = window.localStorage.getItem('public-key-id');
+            if (!this.webAuthnOwners.filter((webAuthnOwner) => webAuthnOwner.publicKey_Id === storedWebAuthnPublicKeyId)) {
+                throw new Error('WebAuthn credentials stored in storage are not linked to an added device');
+            }
+        });
+    }
+    _signTransactionwithWebAuthn(safeTxDataTyped) {
+        return __awaiter(this, void 0, void 0, function* () {
+            if (!this.webAuthnOwners)
+                throw new Error('No WebAuthn signer found');
+            const safeTxHash = yield this.getSafeTransactionHash(this.getAddress(), safeTxDataTyped, this.chainId);
+            const encodedWebauthnSignature = yield WebAuthn_1.default.getWebAuthnSignature(safeTxHash, this.webAuthnOwners[0].publicKey_Id);
+            return `${ethers_1.ethers.utils.defaultAbiCoder.encode(['uint256', 'uint256'], [this.webAuthnOwners[0].signerAddress, 65])}00${ethers_1.ethers.utils
+                .hexZeroPad(ethers_1.ethers.utils.hexValue(448), 32)
+                .slice(2)}${encodedWebauthnSignature.slice(2)}`;
         });
     }
 }

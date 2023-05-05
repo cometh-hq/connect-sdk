@@ -5,10 +5,12 @@ export declare const networks: {
   137: {
     RPCUrl: string
     networkName: string
+    P256FactoryContractAddress: string
   }
   80001: {
     RPCUrl: string
     networkName: string
+    P256FactoryContractAddress: string
   }
 }
 export declare const DEFAULT_BASE_GAS = 80000

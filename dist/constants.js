@@ -8,11 +8,13 @@ exports.networks = {
     // Default network: Polygon
     137: {
         RPCUrl: process.env.RPC_URL_POLYGON || 'https://polygon-rpc.com',
-        networkName: 'Polygon'
+        networkName: 'Polygon',
+        P256FactoryContractAddress: '0xdF51EE1ab0f0Ee8A128a7BCA2d7641636A1a7EC4'
     },
     80001: {
         RPCUrl: process.env.RPC_URL_MUMBAI || 'https://rpc-mumbai.maticvigil.com',
-        networkName: 'Mumbai'
+        networkName: 'Mumbai',
+        P256FactoryContractAddress: ''
     }
 };
 exports.DEFAULT_BASE_GAS = 80000;

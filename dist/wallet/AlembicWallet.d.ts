@@ -22,11 +22,10 @@ export declare class AlembicWallet {
   private REWARD_PERCENTILE
   private API
   private sponsoredAddresses?
+  private webAuthnOwners?
   private walletAddress?
   readonly SafeInterface: SafeInterface
   readonly P256FactoryContract: P256SignerFactoryInterface
-  readonly P256FactoryContractAddress =
-    '0xdF51EE1ab0f0Ee8A128a7BCA2d7641636A1a7EC4'
   constructor({ authAdapter, apiKey }: AlembicWalletConfig)
   /**
    * Connection Section
@@ -58,11 +57,14 @@ export declare class AlembicWallet {
   sendTransaction(
     safeTxData: MetaTransactionData
   ): Promise<SendTransactionResponse>
+  private getSafeTransactionHash
   getSuccessExecTransactionEvent(safeTxHash: string): Promise<any>
   getFailedExecTransactionEvent(safeTxHash: string): Promise<any>
   /**
    * WebAuthn Section
    */
-  addWebAuthnOwner(): Promise<any>
+  addWebAuthnOwner(): Promise<void>
   private getWebAuthnSigner
+  private _verifyWebAuthnOwner
+  private _signTransactionwithWebAuthn
 }
