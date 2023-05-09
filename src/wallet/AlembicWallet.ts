@@ -43,9 +43,7 @@ export class AlembicWallet {
   private webAuthnOwners?: WebAuthnOwner[]
   private walletAddress?: string
 
-  /**
-   * Contracts Interfaces
-   */
+  // Contracts Interfaces
   readonly SafeInterface: SafeInterface = Safe__factory.createInterface()
   readonly P256FactoryContract: P256SignerFactoryInterface =
     P256SignerFactory__factory.createInterface()
