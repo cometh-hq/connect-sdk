@@ -131,6 +131,11 @@ export class AlembicWallet {
     return message
   }
 
+  private _getBalance = async (address: string): Promise<BigNumber> => {
+    const provider = this.getOwnerProvider()
+    return provider.getBalance(address)
+  }
+
   public async logout(): Promise<void> {
     if (!this.authAdapter) throw new Error('No EOA adapter found')
     await this.authAdapter.logout()
@@ -283,6 +288,18 @@ export class AlembicWallet {
       safeTxDataTyped.safeTxGas = +safeTxGas
       safeTxDataTyped.baseGas = baseGas
       safeTxDataTyped.gasPrice = +gasPrice
+
+      const walletBalance = await this._getBalance(this.getAddress())
+      const totalGasCost = BigNumber.from(safeTxGas)
+        .add(BigNumber.from(baseGas))
+        .mul(BigNumber.from(gasPrice))
+
+      if (
+        walletBalance.lt(
+          totalGasCost.add(BigNumber.from(safeTxDataTyped.value))
+        )
+      )
+        throw new Error('Not enough balance to send this value and pay for gas')
     }
 
     const signature = await this._signTransaction(safeTxDataTyped, nonce)
