@@ -146,7 +146,6 @@ class AlembicWallet {
     }
     addOwner(newOwner) {
         return __awaiter(this, void 0, void 0, function* () {
-            console.log({ newOwner });
             const tx = {
                 to: this.getAddress(),
                 value: '0x0',

@@ -14,7 +14,7 @@ exports.networks = {
     80001: {
         RPCUrl: process.env.RPC_URL_MUMBAI || 'https://rpc-mumbai.maticvigil.com',
         networkName: 'Mumbai',
-        P256FactoryContractAddress: ''
+        P256FactoryContractAddress: '0x'
     }
 };
 exports.DEFAULT_BASE_GAS = 80000;

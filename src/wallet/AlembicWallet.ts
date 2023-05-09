@@ -147,7 +147,6 @@ export class AlembicWallet {
   }
 
   public async addOwner(newOwner: string): Promise<SendTransactionResponse> {
-    console.log({ newOwner })
     const tx = {
       to: this.getAddress(),
       value: '0x0',
