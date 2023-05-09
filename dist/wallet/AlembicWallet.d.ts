@@ -63,7 +63,7 @@ export declare class AlembicWallet {
   /**
    * WebAuthn Section
    */
-  addWebAuthnOwner(): Promise<void>
+  addWebAuthnOwner(): Promise<SendTransactionResponse>
   private getWebAuthnSigner
   private _verifyWebAuthnOwner
   private _signTransactionwithWebAuthn

@@ -147,6 +147,7 @@ export class AlembicWallet {
   }
 
   public async addOwner(newOwner: string): Promise<SendTransactionResponse> {
+    console.log({ newOwner })
     const tx = {
       to: this.getAddress(),
       value: '0x0',
@@ -367,7 +368,7 @@ export class AlembicWallet {
    * WebAuthn Section
    */
 
-  public async addWebAuthnOwner(): Promise<void> {
+  public async addWebAuthnOwner(): Promise<SendTransactionResponse> {
     const signer = this.authAdapter.getEthProvider()?.getSigner()
     if (!signer) throw new Error('No signer found')
 
@@ -406,8 +407,9 @@ export class AlembicWallet {
       signerAddress
     )
 
-    await this.addOwner(signerAddress)
+    const safeTxHash = await this.addOwner(signerAddress)
     this.webAuthnOwners = await this.API.getWebAuthnOwners(this.getAddress())
+    return safeTxHash
   }
 
   private async getWebAuthnSigner(

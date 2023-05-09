@@ -146,6 +146,7 @@ class AlembicWallet {
     }
     addOwner(newOwner) {
         return __awaiter(this, void 0, void 0, function* () {
+            console.log({ newOwner });
             const tx = {
                 to: this.getAddress(),
                 value: '0x0',
@@ -289,8 +290,9 @@ class AlembicWallet {
             yield this.API.addWebAuthnOwner(this.getAddress(), publicKey_Id, publicKey_X, publicKey_Y, signature, message, undefined);
             const signerAddress = yield this.getWebAuthnSigner(publicKey_X, publicKey_Y);
             yield this.API.addWebAuthnOwner(this.getAddress(), publicKey_Id, publicKey_X, publicKey_Y, signature, message, signerAddress);
-            yield this.addOwner(signerAddress);
+            const safeTxHash = yield this.addOwner(signerAddress);
             this.webAuthnOwners = yield this.API.getWebAuthnOwners(this.getAddress());
+            return safeTxHash;
         });
     }
     getWebAuthnSigner(publicKey_X, publicKey_Y) {
