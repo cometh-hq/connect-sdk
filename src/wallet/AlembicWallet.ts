@@ -283,10 +283,40 @@ export class AlembicWallet {
     }
   }
 
+  private async _calculateAndShowMaxFee(
+    txValue: string,
+    safeTxGas: BigNumber,
+    baseGas: number,
+    gasPrice: BigNumber
+  ): Promise<void> {
+    const walletBalance = await this._getBalance(this.getAddress())
+    const totalGasCost = BigNumber.from(safeTxGas)
+      .add(BigNumber.from(baseGas))
+      .mul(BigNumber.from(gasPrice))
+
+    if (walletBalance.lt(totalGasCost.add(BigNumber.from(txValue))))
+      throw new Error('Not enough balance to send this value and pay for gas')
+
+    if (this.uiConfig.displayValidationModal) {
+      const totalFees = ethers.utils.formatEther(
+        ethers.utils.parseUnits(
+          BigNumber.from(safeTxGas).add(baseGas).mul(gasPrice).toString(),
+          'wei'
+        )
+      )
+
+      if (!(await new GasModal().initModal((+totalFees).toFixed(3)))) {
+        throw new Error('Transaction denied')
+      }
+    }
+  }
+
   public async sendTransaction(
     safeTxData: MetaTransactionData
   ): Promise<SendTransactionResponse> {
     const nonce = await this._getNonce()
+    const storedWebAuthnPublicKeyId =
+      window.localStorage.getItem('public-key-id')
 
     const safeTxDataTyped = {
       to: safeTxData.to,
@@ -309,39 +339,17 @@ export class AlembicWallet {
       safeTxDataTyped.baseGas = baseGas // gwei
       safeTxDataTyped.gasPrice = +gasPrice // wei
 
-      const walletBalance = await this._getBalance(this.getAddress())
-      const totalGasCost = BigNumber.from(safeTxGas)
-        .add(BigNumber.from(baseGas))
-        .mul(BigNumber.from(gasPrice))
-
-      if (
-        walletBalance.lt(
-          totalGasCost.add(BigNumber.from(safeTxDataTyped.value))
-        )
+      await this._calculateAndShowMaxFee(
+        safeTxDataTyped.value,
+        safeTxGas,
+        baseGas,
+        gasPrice
       )
-        throw new Error('Not enough balance to send this value and pay for gas')
-
-      if (this.uiConfig.displayValidationModal) {
-        const totalFees = ethers.utils.formatEther(
-          ethers.utils.parseUnits(
-            BigNumber.from(safeTxGas).add(baseGas).mul(gasPrice).toString(),
-            'wei'
-          )
-        )
-
-        if (!(await new GasModal().initModal((+totalFees).toFixed(3)))) {
-          throw new Error('Transaction denied')
-        }
-      }
     }
 
     let txSignature: string
 
-    if (this.webAuthnOwners && this.webAuthnOwners.length > 0) {
-      const storedWebAuthnPublicKeyId =
-        window.localStorage.getItem('public-key-id')
-
-      this._verifyWebAuthnOwner(<string>storedWebAuthnPublicKeyId)
+    if (await this._verifyWebAuthnOwner(<string>storedWebAuthnPublicKeyId)) {
       txSignature = await this._signTransactionwithWebAuthn(
         safeTxDataTyped,
         <string>storedWebAuthnPublicKeyId
@@ -496,18 +504,25 @@ export class AlembicWallet {
     return signerDeploymentEvent[0].args.signer
   }
 
-  private async _verifyWebAuthnOwner(publicKey_Id: string): Promise<void> {
-    if (!this.webAuthnOwners) throw new Error('No WebAuthn signer found')
+  private async _verifyWebAuthnOwner(publicKey_Id: string): Promise<boolean> {
+    if (!this.webAuthnOwners) return false
 
-    if (
-      !this.webAuthnOwners.filter(
-        (webAuthnOwner) => webAuthnOwner.publicKey_Id === publicKey_Id
-      )
-    ) {
-      throw new Error(
-        'WebAuthn credentials stored in storage are not linked to an added device'
-      )
-    }
+    const currentWebAuthnOwner = this.webAuthnOwners.find(
+      (webAuthnOwner) => webAuthnOwner.publicKey_Id === publicKey_Id
+    )
+    if (!currentWebAuthnOwner) return false
+
+    const safeInstance = await Safe__factory.connect(
+      this.getAddress(),
+      this.getOwnerProvider()
+    )
+    const isSafeOwner = await safeInstance.isOwner(
+      currentWebAuthnOwner.signerAddress
+    )
+
+    if (!isSafeOwner) return false
+
+    return true
   }
 
   private async _signTransactionwithWebAuthn(

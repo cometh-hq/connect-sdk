@@ -220,10 +220,27 @@ class AlembicWallet {
             };
         });
     }
+    _calculateAndShowMaxFee(txValue, safeTxGas, baseGas, gasPrice) {
+        return __awaiter(this, void 0, void 0, function* () {
+            const walletBalance = yield this._getBalance(this.getAddress());
+            const totalGasCost = ethers_1.BigNumber.from(safeTxGas)
+                .add(ethers_1.BigNumber.from(baseGas))
+                .mul(ethers_1.BigNumber.from(gasPrice));
+            if (walletBalance.lt(totalGasCost.add(ethers_1.BigNumber.from(txValue))))
+                throw new Error('Not enough balance to send this value and pay for gas');
+            if (this.uiConfig.displayValidationModal) {
+                const totalFees = ethers_1.ethers.utils.formatEther(ethers_1.ethers.utils.parseUnits(ethers_1.BigNumber.from(safeTxGas).add(baseGas).mul(gasPrice).toString(), 'wei'));
+                if (!(yield new ui_1.GasModal().initModal((+totalFees).toFixed(3)))) {
+                    throw new Error('Transaction denied');
+                }
+            }
+        });
+    }
     sendTransaction(safeTxData) {
         var _a;
         return __awaiter(this, void 0, void 0, function* () {
             const nonce = yield this._getNonce();
+            const storedWebAuthnPublicKeyId = window.localStorage.getItem('public-key-id');
             const safeTxDataTyped = {
                 to: safeTxData.to,
                 value: (_a = safeTxData.value) !== null && _a !== void 0 ? _a : '0x0',
@@ -241,23 +258,10 @@ class AlembicWallet {
                 safeTxDataTyped.safeTxGas = +safeTxGas; // gwei
                 safeTxDataTyped.baseGas = baseGas; // gwei
                 safeTxDataTyped.gasPrice = +gasPrice; // wei
-                const walletBalance = yield this._getBalance(this.getAddress());
-                const totalGasCost = ethers_1.BigNumber.from(safeTxGas)
-                    .add(ethers_1.BigNumber.from(baseGas))
-                    .mul(ethers_1.BigNumber.from(gasPrice));
-                if (walletBalance.lt(totalGasCost.add(ethers_1.BigNumber.from(safeTxDataTyped.value))))
-                    throw new Error('Not enough balance to send this value and pay for gas');
-                if (this.uiConfig.displayValidationModal) {
-                    const totalFees = ethers_1.ethers.utils.formatEther(ethers_1.ethers.utils.parseUnits(ethers_1.BigNumber.from(safeTxGas).add(baseGas).mul(gasPrice).toString(), 'wei'));
-                    if (!(yield new ui_1.GasModal().initModal((+totalFees).toFixed(3)))) {
-                        throw new Error('Transaction denied');
-                    }
-                }
+                yield this._calculateAndShowMaxFee(safeTxDataTyped.value, safeTxGas, baseGas, gasPrice);
             }
             let txSignature;
-            if (this.webAuthnOwners && this.webAuthnOwners.length > 0) {
-                const storedWebAuthnPublicKeyId = window.localStorage.getItem('public-key-id');
-                this._verifyWebAuthnOwner(storedWebAuthnPublicKeyId);
+            if (yield this._verifyWebAuthnOwner(storedWebAuthnPublicKeyId)) {
                 txSignature = yield this._signTransactionwithWebAuthn(safeTxDataTyped, storedWebAuthnPublicKeyId);
             }
             else {
@@ -346,10 +350,15 @@ class AlembicWallet {
     _verifyWebAuthnOwner(publicKey_Id) {
         return __awaiter(this, void 0, void 0, function* () {
             if (!this.webAuthnOwners)
-                throw new Error('No WebAuthn signer found');
-            if (!this.webAuthnOwners.filter((webAuthnOwner) => webAuthnOwner.publicKey_Id === publicKey_Id)) {
-                throw new Error('WebAuthn credentials stored in storage are not linked to an added device');
-            }
+                return false;
+            const currentWebAuthnOwner = this.webAuthnOwners.find((webAuthnOwner) => webAuthnOwner.publicKey_Id === publicKey_Id);
+            if (!currentWebAuthnOwner)
+                return false;
+            const safeInstance = yield factories_1.Safe__factory.connect(this.getAddress(), this.getOwnerProvider());
+            const isSafeOwner = yield safeInstance.isOwner(currentWebAuthnOwner.signerAddress);
+            if (!isSafeOwner)
+                return false;
+            return true;
         });
     }
     _signTransactionwithWebAuthn(safeTxDataTyped, publicKey_Id) {

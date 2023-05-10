@@ -61,6 +61,7 @@ export declare class AlembicWallet {
     baseGas: number
     gasPrice: BigNumber
   }>
+  private _calculateAndShowMaxFee
   sendTransaction(
     safeTxData: MetaTransactionData
   ): Promise<SendTransactionResponse>
