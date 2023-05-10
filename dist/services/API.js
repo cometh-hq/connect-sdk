@@ -57,7 +57,7 @@ class API {
             return (_e = response.data) === null || _e === void 0 ? void 0 : _e.safeTxHash;
         });
     }
-    addWebAuthnOwner(walletAddress, publicKey_Id, publicKey_X, publicKey_Y, signature, message, signerAddress) {
+    addWebAuthnOwner(walletAddress, publicKey_Id, publicKey_X, publicKey_Y, signature, message, addOwnerTxData, addOwnerTxSignature) {
         var _a;
         return __awaiter(this, void 0, void 0, function* () {
             const body = {
@@ -66,7 +66,8 @@ class API {
                 publicKey_Y,
                 signature,
                 message,
-                signerAddress
+                addOwnerTxData,
+                addOwnerTxSignature
             };
             const response = yield exports.api.post(`/wallets/${walletAddress}/webAuthnOwner`, body);
             return (_a = response.data) === null || _a === void 0 ? void 0 : _a.webAuthnOwner;

@@ -25,7 +25,7 @@ export declare class AlembicWallet {
   private webAuthnOwners?
   private walletAddress?
   readonly SafeInterface: SafeInterface
-  readonly P256FactoryContract: P256SignerFactoryInterface
+  readonly P256FactoryInterface: P256SignerFactoryInterface
   constructor({ authAdapter, apiKey }: AlembicWalletConfig)
   /**
    * Connection Section
@@ -63,8 +63,9 @@ export declare class AlembicWallet {
   /**
    * WebAuthn Section
    */
-  addWebAuthnOwner(): Promise<SendTransactionResponse>
-  private getWebAuthnSigner
+  addWebAuthnOwner(): Promise<string>
+  private _waitWebAuthnSignerDeployment
   private _verifyWebAuthnOwner
   private _signTransactionwithWebAuthn
+  private _predictedSignerAddress
 }

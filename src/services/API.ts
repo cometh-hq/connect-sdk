@@ -74,7 +74,8 @@ export class API {
     publicKey_Y,
     signature,
     message,
-    signerAddress
+    addOwnerTxData,
+    addOwnerTxSignature
   ): Promise<WebAuthnOwner> {
     const body = {
       publicKey_Id,
@@ -82,7 +83,8 @@ export class API {
       publicKey_Y,
       signature,
       message,
-      signerAddress
+      addOwnerTxData,
+      addOwnerTxSignature
     }
 
     const response = await api.post(

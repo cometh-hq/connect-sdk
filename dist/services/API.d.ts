@@ -32,7 +32,8 @@ export declare class API {
     publicKey_Y: any,
     signature: any,
     message: any,
-    signerAddress: any
+    addOwnerTxData: any,
+    addOwnerTxSignature: any
   ): Promise<WebAuthnOwner>
   getWebAuthnOwners(walletAddress: string): Promise<WebAuthnOwner[]>
 }

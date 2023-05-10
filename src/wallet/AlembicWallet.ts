@@ -8,7 +8,8 @@ import {
   DEFAULT_REWARD_PERCENTILE,
   EIP712_SAFE_MESSAGE_TYPE,
   EIP712_SAFE_TX_TYPES,
-  networks
+  networks,
+  P256SignerCreationCode
 } from '../constants'
 import {
   P256SignerFactory__factory,
@@ -45,7 +46,7 @@ export class AlembicWallet {
 
   // Contracts Interfaces
   readonly SafeInterface: SafeInterface = Safe__factory.createInterface()
-  readonly P256FactoryContract: P256SignerFactoryInterface =
+  readonly P256FactoryInterface: P256SignerFactoryInterface =
     P256SignerFactory__factory.createInterface()
 
   constructor({ authAdapter, apiKey }: AlembicWalletConfig) {
@@ -294,18 +295,24 @@ export class AlembicWallet {
       safeTxDataTyped.gasPrice = +gasPrice
     }
 
-    let signature: string
+    let txSignature: string
 
     if (this.webAuthnOwners && this.webAuthnOwners.length > 0) {
-      this._verifyWebAuthnOwner()
-      signature = await this._signTransactionwithWebAuthn(safeTxDataTyped)
+      const storedWebAuthnPublicKeyId =
+        window.localStorage.getItem('public-key-id')
+
+      this._verifyWebAuthnOwner(<string>storedWebAuthnPublicKeyId)
+      txSignature = await this._signTransactionwithWebAuthn(
+        safeTxDataTyped,
+        <string>storedWebAuthnPublicKeyId
+      )
     } else {
-      signature = await this._signTransaction(safeTxDataTyped, nonce)
+      txSignature = await this._signTransaction(safeTxDataTyped, nonce)
     }
 
     const safeTxHash = await this.API.relayTransaction({
       safeTxData: safeTxDataTyped,
-      signatures: signature,
+      signatures: txSignature,
       walletAddress: this.getAddress()
     })
 
@@ -367,7 +374,7 @@ export class AlembicWallet {
    * WebAuthn Section
    */
 
-  public async addWebAuthnOwner(): Promise<SendTransactionResponse> {
+  public async addWebAuthnOwner(): Promise<string> {
     const signer = this.authAdapter.getEthProvider()?.getSigner()
     if (!signer) throw new Error('No signer found')
 
@@ -384,6 +391,32 @@ export class AlembicWallet {
       ethers.utils.hexlify(ethers.utils.toUtf8Bytes(message))
     )
 
+    const predictedSignerAddress = await this._predictedSignerAddress(
+      publicKey_X,
+      publicKey_Y,
+      this.chainId
+    )
+
+    const addOwnerTxData = {
+      to: this.getAddress(),
+      value: '0x0',
+      data: this.SafeInterface.encodeFunctionData('addOwnerWithThreshold', [
+        predictedSignerAddress,
+        1
+      ]),
+      operation: 0,
+      safeTxGas: 0,
+      baseGas: 0,
+      gasPrice: 0,
+      gasToken: ethers.constants.AddressZero,
+      refundReceiver: ethers.constants.AddressZero
+    }
+
+    const addOwnerTxSignature = await this._signTransaction(
+      addOwnerTxData,
+      await this._getNonce()
+    )
+
     await this.API.addWebAuthnOwner(
       this.getAddress(),
       publicKey_Id,
@@ -391,27 +424,17 @@ export class AlembicWallet {
       publicKey_Y,
       signature,
       message,
-      undefined
+      JSON.stringify(addOwnerTxData),
+      addOwnerTxSignature
     )
 
-    const signerAddress = await this.getWebAuthnSigner(publicKey_X, publicKey_Y)
+    await this._waitWebAuthnSignerDeployment(publicKey_X, publicKey_Y)
 
-    await this.API.addWebAuthnOwner(
-      this.getAddress(),
-      publicKey_Id,
-      publicKey_X,
-      publicKey_Y,
-      signature,
-      message,
-      signerAddress
-    )
-
-    const safeTxHash = await this.addOwner(signerAddress)
     this.webAuthnOwners = await this.API.getWebAuthnOwners(this.getAddress())
-    return safeTxHash
+    return predictedSignerAddress
   }
 
-  private async getWebAuthnSigner(
+  private async _waitWebAuthnSignerDeployment(
     publicKey_X: string,
     publicKey_Y: string
   ): Promise<string> {
@@ -433,16 +456,12 @@ export class AlembicWallet {
     return signerDeploymentEvent[0].args.signer
   }
 
-  private async _verifyWebAuthnOwner(): Promise<void> {
+  private async _verifyWebAuthnOwner(publicKey_Id: string): Promise<void> {
     if (!this.webAuthnOwners) throw new Error('No WebAuthn signer found')
-
-    const storedWebAuthnPublicKeyId =
-      window.localStorage.getItem('public-key-id')
 
     if (
       !this.webAuthnOwners.filter(
-        (webAuthnOwner) =>
-          webAuthnOwner.publicKey_Id === storedWebAuthnPublicKeyId
+        (webAuthnOwner) => webAuthnOwner.publicKey_Id === publicKey_Id
       )
     ) {
       throw new Error(
@@ -452,7 +471,8 @@ export class AlembicWallet {
   }
 
   private async _signTransactionwithWebAuthn(
-    safeTxDataTyped: MetaTransactionData
+    safeTxDataTyped: MetaTransactionData,
+    publicKey_Id: string
   ): Promise<string> {
     if (!this.webAuthnOwners) throw new Error('No WebAuthn signer found')
 
@@ -464,7 +484,7 @@ export class AlembicWallet {
 
     const encodedWebauthnSignature = await WebAuthn.getWebAuthnSignature(
       safeTxHash,
-      this.webAuthnOwners[0].publicKey_Id
+      publicKey_Id
     )
 
     return `${ethers.utils.defaultAbiCoder.encode(
@@ -473,5 +493,31 @@ export class AlembicWallet {
     )}00${ethers.utils
       .hexZeroPad(ethers.utils.hexValue(448), 32)
       .slice(2)}${encodedWebauthnSignature.slice(2)}`
+  }
+
+  private async _predictedSignerAddress(
+    publicKey_X: string,
+    publicKey_Y: string,
+    chainId: number
+  ): Promise<string> {
+    const deploymentCode = ethers.utils.keccak256(
+      ethers.utils.solidityPack(
+        ['bytes', 'uint256', 'uint256'],
+        [P256SignerCreationCode, publicKey_X, publicKey_Y]
+      )
+    )
+
+    const salt = ethers.utils.keccak256(
+      ethers.utils.defaultAbiCoder.encode(
+        ['uint256', 'uint256'],
+        [publicKey_X, publicKey_Y]
+      )
+    )
+
+    return ethers.utils.getCreate2Address(
+      networks[chainId].P256FactoryContractAddress,
+      salt,
+      deploymentCode
+    )
   }
 }

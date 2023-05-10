@@ -22,9 +22,9 @@ const WebAuthn_1 = __importDefault(require("./WebAuthn"));
 class AlembicWallet {
     constructor({ authAdapter, apiKey }) {
         this.connected = false;
-        // Contract Interfaces
+        // Contracts Interfaces
         this.SafeInterface = factories_1.Safe__factory.createInterface();
-        this.P256FactoryContract = factories_1.P256SignerFactory__factory.createInterface();
+        this.P256FactoryInterface = factories_1.P256SignerFactory__factory.createInterface();
         /**
          * Transaction Section
          */
@@ -231,17 +231,18 @@ class AlembicWallet {
                 safeTxDataTyped.baseGas = baseGas;
                 safeTxDataTyped.gasPrice = +gasPrice;
             }
-            let signature;
+            let txSignature;
             if (this.webAuthnOwners && this.webAuthnOwners.length > 0) {
-                this._verifyWebAuthnOwner();
-                signature = yield this._signTransactionwithWebAuthn(safeTxDataTyped);
+                const storedWebAuthnPublicKeyId = window.localStorage.getItem('public-key-id');
+                this._verifyWebAuthnOwner(storedWebAuthnPublicKeyId);
+                txSignature = yield this._signTransactionwithWebAuthn(safeTxDataTyped, storedWebAuthnPublicKeyId);
             }
             else {
-                signature = yield this._signTransaction(safeTxDataTyped, nonce);
+                txSignature = yield this._signTransaction(safeTxDataTyped, nonce);
             }
             const safeTxHash = yield this.API.relayTransaction({
                 safeTxData: safeTxDataTyped,
-                signatures: signature,
+                signatures: txSignature,
                 walletAddress: this.getAddress()
             });
             return { safeTxHash };
@@ -286,15 +287,29 @@ class AlembicWallet {
             const publicKey_Id = webAuthnCredentials.id;
             const message = `${publicKey_X},${publicKey_Y},${publicKey_Id}`;
             const signature = yield this.signMessage(ethers_1.ethers.utils.hexlify(ethers_1.ethers.utils.toUtf8Bytes(message)));
-            yield this.API.addWebAuthnOwner(this.getAddress(), publicKey_Id, publicKey_X, publicKey_Y, signature, message, undefined);
-            const signerAddress = yield this.getWebAuthnSigner(publicKey_X, publicKey_Y);
-            yield this.API.addWebAuthnOwner(this.getAddress(), publicKey_Id, publicKey_X, publicKey_Y, signature, message, signerAddress);
-            const safeTxHash = yield this.addOwner(signerAddress);
+            const predictedSignerAddress = yield this._predictedSignerAddress(publicKey_X, publicKey_Y, this.chainId);
+            const addOwnerTxData = {
+                to: this.getAddress(),
+                value: '0x0',
+                data: this.SafeInterface.encodeFunctionData('addOwnerWithThreshold', [
+                    predictedSignerAddress,
+                    1
+                ]),
+                operation: 0,
+                safeTxGas: 0,
+                baseGas: 0,
+                gasPrice: 0,
+                gasToken: ethers_1.ethers.constants.AddressZero,
+                refundReceiver: ethers_1.ethers.constants.AddressZero
+            };
+            const addOwnerTxSignature = yield this._signTransaction(addOwnerTxData, yield this._getNonce());
+            yield this.API.addWebAuthnOwner(this.getAddress(), publicKey_Id, publicKey_X, publicKey_Y, signature, message, JSON.stringify(addOwnerTxData), addOwnerTxSignature);
+            yield this._waitWebAuthnSignerDeployment(publicKey_X, publicKey_Y);
             this.webAuthnOwners = yield this.API.getWebAuthnOwners(this.getAddress());
-            return safeTxHash;
+            return predictedSignerAddress;
         });
     }
-    getWebAuthnSigner(publicKey_X, publicKey_Y) {
+    _waitWebAuthnSignerDeployment(publicKey_X, publicKey_Y) {
         return __awaiter(this, void 0, void 0, function* () {
             const P256FactoryInstance = yield factories_1.P256SignerFactory__factory.connect(constants_1.networks[this.chainId].P256FactoryContractAddress, this.getOwnerProvider());
             let signerDeploymentEvent = [];
@@ -305,25 +320,31 @@ class AlembicWallet {
             return signerDeploymentEvent[0].args.signer;
         });
     }
-    _verifyWebAuthnOwner() {
+    _verifyWebAuthnOwner(publicKey_Id) {
         return __awaiter(this, void 0, void 0, function* () {
             if (!this.webAuthnOwners)
                 throw new Error('No WebAuthn signer found');
-            const storedWebAuthnPublicKeyId = window.localStorage.getItem('public-key-id');
-            if (!this.webAuthnOwners.filter((webAuthnOwner) => webAuthnOwner.publicKey_Id === storedWebAuthnPublicKeyId)) {
+            if (!this.webAuthnOwners.filter((webAuthnOwner) => webAuthnOwner.publicKey_Id === publicKey_Id)) {
                 throw new Error('WebAuthn credentials stored in storage are not linked to an added device');
             }
         });
     }
-    _signTransactionwithWebAuthn(safeTxDataTyped) {
+    _signTransactionwithWebAuthn(safeTxDataTyped, publicKey_Id) {
         return __awaiter(this, void 0, void 0, function* () {
             if (!this.webAuthnOwners)
                 throw new Error('No WebAuthn signer found');
             const safeTxHash = yield this.getSafeTransactionHash(this.getAddress(), safeTxDataTyped, this.chainId);
-            const encodedWebauthnSignature = yield WebAuthn_1.default.getWebAuthnSignature(safeTxHash, this.webAuthnOwners[0].publicKey_Id);
+            const encodedWebauthnSignature = yield WebAuthn_1.default.getWebAuthnSignature(safeTxHash, publicKey_Id);
             return `${ethers_1.ethers.utils.defaultAbiCoder.encode(['uint256', 'uint256'], [this.webAuthnOwners[0].signerAddress, 65])}00${ethers_1.ethers.utils
                 .hexZeroPad(ethers_1.ethers.utils.hexValue(448), 32)
                 .slice(2)}${encodedWebauthnSignature.slice(2)}`;
+        });
+    }
+    _predictedSignerAddress(publicKey_X, publicKey_Y, chainId) {
+        return __awaiter(this, void 0, void 0, function* () {
+            const deploymentCode = ethers_1.ethers.utils.keccak256(ethers_1.ethers.utils.solidityPack(['bytes', 'uint256', 'uint256'], [constants_1.P256SignerCreationCode, publicKey_X, publicKey_Y]));
+            const salt = ethers_1.ethers.utils.keccak256(ethers_1.ethers.utils.defaultAbiCoder.encode(['uint256', 'uint256'], [publicKey_X, publicKey_Y]));
+            return ethers_1.ethers.utils.getCreate2Address(constants_1.networks[chainId].P256FactoryContractAddress, salt, deploymentCode);
         });
     }
 }

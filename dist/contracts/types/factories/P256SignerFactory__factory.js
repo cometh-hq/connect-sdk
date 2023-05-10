@@ -48,6 +48,30 @@ const _abi = [
         outputs: [],
         stateMutability: 'nonpayable',
         type: 'function'
+    },
+    {
+        inputs: [
+            {
+                internalType: 'uint256',
+                name: 'x',
+                type: 'uint256'
+            },
+            {
+                internalType: 'uint256',
+                name: 'y',
+                type: 'uint256'
+            }
+        ],
+        name: 'getAddressFor',
+        outputs: [
+            {
+                internalType: 'address',
+                name: 'signer',
+                type: 'address'
+            }
+        ],
+        stateMutability: 'view',
+        type: 'function'
     }
 ];
 class P256SignerFactory__factory {

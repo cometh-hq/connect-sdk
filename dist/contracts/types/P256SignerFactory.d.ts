@@ -27,13 +27,24 @@ import type {
 export interface P256SignerFactoryInterface extends utils.Interface {
   functions: {
     'create(uint256,uint256)': FunctionFragment
+    'getAddressFor(uint256,uint256)': FunctionFragment
   }
-  getFunction(nameOrSignatureOrTopic: 'create'): FunctionFragment
+  getFunction(
+    nameOrSignatureOrTopic: 'create' | 'getAddressFor'
+  ): FunctionFragment
   encodeFunctionData(
     functionFragment: 'create',
     values: [PromiseOrValue<BigNumberish>, PromiseOrValue<BigNumberish>]
   ): string
+  encodeFunctionData(
+    functionFragment: 'getAddressFor',
+    values: [PromiseOrValue<BigNumberish>, PromiseOrValue<BigNumberish>]
+  ): string
   decodeFunctionResult(functionFragment: 'create', data: BytesLike): Result
+  decodeFunctionResult(
+    functionFragment: 'getAddressFor',
+    data: BytesLike
+  ): Result
   events: {
     'NewSignerCreated(uint256,uint256,address)': EventFragment
   }
@@ -80,6 +91,15 @@ export interface P256SignerFactory extends BaseContract {
         from?: PromiseOrValue<string>
       }
     ): Promise<ContractTransaction>
+    getAddressFor(
+      x: PromiseOrValue<BigNumberish>,
+      y: PromiseOrValue<BigNumberish>,
+      overrides?: CallOverrides
+    ): Promise<
+      [string] & {
+        signer: string
+      }
+    >
   }
   create(
     x: PromiseOrValue<BigNumberish>,
@@ -88,12 +108,22 @@ export interface P256SignerFactory extends BaseContract {
       from?: PromiseOrValue<string>
     }
   ): Promise<ContractTransaction>
+  getAddressFor(
+    x: PromiseOrValue<BigNumberish>,
+    y: PromiseOrValue<BigNumberish>,
+    overrides?: CallOverrides
+  ): Promise<string>
   callStatic: {
     create(
       x: PromiseOrValue<BigNumberish>,
       y: PromiseOrValue<BigNumberish>,
       overrides?: CallOverrides
     ): Promise<void>
+    getAddressFor(
+      x: PromiseOrValue<BigNumberish>,
+      y: PromiseOrValue<BigNumberish>,
+      overrides?: CallOverrides
+    ): Promise<string>
   }
   filters: {
     'NewSignerCreated(uint256,uint256,address)'(
@@ -115,6 +145,11 @@ export interface P256SignerFactory extends BaseContract {
         from?: PromiseOrValue<string>
       }
     ): Promise<BigNumber>
+    getAddressFor(
+      x: PromiseOrValue<BigNumberish>,
+      y: PromiseOrValue<BigNumberish>,
+      overrides?: CallOverrides
+    ): Promise<BigNumber>
   }
   populateTransaction: {
     create(
@@ -123,6 +158,11 @@ export interface P256SignerFactory extends BaseContract {
       overrides?: Overrides & {
         from?: PromiseOrValue<string>
       }
+    ): Promise<PopulatedTransaction>
+    getAddressFor(
+      x: PromiseOrValue<BigNumberish>,
+      y: PromiseOrValue<BigNumberish>,
+      overrides?: CallOverrides
     ): Promise<PopulatedTransaction>
   }
 }
