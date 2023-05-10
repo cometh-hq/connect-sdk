@@ -1,6 +1,6 @@
 import React from 'react'
 import { createRoot } from 'react-dom/client'
-import { GasModal as GasModalComponent } from 'alembic-ui'
+import { GasModal as GasModalComponent } from '@alembic/ui'
 
 interface GasModalConfig {
   zIndex?: string
@@ -53,18 +53,20 @@ export class GasModal {
       }
 
       root.render(
-        <>
+        <div
+          style={{
+            position: 'relative',
+            zIndex: self.modalConfig.zIndex || 9999
+          }}
+        >
           <GasModalComponent
             onDeny={deny}
             onAccept={accept}
             txGasFees={+txGasFees}
             isOpen
             withBackdrop
-            style={{
-              zIndex: self.modalConfig.zIndex || 9999
-            }}
           />
-        </>
+        </div>
       )
     })
   }
