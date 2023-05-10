@@ -1,6 +1,6 @@
 {
-  "name": "alembic-sdk",
-  "version": "0.8.6",
+  "name": "@alembic/account-abstraction-sdk",
+  "version": "0.0.1",
   "main": "dist/index.js",
   "types": "dist/index.d.ts",
   "description": "SDK Alembic tech",
