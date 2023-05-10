@@ -1,4 +1,4 @@
-# AlembicSDK
+# Account Abstraction SDK
 
 Alembic Account Abstraction SDK allows developers to onboard their users with a seedless, gasless experience familiar to Web2.
 
@@ -8,7 +8,7 @@ Our solution is compatible with EIP-4337.
 ## Instanciate Wallet
 
 ```javascript
-import { AlembicWallet, UserInfos } from "alembic-sdk";
+import { AlembicWallet, UserInfos } from "@alembic/account-abstraction-sdk";
 
 const wallet = new AlembicWallet({
       chainId: CHAIN_ID
