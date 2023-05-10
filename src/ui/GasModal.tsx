@@ -1,6 +1,6 @@
 import React from 'react'
 import { createRoot } from 'react-dom/client'
-import { Modal } from './components/Modal'
+import { GasModal as GasModalComponent } from 'alembic-ui'
 
 interface GasModalConfig {
   zIndex?: string
@@ -22,20 +22,6 @@ export class GasModal {
     }
 
     const wrapper: HTMLElement = document.createElement('section')
-    wrapper.setAttribute(
-      'style',
-      ` position: fixed;
-        top: 0;
-        left: 0;
-        width: 100vw;
-        height: 100vh;
-        z-index: ${this.modalConfig.zIndex || '9999'};
-        background-color: rgba(0,0,0,0.5);
-        display: flex;
-        justify-content: center;
-        align-items: center;
-      `
-    )
     wrapper.setAttribute('id', 'alembic-gas-modal-wrapper')
     document.body.appendChild(wrapper)
     return wrapper
@@ -68,7 +54,16 @@ export class GasModal {
 
       root.render(
         <>
-          <Modal onDeny={deny} onAccept={accept} txGasFees={txGasFees} />
+          <GasModalComponent
+            onDeny={deny}
+            onAccept={accept}
+            txGasFees={+txGasFees}
+            isOpen
+            withBackdrop
+            style={{
+              zIndex: self.modalConfig.zIndex || 9999
+            }}
+          />
         </>
       )
     })
