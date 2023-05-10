@@ -55,10 +55,9 @@ export type SendTransactionResponse = {
 export type WebAuthnOwner = {
   customerId: string
   walletAddress: string
-  credentialId: string
   publicKey_Id: string
   publicKey_X: string
   publicKey_Y: string
   signature: string
-  signerAddress?: string
+  signerAddress: string
 }
