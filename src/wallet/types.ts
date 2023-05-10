@@ -51,3 +51,7 @@ export type TransactionStatus = {
 export type SendTransactionResponse = {
   safeTxHash: string
 }
+
+export interface WalletUiConfig {
+  displayValidationModal: boolean
+}

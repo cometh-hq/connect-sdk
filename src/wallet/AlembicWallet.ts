@@ -13,6 +13,7 @@ import {
 import { Safe__factory } from '../contracts/types/factories/Safe__factory'
 import { SafeInterface } from '../contracts/types/Safe'
 import { API } from '../services'
+import { GasModal } from '../ui'
 import { AUTHAdapter } from './adapters'
 import {
   MetaTransactionData,
@@ -25,6 +26,9 @@ import {
 export interface AlembicWalletConfig {
   authAdapter: AUTHAdapter
   apiKey: string
+  uiConfig?: {
+    displayValidationModal: boolean
+  }
 }
 export class AlembicWallet {
   private authAdapter: AUTHAdapter
@@ -35,16 +39,22 @@ export class AlembicWallet {
   private API: API
   private sponsoredAddresses?: SponsoredTransaction[]
   private walletAddress?: string
+  readonly uiConfig = {
+    displayValidationModal: true
+  }
 
   // Contract Interfaces
   readonly SafeInterface: SafeInterface = Safe__factory.createInterface()
 
-  constructor({ authAdapter, apiKey }: AlembicWalletConfig) {
+  constructor({ authAdapter, apiKey, uiConfig }: AlembicWalletConfig) {
     this.authAdapter = authAdapter
     this.chainId = +authAdapter.chaindId
     this.API = new API(apiKey, this.chainId)
     this.BASE_GAS = DEFAULT_BASE_GAS
     this.REWARD_PERCENTILE = DEFAULT_REWARD_PERCENTILE
+    if (uiConfig) {
+      this.uiConfig = uiConfig
+    }
   }
 
   /**
@@ -285,9 +295,9 @@ export class AlembicWallet {
       const { safeTxGas, baseGas, gasPrice } =
         await this._estimateTransactionGas(safeTxDataTyped)
 
-      safeTxDataTyped.safeTxGas = +safeTxGas
-      safeTxDataTyped.baseGas = baseGas
-      safeTxDataTyped.gasPrice = +gasPrice
+      safeTxDataTyped.safeTxGas = +safeTxGas // gwei
+      safeTxDataTyped.baseGas = baseGas // gwei
+      safeTxDataTyped.gasPrice = +gasPrice // wei
 
       const walletBalance = await this._getBalance(this.getAddress())
       const totalGasCost = BigNumber.from(safeTxGas)
@@ -300,6 +310,19 @@ export class AlembicWallet {
         )
       )
         throw new Error('Not enough balance to send this value and pay for gas')
+
+      if (this.uiConfig.displayValidationModal) {
+        const totalFees = ethers.utils.formatEther(
+          ethers.utils.parseUnits(
+            BigNumber.from(safeTxGas).add(baseGas).mul(gasPrice).toString(),
+            'wei'
+          )
+        )
+
+        if (!(await new GasModal().initModal((+totalFees).toFixed(3)))) {
+          throw new Error('Transaction denied')
+        }
+      }
     }
 
     const signature = await this._signTransaction(safeTxDataTyped, nonce)

@@ -8,13 +8,16 @@ import { ethers } from 'ethers'
 import { AUTHAdapter } from '../adapters'
 import { AlembicProvider } from '../AlembicProvider'
 import { AlembicWallet } from '../AlembicWallet'
+import { WalletUiConfig } from '../types'
 
 export function AlembicWalletOnboardConnector({
   apiKey,
-  authAdapter
+  authAdapter,
+  uiConfig
 }: {
   apiKey: string
   authAdapter: AUTHAdapter
+  uiConfig?: WalletUiConfig
 }): WalletInit {
   return (): WalletModule => {
     return {
@@ -26,7 +29,8 @@ export function AlembicWalletOnboardConnector({
 
         const instance = new AlembicWallet({
           authAdapter,
-          apiKey
+          apiKey,
+          ...(uiConfig ?? { uiConfig })
         })
         const instanceProvider = new AlembicProvider(instance)
         await instance.connect()
