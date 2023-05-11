@@ -21,7 +21,7 @@ const services_1 = require("../services");
 const ui_1 = require("../ui");
 const WebAuthn_1 = __importDefault(require("./WebAuthn"));
 class AlembicWallet {
-    constructor({ authAdapter, apiKey, uiConfig }) {
+    constructor({ authAdapter, apiKey }) {
         this.connected = false;
         this.uiConfig = {
             displayValidationModal: true
@@ -67,9 +67,6 @@ class AlembicWallet {
         this.API = new services_1.API(apiKey, this.chainId);
         this.BASE_GAS = constants_1.DEFAULT_BASE_GAS;
         this.REWARD_PERCENTILE = constants_1.DEFAULT_REWARD_PERCENTILE;
-        if (uiConfig) {
-            this.uiConfig = uiConfig;
-        }
     }
     /**
      * Connection Section
@@ -213,10 +210,11 @@ class AlembicWallet {
                 ethers_1.BigNumber.from(ethFeeHistory.reward[0][0]),
                 ethers_1.BigNumber.from(ethFeeHistory.baseFeePerGas[0])
             ];
+            const gasPrice = ethers_1.BigNumber.from(reward.add(BaseFee)).add(ethers_1.BigNumber.from(reward.add(BaseFee)).div(10));
             return {
                 safeTxGas,
                 baseGas: this.BASE_GAS,
-                gasPrice: reward.add(BaseFee)
+                gasPrice: gasPrice
             };
         });
     }
@@ -240,7 +238,6 @@ class AlembicWallet {
         var _a;
         return __awaiter(this, void 0, void 0, function* () {
             const nonce = yield this._getNonce();
-            const storedWebAuthnPublicKeyId = window.localStorage.getItem('public-key-id');
             const safeTxDataTyped = {
                 to: safeTxData.to,
                 value: (_a = safeTxData.value) !== null && _a !== void 0 ? _a : '0x0',
@@ -261,8 +258,8 @@ class AlembicWallet {
                 yield this._calculateAndShowMaxFee(safeTxDataTyped.value, safeTxGas, baseGas, gasPrice);
             }
             let txSignature;
-            if (yield this._verifyWebAuthnOwner(storedWebAuthnPublicKeyId)) {
-                txSignature = yield this._signTransactionwithWebAuthn(safeTxDataTyped, storedWebAuthnPublicKeyId);
+            if (yield this._verifyWebAuthnOwner()) {
+                txSignature = yield this._signTransactionwithWebAuthn(safeTxDataTyped);
             }
             else {
                 txSignature = yield this._signTransaction(safeTxDataTyped, nonce);
@@ -302,6 +299,9 @@ class AlembicWallet {
     /**
      * WebAuthn Section
      */
+    getCurrentWebAuthnOwner() {
+        return window.localStorage.getItem('public-key-id');
+    }
     addWebAuthnOwner() {
         var _a;
         return __awaiter(this, void 0, void 0, function* () {
@@ -347,9 +347,12 @@ class AlembicWallet {
             return signerDeploymentEvent[0].args.signer;
         });
     }
-    _verifyWebAuthnOwner(publicKey_Id) {
+    _verifyWebAuthnOwner() {
         return __awaiter(this, void 0, void 0, function* () {
             if (!this.webAuthnOwners)
+                return false;
+            const publicKey_Id = this.getCurrentWebAuthnOwner();
+            if (publicKey_Id === null)
                 return false;
             const currentWebAuthnOwner = this.webAuthnOwners.find((webAuthnOwner) => webAuthnOwner.publicKey_Id === publicKey_Id);
             if (!currentWebAuthnOwner)
@@ -361,13 +364,19 @@ class AlembicWallet {
             return true;
         });
     }
-    _signTransactionwithWebAuthn(safeTxDataTyped, publicKey_Id) {
+    _signTransactionwithWebAuthn(safeTxDataTyped) {
         return __awaiter(this, void 0, void 0, function* () {
             if (!this.webAuthnOwners)
-                throw new Error('No WebAuthn signer found');
+                throw new Error('No WebAuthn signer have been registered');
+            const publicKey_Id = this.getCurrentWebAuthnOwner();
+            if (publicKey_Id === null)
+                throw new Error('No current WebAuthn signer found');
+            const currentWebAuthnOwner = this.webAuthnOwners.find((webAuthnOwner) => webAuthnOwner.publicKey_Id === publicKey_Id);
+            if (!currentWebAuthnOwner)
+                throw new Error('Current WebAuthn signer has not been registered');
             const safeTxHash = yield this.getSafeTransactionHash(this.getAddress(), safeTxDataTyped, this.chainId);
             const encodedWebauthnSignature = yield WebAuthn_1.default.getWebAuthnSignature(safeTxHash, publicKey_Id);
-            return `${ethers_1.ethers.utils.defaultAbiCoder.encode(['uint256', 'uint256'], [this.webAuthnOwners[0].signerAddress, 65])}00${ethers_1.ethers.utils
+            return `${ethers_1.ethers.utils.defaultAbiCoder.encode(['uint256', 'uint256'], [currentWebAuthnOwner.signerAddress, 65])}00${ethers_1.ethers.utils
                 .hexZeroPad(ethers_1.ethers.utils.hexValue(448), 32)
                 .slice(2)}${encodedWebauthnSignature.slice(2)}`;
         });

@@ -47,7 +47,7 @@ export class AlembicWallet {
   private sponsoredAddresses?: SponsoredTransaction[]
   private webAuthnOwners?: WebAuthnOwner[]
   private walletAddress?: string
-  readonly uiConfig = {
+  private uiConfig = {
     displayValidationModal: true
   }
 
@@ -56,15 +56,12 @@ export class AlembicWallet {
   readonly P256FactoryInterface: P256SignerFactoryInterface =
     P256SignerFactory__factory.createInterface()
 
-  constructor({ authAdapter, apiKey, uiConfig }: AlembicWalletConfig) {
+  constructor({ authAdapter, apiKey }: AlembicWalletConfig) {
     this.authAdapter = authAdapter
     this.chainId = +authAdapter.chaindId
     this.API = new API(apiKey, this.chainId)
     this.BASE_GAS = DEFAULT_BASE_GAS
     this.REWARD_PERCENTILE = DEFAULT_REWARD_PERCENTILE
-    if (uiConfig) {
-      this.uiConfig = uiConfig
-    }
   }
 
   /**
@@ -276,10 +273,14 @@ export class AlembicWallet {
       BigNumber.from(ethFeeHistory.baseFeePerGas[0])
     ]
 
+    const gasPrice = BigNumber.from(reward.add(BaseFee)).add(
+      BigNumber.from(reward.add(BaseFee)).div(10)
+    )
+
     return {
       safeTxGas,
       baseGas: this.BASE_GAS,
-      gasPrice: reward.add(BaseFee)
+      gasPrice: gasPrice
     }
   }
 
@@ -315,8 +316,6 @@ export class AlembicWallet {
     safeTxData: MetaTransactionData
   ): Promise<SendTransactionResponse> {
     const nonce = await this._getNonce()
-    const storedWebAuthnPublicKeyId =
-      window.localStorage.getItem('public-key-id')
 
     const safeTxDataTyped = {
       to: safeTxData.to,
@@ -349,11 +348,8 @@ export class AlembicWallet {
 
     let txSignature: string
 
-    if (await this._verifyWebAuthnOwner(<string>storedWebAuthnPublicKeyId)) {
-      txSignature = await this._signTransactionwithWebAuthn(
-        safeTxDataTyped,
-        <string>storedWebAuthnPublicKeyId
-      )
+    if (await this._verifyWebAuthnOwner()) {
+      txSignature = await this._signTransactionwithWebAuthn(safeTxDataTyped)
     } else {
       txSignature = await this._signTransaction(safeTxDataTyped, nonce)
     }
@@ -421,6 +417,10 @@ export class AlembicWallet {
   /**
    * WebAuthn Section
    */
+
+  public getCurrentWebAuthnOwner(): string | null {
+    return window.localStorage.getItem('public-key-id')
+  }
 
   public async addWebAuthnOwner(): Promise<string> {
     const signer = this.authAdapter.getEthProvider()?.getSigner()
@@ -504,8 +504,11 @@ export class AlembicWallet {
     return signerDeploymentEvent[0].args.signer
   }
 
-  private async _verifyWebAuthnOwner(publicKey_Id: string): Promise<boolean> {
+  private async _verifyWebAuthnOwner(): Promise<boolean> {
     if (!this.webAuthnOwners) return false
+
+    const publicKey_Id = this.getCurrentWebAuthnOwner()
+    if (publicKey_Id === null) return false
 
     const currentWebAuthnOwner = this.webAuthnOwners.find(
       (webAuthnOwner) => webAuthnOwner.publicKey_Id === publicKey_Id
@@ -526,10 +529,21 @@ export class AlembicWallet {
   }
 
   private async _signTransactionwithWebAuthn(
-    safeTxDataTyped: MetaTransactionData,
-    publicKey_Id: string
+    safeTxDataTyped: MetaTransactionData
   ): Promise<string> {
-    if (!this.webAuthnOwners) throw new Error('No WebAuthn signer found')
+    if (!this.webAuthnOwners)
+      throw new Error('No WebAuthn signer have been registered')
+
+    const publicKey_Id = this.getCurrentWebAuthnOwner()
+    if (publicKey_Id === null)
+      throw new Error('No current WebAuthn signer found')
+
+    const currentWebAuthnOwner = this.webAuthnOwners.find(
+      (webAuthnOwner) => webAuthnOwner.publicKey_Id === publicKey_Id
+    )
+
+    if (!currentWebAuthnOwner)
+      throw new Error('Current WebAuthn signer has not been registered')
 
     const safeTxHash = await this.getSafeTransactionHash(
       this.getAddress(),
@@ -544,7 +558,7 @@ export class AlembicWallet {
 
     return `${ethers.utils.defaultAbiCoder.encode(
       ['uint256', 'uint256'],
-      [this.webAuthnOwners[0].signerAddress, 65]
+      [currentWebAuthnOwner.signerAddress, 65]
     )}00${ethers.utils
       .hexZeroPad(ethers.utils.hexValue(448), 32)
       .slice(2)}${encodedWebauthnSignature.slice(2)}`
