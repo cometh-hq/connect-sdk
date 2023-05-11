@@ -58,4 +58,8 @@ export class AlembicProvider extends BaseProvider {
   async detectNetwork(): Promise<Network> {
     return this.alembicWallet.getOwnerProvider().detectNetwork()
   }
+
+  eth_accounts(): string[] {
+    return [this.alembicWallet.getAddress()]
+  }
 }
