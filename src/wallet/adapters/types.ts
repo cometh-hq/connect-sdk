@@ -1,5 +1,6 @@
-import { UserInfo } from '@web3auth/base'
 import { ethers } from 'ethers'
+
+import { UserInfos } from '../types'
 export interface AUTHAdapter {
   init(): Promise<void>
   logout(): Promise<void>
@@ -7,7 +8,7 @@ export interface AUTHAdapter {
   getAccount(): Promise<string | null>
   getSigner(): ethers.Signer | null
   getEthProvider(): ethers.providers.Web3Provider | null
-  getUserInfos(): Promise<Partial<UserInfo>>
+  getUserInfos(): Promise<Partial<UserInfos>>
   readonly chaindId: string
 }
 

@@ -1,3 +1,4 @@
+import { MagicUserMetadata } from '@magic-sdk/types'
 import { UserInfo } from '@web3auth/base'
 
 export enum RelayStatus {
@@ -38,7 +39,7 @@ export type RelayTransactionType = {
   signatures: string
   walletAddress: string
 }
-export type UserInfos = Partial<UserInfo> & {
+export type UserInfos = (Partial<UserInfo> | Partial<MagicUserMetadata>) & {
   ownerAddress: string | undefined
   walletAddress: string
 }

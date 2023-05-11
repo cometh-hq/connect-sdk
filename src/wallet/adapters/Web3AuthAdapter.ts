@@ -1,8 +1,8 @@
-import { UserInfo } from '@web3auth/base'
 import { Web3AuthCoreOptions } from '@web3auth/core'
 import { Web3Auth, Web3AuthOptions } from '@web3auth/modal'
 import { ethers } from 'ethers'
 
+import { UserInfos } from '../types'
 import { AUTHAdapter } from './types'
 
 export class Web3AuthAdapter implements AUTHAdapter {
@@ -57,7 +57,7 @@ export class Web3AuthAdapter implements AUTHAdapter {
     return this.ethProvider ?? null
   }
 
-  async getUserInfos(): Promise<Partial<UserInfo>> {
+  async getUserInfos(): Promise<Partial<UserInfos>> {
     if (!this.web3auth) throw new Error('No Web3Auth instance found')
     const userInfos = await this.web3auth.getUserInfo()
     return userInfos ?? {}
