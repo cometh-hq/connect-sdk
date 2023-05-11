@@ -1,8 +1,4 @@
-import type {
-  WalletInit,
-  WalletInterface,
-  WalletModule
-} from '@web3-onboard/common'
+import { WalletInit, WalletInterface, WalletModule } from '@web3-onboard/common'
 import { ethers } from 'ethers'
 
 import { AUTHAdapter } from '../adapters'
@@ -46,6 +42,9 @@ export function AlembicWalletOnboardConnector({
           eth_getBalance: async () => {
             const balance = await instanceProvider.getSigner().getBalance()
             return balance?.toString() ?? '0'
+          },
+          eth_accounts: async () => {
+            return instanceProvider.eth_accounts()
           }
         })
 
