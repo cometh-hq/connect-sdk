@@ -51,19 +51,28 @@ export class RelayTransactionResponse implements TransactionResponse {
   }
 
   public async wait(): Promise<TransactionReceipt> {
-    const [txSuccessEvent, txFailureEvent] = await Promise.all([
-      this.alembicWallet.getSuccessExecTransactionEvent(this.getSafeTxHash()),
-      this.alembicWallet.getFailedExecTransactionEvent(this.getSafeTxHash())
-    ])
+    let txSuccessEvent: any = undefined
+    let txFailureEvent: any = undefined
+
+    while (!txSuccessEvent && !txFailureEvent) {
+      await new Promise((resolve) => setTimeout(resolve, 2000))
+      txSuccessEvent = await this.alembicWallet.getSuccessExecTransactionEvent(
+        this.safeTxHash
+      )
+      txFailureEvent = await this.alembicWallet.getFailedExecTransactionEvent(
+        this.safeTxHash
+      )
+    }
 
     if (txSuccessEvent) {
-      const txResponse = await this.provider.getTransactionReceipt(
-        txSuccessEvent.transactionHash
-      )
-      if (txResponse === null) {
+      let txResponse: TransactionReceipt | null = null
+      while (txResponse === null) {
+        txResponse = await this.provider.getTransactionReceipt(
+          txSuccessEvent.transactionHash
+        )
         await new Promise((resolve) => setTimeout(resolve, 1000))
-        return this.wait()
       }
+
       this.hash = txResponse.transactionHash
       this.confirmations = txResponse.confirmations
       this.from = txResponse.from
@@ -73,13 +82,12 @@ export class RelayTransactionResponse implements TransactionResponse {
       return txResponse
     }
     if (txFailureEvent) {
-      const txResponse = await this.provider.getTransactionReceipt(
-        txFailureEvent.transactionHash
-      )
-
-      if (txResponse === null) {
+      let txResponse: TransactionReceipt | null = null
+      while (txResponse === null) {
+        txResponse = await this.provider.getTransactionReceipt(
+          txFailureEvent.transactionHash
+        )
         await new Promise((resolve) => setTimeout(resolve, 1000))
-        return this.wait()
       }
       this.hash = txResponse.transactionHash
       this.confirmations = txResponse.confirmations

@@ -8,22 +8,27 @@ var __awaiter = (this && this.__awaiter) || function (thisArg, _arguments, P, ge
         step((generator = generator.apply(thisArg, _arguments || [])).next());
     });
 };
+var __importDefault = (this && this.__importDefault) || function (mod) {
+    return (mod && mod.__esModule) ? mod : { "default": mod };
+};
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.AlembicWallet = void 0;
 const ethers_1 = require("ethers");
 const siwe_1 = require("siwe");
 const constants_1 = require("../constants");
-const Safe__factory_1 = require("../contracts/types/factories/Safe__factory");
+const factories_1 = require("../contracts/types/factories");
 const services_1 = require("../services");
 const ui_1 = require("../ui");
+const WebAuthn_1 = __importDefault(require("./WebAuthn"));
 class AlembicWallet {
-    constructor({ authAdapter, apiKey, uiConfig }) {
+    constructor({ authAdapter, apiKey }) {
         this.connected = false;
         this.uiConfig = {
             displayValidationModal: true
         };
-        // Contract Interfaces
-        this.SafeInterface = Safe__factory_1.Safe__factory.createInterface();
+        // Contracts Interfaces
+        this.SafeInterface = factories_1.Safe__factory.createInterface();
+        this.P256FactoryInterface = factories_1.P256SignerFactory__factory.createInterface();
         this._getBalance = (address) => __awaiter(this, void 0, void 0, function* () {
             const provider = this.getOwnerProvider();
             return provider.getBalance(address);
@@ -54,7 +59,7 @@ class AlembicWallet {
         });
         this._getNonce = () => __awaiter(this, void 0, void 0, function* () {
             return (yield this.isDeployed())
-                ? (yield Safe__factory_1.Safe__factory.connect(this.getAddress(), this.getOwnerProvider()).nonce()).toNumber()
+                ? (yield factories_1.Safe__factory.connect(this.getAddress(), this.getOwnerProvider()).nonce()).toNumber()
                 : 0;
         });
         this.authAdapter = authAdapter;
@@ -62,9 +67,6 @@ class AlembicWallet {
         this.API = new services_1.API(apiKey, this.chainId);
         this.BASE_GAS = constants_1.DEFAULT_BASE_GAS;
         this.REWARD_PERCENTILE = constants_1.DEFAULT_REWARD_PERCENTILE;
-        if (uiConfig) {
-            this.uiConfig = uiConfig;
-        }
     }
     /**
      * Connection Section
@@ -86,7 +88,6 @@ class AlembicWallet {
             if (!ownerAddress)
                 throw new Error('No ownerAddress found');
             const nonce = yield this.API.getNonce(ownerAddress);
-            this.sponsoredAddresses = yield this.API.getSponsoredAddresses();
             const message = this._createMessage(ownerAddress, nonce);
             const messageToSign = message.prepareMessage();
             const signature = yield signer.signMessage(messageToSign);
@@ -96,6 +97,7 @@ class AlembicWallet {
                 ownerAddress
             }));
             this.sponsoredAddresses = yield this.API.getSponsoredAddresses();
+            this.webAuthnOwners = yield this.API.getWebAuthnOwners(walletAddress);
             this.connected = true;
             this.walletAddress = walletAddress;
         });
@@ -106,7 +108,7 @@ class AlembicWallet {
     isDeployed() {
         return __awaiter(this, void 0, void 0, function* () {
             try {
-                yield Safe__factory_1.Safe__factory.connect(this.getAddress(), this.getOwnerProvider()).deployed();
+                yield factories_1.Safe__factory.connect(this.getAddress(), this.getOwnerProvider()).deployed();
                 return true;
             }
             catch (error) {
@@ -207,11 +209,28 @@ class AlembicWallet {
                 ethers_1.BigNumber.from(ethFeeHistory.reward[0][0]),
                 ethers_1.BigNumber.from(ethFeeHistory.baseFeePerGas[0])
             ];
+            const gasPrice = ethers_1.BigNumber.from(reward.add(BaseFee)).add(ethers_1.BigNumber.from(reward.add(BaseFee)).div(10));
             return {
                 safeTxGas,
                 baseGas: this.BASE_GAS,
-                gasPrice: reward.add(BaseFee)
+                gasPrice: gasPrice
             };
+        });
+    }
+    _calculateAndShowMaxFee(txValue, safeTxGas, baseGas, gasPrice) {
+        return __awaiter(this, void 0, void 0, function* () {
+            const walletBalance = yield this._getBalance(this.getAddress());
+            const totalGasCost = ethers_1.BigNumber.from(safeTxGas)
+                .add(ethers_1.BigNumber.from(baseGas))
+                .mul(ethers_1.BigNumber.from(gasPrice));
+            if (walletBalance.lt(totalGasCost.add(ethers_1.BigNumber.from(txValue))))
+                throw new Error('Not enough balance to send this value and pay for gas');
+            if (this.uiConfig.displayValidationModal) {
+                const totalFees = ethers_1.ethers.utils.formatEther(ethers_1.ethers.utils.parseUnits(ethers_1.BigNumber.from(safeTxGas).add(baseGas).mul(gasPrice).toString(), 'wei'));
+                if (!(yield new ui_1.GasModal().initModal((+totalFees).toFixed(3)))) {
+                    throw new Error('Transaction denied');
+                }
+            }
         });
     }
     sendTransaction(safeTxData) {
@@ -220,7 +239,7 @@ class AlembicWallet {
             const nonce = yield this._getNonce();
             const safeTxDataTyped = {
                 to: safeTxData.to,
-                value: (_a = safeTxData.value) !== null && _a !== void 0 ? _a : 0,
+                value: (_a = safeTxData.value) !== null && _a !== void 0 ? _a : '0x0',
                 data: safeTxData.data,
                 operation: 0,
                 safeTxGas: 0,
@@ -235,31 +254,34 @@ class AlembicWallet {
                 safeTxDataTyped.safeTxGas = +safeTxGas; // gwei
                 safeTxDataTyped.baseGas = baseGas; // gwei
                 safeTxDataTyped.gasPrice = +gasPrice; // wei
-                const walletBalance = yield this._getBalance(this.getAddress());
-                const totalGasCost = ethers_1.BigNumber.from(safeTxGas)
-                    .add(ethers_1.BigNumber.from(baseGas))
-                    .mul(ethers_1.BigNumber.from(gasPrice));
-                if (walletBalance.lt(totalGasCost.add(ethers_1.BigNumber.from(safeTxDataTyped.value))))
-                    throw new Error('Not enough balance to send this value and pay for gas');
-                if (this.uiConfig.displayValidationModal) {
-                    const totalFees = ethers_1.ethers.utils.formatEther(ethers_1.ethers.utils.parseUnits(ethers_1.BigNumber.from(safeTxGas).add(baseGas).mul(gasPrice).toString(), 'wei'));
-                    if (!(yield new ui_1.GasModal().initModal((+totalFees).toFixed(3)))) {
-                        throw new Error('Transaction denied');
-                    }
-                }
+                yield this._calculateAndShowMaxFee(safeTxDataTyped.value, safeTxGas, baseGas, gasPrice);
             }
-            const signature = yield this._signTransaction(safeTxDataTyped, nonce);
+            let txSignature;
+            if (yield this._verifyWebAuthnOwner()) {
+                txSignature = yield this._signTransactionwithWebAuthn(safeTxDataTyped);
+            }
+            else {
+                txSignature = yield this._signTransaction(safeTxDataTyped, nonce);
+            }
             const safeTxHash = yield this.API.relayTransaction({
                 safeTxData: safeTxDataTyped,
-                signatures: signature,
+                signatures: txSignature,
                 walletAddress: this.getAddress()
             });
             return { safeTxHash };
         });
     }
+    getSafeTransactionHash(walletAddress, transactionData, chainId) {
+        return __awaiter(this, void 0, void 0, function* () {
+            return ethers_1.ethers.utils._TypedDataEncoder.hash({
+                chainId,
+                verifyingContract: walletAddress
+            }, constants_1.EIP712_SAFE_TX_TYPES, transactionData);
+        });
+    }
     getSuccessExecTransactionEvent(safeTxHash) {
         return __awaiter(this, void 0, void 0, function* () {
-            const safeInstance = yield Safe__factory_1.Safe__factory.connect(this.getAddress(), this.getOwnerProvider());
+            const safeInstance = yield factories_1.Safe__factory.connect(this.getAddress(), this.getOwnerProvider());
             const transactionEvents = yield safeInstance.queryFilter(safeInstance.filters.ExecutionSuccess(), constants_1.BLOCK_EVENT_GAP);
             const filteredTransactionEvent = transactionEvents.filter((e) => e.args.txHash === safeTxHash);
             return filteredTransactionEvent[0];
@@ -267,10 +289,98 @@ class AlembicWallet {
     }
     getFailedExecTransactionEvent(safeTxHash) {
         return __awaiter(this, void 0, void 0, function* () {
-            const safeInstance = yield Safe__factory_1.Safe__factory.connect(this.getAddress(), this.getOwnerProvider());
+            const safeInstance = yield factories_1.Safe__factory.connect(this.getAddress(), this.getOwnerProvider());
             const transactionEvents = yield safeInstance.queryFilter(safeInstance.filters.ExecutionFailure(), constants_1.BLOCK_EVENT_GAP);
             const filteredTransactionEvent = transactionEvents.filter((e) => e.args.txHash === safeTxHash);
             return filteredTransactionEvent[0];
+        });
+    }
+    /**
+     * WebAuthn Section
+     */
+    getCurrentWebAuthnOwner() {
+        if (!this.webAuthnOwners)
+            return undefined;
+        const publicKey_Id = window.localStorage.getItem('public-key-id');
+        if (publicKey_Id === null)
+            return undefined;
+        const currentWebAuthnOwner = this.webAuthnOwners.find((webAuthnOwner) => webAuthnOwner.publicKey_Id == publicKey_Id);
+        return currentWebAuthnOwner;
+    }
+    addWebAuthnOwner() {
+        var _a;
+        return __awaiter(this, void 0, void 0, function* () {
+            const signer = (_a = this.authAdapter.getEthProvider()) === null || _a === void 0 ? void 0 : _a.getSigner();
+            if (!signer)
+                throw new Error('No signer found');
+            const webAuthnCredentials = yield WebAuthn_1.default.createCredentials(this.getAddress());
+            const publicKey_X = `0x${webAuthnCredentials.point.getX().toString(16)}`;
+            const publicKey_Y = `0x${webAuthnCredentials.point.getY().toString(16)}`;
+            const publicKey_Id = webAuthnCredentials.id;
+            const message = `${publicKey_X},${publicKey_Y},${publicKey_Id}`;
+            const signature = yield this.signMessage(ethers_1.ethers.utils.hexlify(ethers_1.ethers.utils.toUtf8Bytes(message)));
+            const predictedSignerAddress = yield this._predictedSignerAddress(publicKey_X, publicKey_Y, this.chainId);
+            const addOwnerTxData = {
+                to: this.getAddress(),
+                value: '0x0',
+                data: this.SafeInterface.encodeFunctionData('addOwnerWithThreshold', [
+                    predictedSignerAddress,
+                    1
+                ]),
+                operation: 0,
+                safeTxGas: 0,
+                baseGas: 0,
+                gasPrice: 0,
+                gasToken: ethers_1.ethers.constants.AddressZero,
+                refundReceiver: ethers_1.ethers.constants.AddressZero
+            };
+            const addOwnerTxSignature = yield this._signTransaction(addOwnerTxData, yield this._getNonce());
+            yield this.API.addWebAuthnOwner(this.getAddress(), publicKey_Id, publicKey_X, publicKey_Y, signature, message, JSON.stringify(addOwnerTxData), addOwnerTxSignature);
+            yield this._waitWebAuthnSignerDeployment(publicKey_X, publicKey_Y);
+            this.webAuthnOwners = yield this.API.getWebAuthnOwners(this.getAddress());
+            return predictedSignerAddress;
+        });
+    }
+    _waitWebAuthnSignerDeployment(publicKey_X, publicKey_Y) {
+        return __awaiter(this, void 0, void 0, function* () {
+            const P256FactoryInstance = yield factories_1.P256SignerFactory__factory.connect(constants_1.networks[this.chainId].P256FactoryContractAddress, this.getOwnerProvider());
+            let signerDeploymentEvent = [];
+            while (signerDeploymentEvent.length === 0) {
+                yield new Promise((resolve) => setTimeout(resolve, 2000));
+                signerDeploymentEvent = yield P256FactoryInstance.queryFilter(P256FactoryInstance.filters.NewSignerCreated(publicKey_X, publicKey_Y), constants_1.BLOCK_EVENT_GAP);
+            }
+            return signerDeploymentEvent[0].args.signer;
+        });
+    }
+    _verifyWebAuthnOwner() {
+        return __awaiter(this, void 0, void 0, function* () {
+            const currentWebAuthnOwner = this.getCurrentWebAuthnOwner();
+            if (!currentWebAuthnOwner)
+                return false;
+            const safeInstance = yield factories_1.Safe__factory.connect(this.getAddress(), this.getOwnerProvider());
+            const isSafeOwner = yield safeInstance.isOwner(currentWebAuthnOwner.signerAddress);
+            if (!isSafeOwner)
+                return false;
+            return true;
+        });
+    }
+    _signTransactionwithWebAuthn(safeTxDataTyped) {
+        return __awaiter(this, void 0, void 0, function* () {
+            const currentWebAuthnOwner = this.getCurrentWebAuthnOwner();
+            if (!currentWebAuthnOwner)
+                throw new Error('No WebAuthn signer found');
+            const safeTxHash = yield this.getSafeTransactionHash(this.getAddress(), safeTxDataTyped, this.chainId);
+            const encodedWebauthnSignature = yield WebAuthn_1.default.getWebAuthnSignature(safeTxHash, currentWebAuthnOwner.publicKey_Id);
+            return `${ethers_1.ethers.utils.defaultAbiCoder.encode(['uint256', 'uint256'], [currentWebAuthnOwner.signerAddress, 65])}00${ethers_1.ethers.utils
+                .hexZeroPad(ethers_1.ethers.utils.hexValue(ethers_1.ethers.utils.arrayify(encodedWebauthnSignature).length), 32)
+                .slice(2)}${encodedWebauthnSignature.slice(2)}`;
+        });
+    }
+    _predictedSignerAddress(publicKey_X, publicKey_Y, chainId) {
+        return __awaiter(this, void 0, void 0, function* () {
+            const deploymentCode = ethers_1.ethers.utils.keccak256(ethers_1.ethers.utils.solidityPack(['bytes', 'uint256', 'uint256'], [constants_1.P256SignerCreationCode, publicKey_X, publicKey_Y]));
+            const salt = ethers_1.ethers.utils.keccak256(ethers_1.ethers.utils.defaultAbiCoder.encode(['uint256', 'uint256'], [publicKey_X, publicKey_Y]));
+            return ethers_1.ethers.utils.getCreate2Address(constants_1.networks[chainId].P256FactoryContractAddress, salt, deploymentCode);
         });
     }
 }

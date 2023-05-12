@@ -8,9 +8,14 @@ import {
   DEFAULT_REWARD_PERCENTILE,
   EIP712_SAFE_MESSAGE_TYPE,
   EIP712_SAFE_TX_TYPES,
-  networks
+  networks,
+  P256SignerCreationCode
 } from '../constants'
-import { Safe__factory } from '../contracts/types/factories/Safe__factory'
+import {
+  P256SignerFactory__factory,
+  Safe__factory
+} from '../contracts/types/factories'
+import { P256SignerFactoryInterface } from '../contracts/types/P256SignerFactory'
 import { SafeInterface } from '../contracts/types/Safe'
 import { API } from '../services'
 import { GasModal } from '../ui'
@@ -20,8 +25,10 @@ import {
   SafeTransactionDataPartial,
   SendTransactionResponse,
   SponsoredTransaction,
-  UserInfos
+  UserInfos,
+  WebAuthnOwner
 } from './types'
+import WebAuthn from './WebAuthn'
 
 export interface AlembicWalletConfig {
   authAdapter: AUTHAdapter
@@ -38,23 +45,23 @@ export class AlembicWallet {
   private REWARD_PERCENTILE: number
   private API: API
   private sponsoredAddresses?: SponsoredTransaction[]
+  private webAuthnOwners?: WebAuthnOwner[]
   private walletAddress?: string
-  readonly uiConfig = {
+  private uiConfig = {
     displayValidationModal: true
   }
 
-  // Contract Interfaces
+  // Contracts Interfaces
   readonly SafeInterface: SafeInterface = Safe__factory.createInterface()
+  readonly P256FactoryInterface: P256SignerFactoryInterface =
+    P256SignerFactory__factory.createInterface()
 
-  constructor({ authAdapter, apiKey, uiConfig }: AlembicWalletConfig) {
+  constructor({ authAdapter, apiKey }: AlembicWalletConfig) {
     this.authAdapter = authAdapter
     this.chainId = +authAdapter.chaindId
     this.API = new API(apiKey, this.chainId)
     this.BASE_GAS = DEFAULT_BASE_GAS
     this.REWARD_PERCENTILE = DEFAULT_REWARD_PERCENTILE
-    if (uiConfig) {
-      this.uiConfig = uiConfig
-    }
   }
 
   /**
@@ -76,7 +83,6 @@ export class AlembicWallet {
     if (!ownerAddress) throw new Error('No ownerAddress found')
 
     const nonce = await this.API.getNonce(ownerAddress)
-    this.sponsoredAddresses = await this.API.getSponsoredAddresses()
 
     const message: SiweMessage = this._createMessage(ownerAddress, nonce)
     const messageToSign = message.prepareMessage()
@@ -89,6 +95,7 @@ export class AlembicWallet {
     })
 
     this.sponsoredAddresses = await this.API.getSponsoredAddresses()
+    this.webAuthnOwners = await this.API.getWebAuthnOwners(walletAddress)
     this.connected = true
     this.walletAddress = walletAddress
   }
@@ -265,10 +272,42 @@ export class AlembicWallet {
       BigNumber.from(ethFeeHistory.baseFeePerGas[0])
     ]
 
+    const gasPrice = BigNumber.from(reward.add(BaseFee)).add(
+      BigNumber.from(reward.add(BaseFee)).div(10)
+    )
+
     return {
       safeTxGas,
       baseGas: this.BASE_GAS,
-      gasPrice: reward.add(BaseFee)
+      gasPrice: gasPrice
+    }
+  }
+
+  private async _calculateAndShowMaxFee(
+    txValue: string,
+    safeTxGas: BigNumber,
+    baseGas: number,
+    gasPrice: BigNumber
+  ): Promise<void> {
+    const walletBalance = await this._getBalance(this.getAddress())
+    const totalGasCost = BigNumber.from(safeTxGas)
+      .add(BigNumber.from(baseGas))
+      .mul(BigNumber.from(gasPrice))
+
+    if (walletBalance.lt(totalGasCost.add(BigNumber.from(txValue))))
+      throw new Error('Not enough balance to send this value and pay for gas')
+
+    if (this.uiConfig.displayValidationModal) {
+      const totalFees = ethers.utils.formatEther(
+        ethers.utils.parseUnits(
+          BigNumber.from(safeTxGas).add(baseGas).mul(gasPrice).toString(),
+          'wei'
+        )
+      )
+
+      if (!(await new GasModal().initModal((+totalFees).toFixed(3)))) {
+        throw new Error('Transaction denied')
+      }
     }
   }
 
@@ -279,7 +318,7 @@ export class AlembicWallet {
 
     const safeTxDataTyped = {
       to: safeTxData.to,
-      value: safeTxData.value ?? 0,
+      value: safeTxData.value ?? '0x0',
       data: safeTxData.data,
       operation: 0,
       safeTxGas: 0,
@@ -298,41 +337,44 @@ export class AlembicWallet {
       safeTxDataTyped.baseGas = baseGas // gwei
       safeTxDataTyped.gasPrice = +gasPrice // wei
 
-      const walletBalance = await this._getBalance(this.getAddress())
-      const totalGasCost = BigNumber.from(safeTxGas)
-        .add(BigNumber.from(baseGas))
-        .mul(BigNumber.from(gasPrice))
-
-      if (
-        walletBalance.lt(
-          totalGasCost.add(BigNumber.from(safeTxDataTyped.value))
-        )
+      await this._calculateAndShowMaxFee(
+        safeTxDataTyped.value,
+        safeTxGas,
+        baseGas,
+        gasPrice
       )
-        throw new Error('Not enough balance to send this value and pay for gas')
-
-      if (this.uiConfig.displayValidationModal) {
-        const totalFees = ethers.utils.formatEther(
-          ethers.utils.parseUnits(
-            BigNumber.from(safeTxGas).add(baseGas).mul(gasPrice).toString(),
-            'wei'
-          )
-        )
-
-        if (!(await new GasModal().initModal((+totalFees).toFixed(3)))) {
-          throw new Error('Transaction denied')
-        }
-      }
     }
 
-    const signature = await this._signTransaction(safeTxDataTyped, nonce)
+    let txSignature: string
+
+    if (await this._verifyWebAuthnOwner()) {
+      txSignature = await this._signTransactionwithWebAuthn(safeTxDataTyped)
+    } else {
+      txSignature = await this._signTransaction(safeTxDataTyped, nonce)
+    }
 
     const safeTxHash = await this.API.relayTransaction({
       safeTxData: safeTxDataTyped,
-      signatures: signature,
+      signatures: txSignature,
       walletAddress: this.getAddress()
     })
 
     return { safeTxHash }
+  }
+
+  private async getSafeTransactionHash(
+    walletAddress: string,
+    transactionData: MetaTransactionData,
+    chainId: number
+  ): Promise<string> {
+    return ethers.utils._TypedDataEncoder.hash(
+      {
+        chainId,
+        verifyingContract: walletAddress
+      },
+      EIP712_SAFE_TX_TYPES,
+      transactionData
+    )
   }
 
   public async getSuccessExecTransactionEvent(
@@ -375,7 +417,7 @@ export class AlembicWallet {
    * WebAuthn Section
    */
 
-  /* public getCurrentWebAuthnOwner(): WebAuthnOwner | undefined {
+  public getCurrentWebAuthnOwner(): WebAuthnOwner | undefined {
     if (!this.webAuthnOwners) return undefined
     const publicKey_Id = window.localStorage.getItem('public-key-id')
     if (publicKey_Id === null) return undefined
@@ -540,5 +582,5 @@ export class AlembicWallet {
       salt,
       deploymentCode
     )
-  } */
+  }
 }

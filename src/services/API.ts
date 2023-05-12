@@ -5,7 +5,8 @@ import { API_URL } from '../constants'
 import {
   RelayTransactionType,
   SponsoredTransaction,
-  UserNonceType
+  UserNonceType,
+  WebAuthnOwner
 } from '../wallet/types'
 
 export const api = axios.create({
@@ -64,5 +65,37 @@ export class API {
     }
     const response = await api.post(`/wallets/${walletAddress}/relay`, body)
     return response.data?.safeTxHash
+  }
+
+  async addWebAuthnOwner(
+    walletAddress,
+    publicKey_Id,
+    publicKey_X,
+    publicKey_Y,
+    signature,
+    message,
+    addOwnerTxData,
+    addOwnerTxSignature
+  ): Promise<WebAuthnOwner> {
+    const body = {
+      publicKey_Id,
+      publicKey_X,
+      publicKey_Y,
+      signature,
+      message,
+      addOwnerTxData,
+      addOwnerTxSignature
+    }
+
+    const response = await api.post(
+      `/wallets/${walletAddress}/webAuthnOwner`,
+      body
+    )
+    return response.data?.webAuthnOwner
+  }
+
+  async getWebAuthnOwners(walletAddress: string): Promise<WebAuthnOwner[]> {
+    const response = await api.get(`/wallets/${walletAddress}/webAuthnOwner`)
+    return response?.data?.webAuthnOwners
   }
 }
