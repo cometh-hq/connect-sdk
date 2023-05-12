@@ -22,7 +22,7 @@ export class AlembicProvider extends BaseProvider {
     this.signer = new AlembicSigner(alembicWallet, this)
   }
 
-  getSigner(): Signer {
+  getSigner(): AlembicSigner {
     return this.signer
   }
 
