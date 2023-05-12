@@ -177,15 +177,14 @@ class AlembicWallet {
     signMessage(messageToSign) {
         var _a;
         return __awaiter(this, void 0, void 0, function* () {
+            const messageHash = ethers_1.ethers.utils.hashMessage(messageToSign);
             const signer = (_a = this.authAdapter.getEthProvider()) === null || _a === void 0 ? void 0 : _a.getSigner();
             if (!signer)
                 throw new Error('Sign message: missing signer');
-            const messageHash = ethers_1.ethers.utils.hashMessage(messageToSign);
-            const signature = yield signer._signTypedData({
+            return yield signer._signTypedData({
                 verifyingContract: this.getAddress(),
                 chainId: this.chainId
             }, constants_1.EIP712_SAFE_MESSAGE_TYPE, { message: messageHash });
-            return signature;
         });
     }
     _toSponsoredAddress(targetAddress) {
@@ -300,7 +299,13 @@ class AlembicWallet {
      * WebAuthn Section
      */
     getCurrentWebAuthnOwner() {
-        return window.localStorage.getItem('public-key-id');
+        if (!this.webAuthnOwners)
+            return undefined;
+        const publicKey_Id = window.localStorage.getItem('public-key-id');
+        if (publicKey_Id === null)
+            return undefined;
+        const currentWebAuthnOwner = this.webAuthnOwners.find((webAuthnOwner) => webAuthnOwner.publicKey_Id == publicKey_Id);
+        return currentWebAuthnOwner;
     }
     addWebAuthnOwner() {
         var _a;
@@ -349,12 +354,7 @@ class AlembicWallet {
     }
     _verifyWebAuthnOwner() {
         return __awaiter(this, void 0, void 0, function* () {
-            if (!this.webAuthnOwners)
-                return false;
-            const publicKey_Id = this.getCurrentWebAuthnOwner();
-            if (publicKey_Id === null)
-                return false;
-            const currentWebAuthnOwner = this.webAuthnOwners.find((webAuthnOwner) => webAuthnOwner.publicKey_Id === publicKey_Id);
+            const currentWebAuthnOwner = this.getCurrentWebAuthnOwner();
             if (!currentWebAuthnOwner)
                 return false;
             const safeInstance = yield factories_1.Safe__factory.connect(this.getAddress(), this.getOwnerProvider());
@@ -366,18 +366,13 @@ class AlembicWallet {
     }
     _signTransactionwithWebAuthn(safeTxDataTyped) {
         return __awaiter(this, void 0, void 0, function* () {
-            if (!this.webAuthnOwners)
-                throw new Error('No WebAuthn signer have been registered');
-            const publicKey_Id = this.getCurrentWebAuthnOwner();
-            if (publicKey_Id === null)
-                throw new Error('No current WebAuthn signer found');
-            const currentWebAuthnOwner = this.webAuthnOwners.find((webAuthnOwner) => webAuthnOwner.publicKey_Id === publicKey_Id);
+            const currentWebAuthnOwner = this.getCurrentWebAuthnOwner();
             if (!currentWebAuthnOwner)
-                throw new Error('Current WebAuthn signer has not been registered');
+                throw new Error('No WebAuthn signer found');
             const safeTxHash = yield this.getSafeTransactionHash(this.getAddress(), safeTxDataTyped, this.chainId);
-            const encodedWebauthnSignature = yield WebAuthn_1.default.getWebAuthnSignature(safeTxHash, publicKey_Id);
+            const encodedWebauthnSignature = yield WebAuthn_1.default.getWebAuthnSignature(safeTxHash, currentWebAuthnOwner.publicKey_Id);
             return `${ethers_1.ethers.utils.defaultAbiCoder.encode(['uint256', 'uint256'], [currentWebAuthnOwner.signerAddress, 65])}00${ethers_1.ethers.utils
-                .hexZeroPad(ethers_1.ethers.utils.hexValue(448), 32)
+                .hexZeroPad(ethers_1.ethers.utils.hexValue(ethers_1.ethers.utils.arrayify(encodedWebauthnSignature).length), 32)
                 .slice(2)}${encodedWebauthnSignature.slice(2)}`;
         });
     }

@@ -8,7 +8,8 @@ import {
   MetaTransactionData,
   SafeTransactionDataPartial,
   SendTransactionResponse,
-  UserInfos
+  UserInfos,
+  WebAuthnOwner
 } from './types'
 export interface AlembicWalletConfig {
   authAdapter: AUTHAdapter
@@ -69,7 +70,7 @@ export declare class AlembicWallet {
   /**
    * WebAuthn Section
    */
-  getCurrentWebAuthnOwner(): string | null
+  getCurrentWebAuthnOwner(): WebAuthnOwner | undefined
   addWebAuthnOwner(): Promise<string>
   private _waitWebAuthnSignerDeployment
   private _verifyWebAuthnOwner
