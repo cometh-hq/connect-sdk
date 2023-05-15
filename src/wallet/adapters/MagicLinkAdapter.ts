@@ -4,21 +4,22 @@ import { Magic, MagicSDKAdditionalConfiguration } from 'magic-sdk'
 import { UserInfos } from '../types'
 import { AUTHAdapter } from './types'
 
-export interface MagicLinkConfig {
+export interface MagicLinkAdapterConfig {
   apiKey: string
-  options: MagicSDKAdditionalConfiguration
-  chainId: string
+  options: MagicSDKAdditionalConfiguration & {
+    chainId: string
+  }
 }
 
 export class MagicLinkAdapter implements AUTHAdapter {
   private magic: Magic | null = null
   private ethProvider: ethers.providers.Web3Provider | null = null
-  private magicConfig: MagicLinkConfig
+  private magicConfig: MagicLinkAdapterConfig
   readonly chaindId: string
 
-  constructor(magicConfig: MagicLinkConfig) {
+  constructor(magicConfig: MagicLinkAdapterConfig) {
     this.magicConfig = magicConfig
-    this.chaindId = magicConfig.chainId
+    this.chaindId = magicConfig.options.chainId!
   }
 
   public async init(): Promise<void> {
@@ -61,6 +62,7 @@ export class MagicLinkAdapter implements AUTHAdapter {
   async getUserInfos(): Promise<Partial<UserInfos>> {
     if (!this.magic) throw new Error('No magicLink instance found')
     const userInfos = await this.magic.user.getMetadata()
+
     return userInfos ?? {}
   }
 }
