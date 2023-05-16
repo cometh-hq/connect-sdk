@@ -12,7 +12,7 @@
     "build": "rimraf dist && yarn build:ts",
     "prettier-format": "prettier --config .prettierrc 'src/**/*.ts' --write",
     "lint": "eslint . --ext .ts",
-    "test": "jest --passWithNoTests",
+    "test": " jest",
     "prepare": "husky install"
   },
   "repository": {

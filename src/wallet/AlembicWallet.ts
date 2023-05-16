@@ -3,13 +3,11 @@ import { BigNumber, Bytes, ethers } from 'ethers'
 import { SiweMessage } from 'siwe'
 
 import {
-  BLOCK_EVENT_GAP,
   DEFAULT_BASE_GAS,
   DEFAULT_REWARD_PERCENTILE,
   EIP712_SAFE_MESSAGE_TYPE,
   EIP712_SAFE_TX_TYPES,
-  networks,
-  P256SignerCreationCode
+  networks
 } from '../constants'
 import {
   P256SignerFactory__factory,
@@ -20,6 +18,7 @@ import { SafeInterface } from '../contracts/types/Safe'
 import { API } from '../services'
 import { GasModal } from '../ui'
 import { AUTHAdapter } from './adapters'
+import SafeUtils from './SafeUtils'
 import {
   MetaTransactionData,
   SafeTransactionDataPartial,
@@ -102,18 +101,6 @@ export class AlembicWallet {
 
   public getConnected(): boolean {
     return this.connected
-  }
-
-  public async isDeployed(): Promise<boolean> {
-    try {
-      await Safe__factory.connect(
-        this.getAddress(),
-        this.getOwnerProvider()
-      ).deployed()
-      return true
-    } catch (error) {
-      return false
-    }
   }
 
   public async getUserInfos(): Promise<UserInfos> {
@@ -233,20 +220,15 @@ export class AlembicWallet {
         gasPrice: BigNumber.from(safeTxData.gasPrice).toString(),
         gasToken: ethers.constants.AddressZero,
         refundReceiver: ethers.constants.AddressZero,
-        nonce: BigNumber.from(nonce ?? (await this._getNonce())).toString()
+        nonce: BigNumber.from(
+          nonce ??
+            (await SafeUtils.getNonce(
+              this.getAddress(),
+              this.getOwnerProvider()
+            ))
+        ).toString()
       }
     )
-  }
-
-  private _getNonce = async (): Promise<number> => {
-    return (await this.isDeployed())
-      ? (
-          await Safe__factory.connect(
-            this.getAddress(),
-            this.getOwnerProvider()
-          ).nonce()
-        ).toNumber()
-      : 0
   }
 
   private _toSponsoredAddress(targetAddress: string): boolean {
@@ -322,7 +304,10 @@ export class AlembicWallet {
   public async sendTransaction(
     safeTxData: MetaTransactionData
   ): Promise<SendTransactionResponse> {
-    const nonce = await this._getNonce()
+    const nonce = await SafeUtils.getNonce(
+      this.getAddress(),
+      this.getOwnerProvider()
+    )
 
     const safeTxDataTyped = {
       to: safeTxData.to,
@@ -370,57 +355,6 @@ export class AlembicWallet {
     return { safeTxHash }
   }
 
-  private async getSafeTransactionHash(
-    walletAddress: string,
-    transactionData: MetaTransactionData,
-    chainId: number
-  ): Promise<string> {
-    return ethers.utils._TypedDataEncoder.hash(
-      {
-        chainId,
-        verifyingContract: walletAddress
-      },
-      EIP712_SAFE_TX_TYPES,
-      transactionData
-    )
-  }
-
-  public async getSuccessExecTransactionEvent(
-    safeTxHash: string
-  ): Promise<any> {
-    const safeInstance = await Safe__factory.connect(
-      this.getAddress(),
-      this.getOwnerProvider()
-    )
-
-    const transactionEvents = await safeInstance.queryFilter(
-      safeInstance.filters.ExecutionSuccess(),
-      BLOCK_EVENT_GAP
-    )
-    const filteredTransactionEvent = transactionEvents.filter(
-      (e) => e.args.txHash === safeTxHash
-    )
-
-    return filteredTransactionEvent[0]
-  }
-
-  public async getFailedExecTransactionEvent(safeTxHash: string): Promise<any> {
-    const safeInstance = await Safe__factory.connect(
-      this.getAddress(),
-      this.getOwnerProvider()
-    )
-
-    const transactionEvents = await safeInstance.queryFilter(
-      safeInstance.filters.ExecutionFailure(),
-      BLOCK_EVENT_GAP
-    )
-    const filteredTransactionEvent = transactionEvents.filter(
-      (e) => e.args.txHash === safeTxHash
-    )
-
-    return filteredTransactionEvent[0]
-  }
-
   /**
    * WebAuthn Section
    */
@@ -451,7 +385,7 @@ export class AlembicWallet {
     const message = `${publicKey_X},${publicKey_Y},${publicKey_Id}`
     const signature = await this.signMessage(ethers.utils.hashMessage(message))
 
-    const predictedSignerAddress = await this._predictedSignerAddress(
+    const predictedSignerAddress = await WebAuthn.predictSignerAddress(
       publicKey_X,
       publicKey_Y,
       this.chainId
@@ -474,7 +408,7 @@ export class AlembicWallet {
 
     const addOwnerTxSignature = await this._signTransaction(
       addOwnerTxData,
-      await this._getNonce()
+      await SafeUtils.getNonce(this.getAddress(), this.getOwnerProvider())
     )
 
     await this.API.addWebAuthnOwner(
@@ -488,32 +422,15 @@ export class AlembicWallet {
       addOwnerTxSignature
     )
 
-    await this._waitWebAuthnSignerDeployment(publicKey_X, publicKey_Y)
-
-    this.webAuthnOwners = await this.API.getWebAuthnOwners(this.getAddress())
-    return predictedSignerAddress
-  }
-
-  private async _waitWebAuthnSignerDeployment(
-    publicKey_X: string,
-    publicKey_Y: string
-  ): Promise<string> {
-    const P256FactoryInstance = await P256SignerFactory__factory.connect(
-      networks[this.chainId].P256FactoryContractAddress,
+    await WebAuthn.waitWebAuthnSignerDeployment(
+      publicKey_X,
+      publicKey_Y,
+      this.chainId,
       this.getOwnerProvider()
     )
 
-    let signerDeploymentEvent: any = []
-
-    while (signerDeploymentEvent.length === 0) {
-      await new Promise((resolve) => setTimeout(resolve, 2000))
-      signerDeploymentEvent = await P256FactoryInstance.queryFilter(
-        P256FactoryInstance.filters.NewSignerCreated(publicKey_X, publicKey_Y),
-        BLOCK_EVENT_GAP
-      )
-    }
-
-    return signerDeploymentEvent[0].args.signer
+    this.webAuthnOwners = await this.API.getWebAuthnOwners(this.getAddress())
+    return predictedSignerAddress
   }
 
   private async _verifyWebAuthnOwner(): Promise<boolean> {
@@ -540,7 +457,7 @@ export class AlembicWallet {
     const currentWebAuthnOwner = this.getCurrentWebAuthnOwner()
     if (!currentWebAuthnOwner) throw new Error('No WebAuthn signer found')
 
-    const safeTxHash = await this.getSafeTransactionHash(
+    const safeTxHash = await SafeUtils.getSafeTransactionHash(
       this.getAddress(),
       safeTxDataTyped,
       this.chainId
@@ -551,7 +468,7 @@ export class AlembicWallet {
       currentWebAuthnOwner.publicKey_Id
     )
 
-    return this._formatWebAuthnSignatureForSafe(
+    return SafeUtils.formatWebAuthnSignatureForSafe(
       currentWebAuthnOwner.signerAddress,
       encodedWebAuthnSignature
     )
@@ -568,50 +485,9 @@ export class AlembicWallet {
       currentWebAuthnOwner.publicKey_Id
     )
 
-    return this._formatWebAuthnSignatureForSafe(
+    return SafeUtils.formatWebAuthnSignatureForSafe(
       currentWebAuthnOwner.signerAddress,
       encodedWebAuthnSignature
-    )
-  }
-
-  private _formatWebAuthnSignatureForSafe = (
-    signerAddress: string,
-    signature: string
-  ): string => {
-    return `${ethers.utils.defaultAbiCoder.encode(
-      ['uint256', 'uint256'],
-      [signerAddress, 65]
-    )}00${ethers.utils
-      .hexZeroPad(
-        ethers.utils.hexValue(ethers.utils.arrayify(signature).length),
-        32
-      )
-      .slice(2)}${signature.slice(2)}`
-  }
-
-  private async _predictedSignerAddress(
-    publicKey_X: string,
-    publicKey_Y: string,
-    chainId: number
-  ): Promise<string> {
-    const deploymentCode = ethers.utils.keccak256(
-      ethers.utils.solidityPack(
-        ['bytes', 'uint256', 'uint256'],
-        [P256SignerCreationCode, publicKey_X, publicKey_Y]
-      )
-    )
-
-    const salt = ethers.utils.keccak256(
-      ethers.utils.defaultAbiCoder.encode(
-        ['uint256', 'uint256'],
-        [publicKey_X, publicKey_Y]
-      )
-    )
-
-    return ethers.utils.getCreate2Address(
-      networks[chainId].P256FactoryContractAddress,
-      salt,
-      deploymentCode
     )
   }
 }

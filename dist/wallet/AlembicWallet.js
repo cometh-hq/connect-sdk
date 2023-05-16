@@ -19,6 +19,7 @@ const constants_1 = require("../constants");
 const factories_1 = require("../contracts/types/factories");
 const services_1 = require("../services");
 const ui_1 = require("../ui");
+const SafeUtils_1 = __importDefault(require("./SafeUtils"));
 const WebAuthn_1 = __importDefault(require("./WebAuthn"));
 class AlembicWallet {
     constructor({ authAdapter, apiKey }) {
@@ -54,19 +55,9 @@ class AlembicWallet {
                 gasPrice: ethers_1.BigNumber.from(safeTxData.gasPrice).toString(),
                 gasToken: ethers_1.ethers.constants.AddressZero,
                 refundReceiver: ethers_1.ethers.constants.AddressZero,
-                nonce: ethers_1.BigNumber.from(nonce !== null && nonce !== void 0 ? nonce : (yield this._getNonce())).toString()
+                nonce: ethers_1.BigNumber.from(nonce !== null && nonce !== void 0 ? nonce : (yield SafeUtils_1.default.getNonce(this.getAddress(), this.getOwnerProvider()))).toString()
             });
         });
-        this._getNonce = () => __awaiter(this, void 0, void 0, function* () {
-            return (yield this.isDeployed())
-                ? (yield factories_1.Safe__factory.connect(this.getAddress(), this.getOwnerProvider()).nonce()).toNumber()
-                : 0;
-        });
-        this._formatWebAuthnSignatureForSafe = (signerAddress, signature) => {
-            return `${ethers_1.ethers.utils.defaultAbiCoder.encode(['uint256', 'uint256'], [signerAddress, 65])}00${ethers_1.ethers.utils
-                .hexZeroPad(ethers_1.ethers.utils.hexValue(ethers_1.ethers.utils.arrayify(signature).length), 32)
-                .slice(2)}${signature.slice(2)}`;
-        };
         this.authAdapter = authAdapter;
         this.chainId = +authAdapter.chaindId;
         this.API = new services_1.API(apiKey, this.chainId);
@@ -109,17 +100,6 @@ class AlembicWallet {
     }
     getConnected() {
         return this.connected;
-    }
-    isDeployed() {
-        return __awaiter(this, void 0, void 0, function* () {
-            try {
-                yield factories_1.Safe__factory.connect(this.getAddress(), this.getOwnerProvider()).deployed();
-                return true;
-            }
-            catch (error) {
-                return false;
-            }
-        });
     }
     getUserInfos() {
         var _a;
@@ -250,7 +230,7 @@ class AlembicWallet {
     sendTransaction(safeTxData) {
         var _a;
         return __awaiter(this, void 0, void 0, function* () {
-            const nonce = yield this._getNonce();
+            const nonce = yield SafeUtils_1.default.getNonce(this.getAddress(), this.getOwnerProvider());
             const safeTxDataTyped = {
                 to: safeTxData.to,
                 value: (_a = safeTxData.value) !== null && _a !== void 0 ? _a : '0x0',
@@ -285,30 +265,6 @@ class AlembicWallet {
             return { safeTxHash };
         });
     }
-    getSafeTransactionHash(walletAddress, transactionData, chainId) {
-        return __awaiter(this, void 0, void 0, function* () {
-            return ethers_1.ethers.utils._TypedDataEncoder.hash({
-                chainId,
-                verifyingContract: walletAddress
-            }, constants_1.EIP712_SAFE_TX_TYPES, transactionData);
-        });
-    }
-    getSuccessExecTransactionEvent(safeTxHash) {
-        return __awaiter(this, void 0, void 0, function* () {
-            const safeInstance = yield factories_1.Safe__factory.connect(this.getAddress(), this.getOwnerProvider());
-            const transactionEvents = yield safeInstance.queryFilter(safeInstance.filters.ExecutionSuccess(), constants_1.BLOCK_EVENT_GAP);
-            const filteredTransactionEvent = transactionEvents.filter((e) => e.args.txHash === safeTxHash);
-            return filteredTransactionEvent[0];
-        });
-    }
-    getFailedExecTransactionEvent(safeTxHash) {
-        return __awaiter(this, void 0, void 0, function* () {
-            const safeInstance = yield factories_1.Safe__factory.connect(this.getAddress(), this.getOwnerProvider());
-            const transactionEvents = yield safeInstance.queryFilter(safeInstance.filters.ExecutionFailure(), constants_1.BLOCK_EVENT_GAP);
-            const filteredTransactionEvent = transactionEvents.filter((e) => e.args.txHash === safeTxHash);
-            return filteredTransactionEvent[0];
-        });
-    }
     /**
      * WebAuthn Section
      */
@@ -333,7 +289,7 @@ class AlembicWallet {
             const publicKey_Id = webAuthnCredentials.id;
             const message = `${publicKey_X},${publicKey_Y},${publicKey_Id}`;
             const signature = yield this.signMessage(ethers_1.ethers.utils.hashMessage(message));
-            const predictedSignerAddress = yield this._predictedSignerAddress(publicKey_X, publicKey_Y, this.chainId);
+            const predictedSignerAddress = yield WebAuthn_1.default.predictSignerAddress(publicKey_X, publicKey_Y, this.chainId);
             const addOwnerTxData = {
                 to: this.getAddress(),
                 value: '0x0',
@@ -348,22 +304,11 @@ class AlembicWallet {
                 gasToken: ethers_1.ethers.constants.AddressZero,
                 refundReceiver: ethers_1.ethers.constants.AddressZero
             };
-            const addOwnerTxSignature = yield this._signTransaction(addOwnerTxData, yield this._getNonce());
+            const addOwnerTxSignature = yield this._signTransaction(addOwnerTxData, yield SafeUtils_1.default.getNonce(this.getAddress(), this.getOwnerProvider()));
             yield this.API.addWebAuthnOwner(this.getAddress(), publicKey_Id, publicKey_X, publicKey_Y, signature, message, JSON.stringify(addOwnerTxData), addOwnerTxSignature);
-            yield this._waitWebAuthnSignerDeployment(publicKey_X, publicKey_Y);
+            yield WebAuthn_1.default.waitWebAuthnSignerDeployment(publicKey_X, publicKey_Y, this.chainId, this.getOwnerProvider());
             this.webAuthnOwners = yield this.API.getWebAuthnOwners(this.getAddress());
             return predictedSignerAddress;
-        });
-    }
-    _waitWebAuthnSignerDeployment(publicKey_X, publicKey_Y) {
-        return __awaiter(this, void 0, void 0, function* () {
-            const P256FactoryInstance = yield factories_1.P256SignerFactory__factory.connect(constants_1.networks[this.chainId].P256FactoryContractAddress, this.getOwnerProvider());
-            let signerDeploymentEvent = [];
-            while (signerDeploymentEvent.length === 0) {
-                yield new Promise((resolve) => setTimeout(resolve, 2000));
-                signerDeploymentEvent = yield P256FactoryInstance.queryFilter(P256FactoryInstance.filters.NewSignerCreated(publicKey_X, publicKey_Y), constants_1.BLOCK_EVENT_GAP);
-            }
-            return signerDeploymentEvent[0].args.signer;
         });
     }
     _verifyWebAuthnOwner() {
@@ -383,9 +328,9 @@ class AlembicWallet {
             const currentWebAuthnOwner = this.getCurrentWebAuthnOwner();
             if (!currentWebAuthnOwner)
                 throw new Error('No WebAuthn signer found');
-            const safeTxHash = yield this.getSafeTransactionHash(this.getAddress(), safeTxDataTyped, this.chainId);
+            const safeTxHash = yield SafeUtils_1.default.getSafeTransactionHash(this.getAddress(), safeTxDataTyped, this.chainId);
             const encodedWebAuthnSignature = yield WebAuthn_1.default.getWebAuthnSignature(safeTxHash, currentWebAuthnOwner.publicKey_Id);
-            return this._formatWebAuthnSignatureForSafe(currentWebAuthnOwner.signerAddress, encodedWebAuthnSignature);
+            return SafeUtils_1.default.formatWebAuthnSignatureForSafe(currentWebAuthnOwner.signerAddress, encodedWebAuthnSignature);
         });
     }
     _signMessageWithWebAuthn(messageToSign) {
@@ -394,14 +339,7 @@ class AlembicWallet {
             if (!currentWebAuthnOwner)
                 throw new Error('No WebAuthn signer found');
             const encodedWebAuthnSignature = yield WebAuthn_1.default.getWebAuthnSignature(ethers_1.ethers.utils.keccak256(messageToSign), currentWebAuthnOwner.publicKey_Id);
-            return this._formatWebAuthnSignatureForSafe(currentWebAuthnOwner.signerAddress, encodedWebAuthnSignature);
-        });
-    }
-    _predictedSignerAddress(publicKey_X, publicKey_Y, chainId) {
-        return __awaiter(this, void 0, void 0, function* () {
-            const deploymentCode = ethers_1.ethers.utils.keccak256(ethers_1.ethers.utils.solidityPack(['bytes', 'uint256', 'uint256'], [constants_1.P256SignerCreationCode, publicKey_X, publicKey_Y]));
-            const salt = ethers_1.ethers.utils.keccak256(ethers_1.ethers.utils.defaultAbiCoder.encode(['uint256', 'uint256'], [publicKey_X, publicKey_Y]));
-            return ethers_1.ethers.utils.getCreate2Address(constants_1.networks[chainId].P256FactoryContractAddress, salt, deploymentCode);
+            return SafeUtils_1.default.formatWebAuthnSignatureForSafe(currentWebAuthnOwner.signerAddress, encodedWebAuthnSignature);
         });
     }
 }

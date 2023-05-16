@@ -37,7 +37,6 @@ export declare class AlembicWallet {
    */
   connect(): Promise<void>
   getConnected(): boolean
-  isDeployed(): Promise<boolean>
   getUserInfos(): Promise<UserInfos>
   getAddress(): string
   private _createMessage
@@ -54,7 +53,6 @@ export declare class AlembicWallet {
    * Transaction Section
    */
   private _signTransaction
-  private _getNonce
   private _toSponsoredAddress
   _estimateTransactionGas(safeTxData: SafeTransactionDataPartial): Promise<{
     safeTxGas: BigNumber
@@ -65,18 +63,12 @@ export declare class AlembicWallet {
   sendTransaction(
     safeTxData: MetaTransactionData
   ): Promise<SendTransactionResponse>
-  private getSafeTransactionHash
-  getSuccessExecTransactionEvent(safeTxHash: string): Promise<any>
-  getFailedExecTransactionEvent(safeTxHash: string): Promise<any>
   /**
    * WebAuthn Section
    */
   getCurrentWebAuthnOwner(): WebAuthnOwner | undefined
   addWebAuthnOwner(): Promise<string>
-  private _waitWebAuthnSignerDeployment
   private _verifyWebAuthnOwner
   private _signTransactionwithWebAuthn
   private _signMessageWithWebAuthn
-  private _formatWebAuthnSignatureForSafe
-  private _predictedSignerAddress
 }
