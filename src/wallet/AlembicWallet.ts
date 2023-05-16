@@ -27,7 +27,7 @@ import {
   UserInfos,
   WebAuthnOwner
 } from './types'
-import WebAuthn from './WebAuthn'
+import WebAuthnUtils from './WebAuthnUtils'
 
 export interface AlembicWalletConfig {
   authAdapter: AUTHAdapter
@@ -374,7 +374,7 @@ export class AlembicWallet {
     const signer = this.authAdapter.getEthProvider()?.getSigner()
     if (!signer) throw new Error('No signer found')
 
-    const webAuthnCredentials = await WebAuthn.createCredentials(
+    const webAuthnCredentials = await WebAuthnUtils.createCredentials(
       this.getAddress()
     )
 
@@ -385,7 +385,7 @@ export class AlembicWallet {
     const message = `${publicKey_X},${publicKey_Y},${publicKey_Id}`
     const signature = await this.signMessage(ethers.utils.hashMessage(message))
 
-    const predictedSignerAddress = await WebAuthn.predictSignerAddress(
+    const predictedSignerAddress = await WebAuthnUtils.predictSignerAddress(
       publicKey_X,
       publicKey_Y,
       this.chainId
@@ -422,7 +422,7 @@ export class AlembicWallet {
       addOwnerTxSignature
     )
 
-    await WebAuthn.waitWebAuthnSignerDeployment(
+    await WebAuthnUtils.waitWebAuthnSignerDeployment(
       publicKey_X,
       publicKey_Y,
       this.chainId,
@@ -463,7 +463,7 @@ export class AlembicWallet {
       this.chainId
     )
 
-    const encodedWebAuthnSignature = await WebAuthn.getWebAuthnSignature(
+    const encodedWebAuthnSignature = await WebAuthnUtils.getWebAuthnSignature(
       safeTxHash,
       currentWebAuthnOwner.publicKey_Id
     )
@@ -480,7 +480,7 @@ export class AlembicWallet {
     const currentWebAuthnOwner = this.getCurrentWebAuthnOwner()
     if (!currentWebAuthnOwner) throw new Error('No WebAuthn signer found')
 
-    const encodedWebAuthnSignature = await WebAuthn.getWebAuthnSignature(
+    const encodedWebAuthnSignature = await WebAuthnUtils.getWebAuthnSignature(
       ethers.utils.keccak256(messageToSign),
       currentWebAuthnOwner.publicKey_Id
     )
