@@ -49,6 +49,7 @@ export declare class AlembicWallet {
    */
   getOwnerProvider(): Web3Provider
   signMessage(messageToSign: string | Bytes): Promise<string>
+  private _signMessageWithEOA
   /**
    * Transaction Section
    */
@@ -76,5 +77,6 @@ export declare class AlembicWallet {
   private _verifyWebAuthnOwner
   private _signTransactionwithWebAuthn
   private _signMessageWithWebAuthn
+  private _formatWebAuthnSignatureForSafe
   private _predictedSignerAddress
 }

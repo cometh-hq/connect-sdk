@@ -62,6 +62,11 @@ class AlembicWallet {
                 ? (yield factories_1.Safe__factory.connect(this.getAddress(), this.getOwnerProvider()).nonce()).toNumber()
                 : 0;
         });
+        this._formatWebAuthnSignatureForSafe = (signerAddress, signature) => {
+            return `${ethers_1.ethers.utils.defaultAbiCoder.encode(['uint256', 'uint256'], [signerAddress, 65])}00${ethers_1.ethers.utils
+                .hexZeroPad(ethers_1.ethers.utils.hexValue(ethers_1.ethers.utils.arrayify(signature).length), 32)
+                .slice(2)}${signature.slice(2)}`;
+        };
         this.authAdapter = authAdapter;
         this.chainId = +authAdapter.chaindId;
         this.API = new services_1.API(apiKey, this.chainId);
@@ -175,20 +180,25 @@ class AlembicWallet {
         return provider;
     }
     signMessage(messageToSign) {
-        var _a;
         return __awaiter(this, void 0, void 0, function* () {
             if (yield this._verifyWebAuthnOwner()) {
                 return yield this._signMessageWithWebAuthn(messageToSign);
             }
             else {
-                const signer = (_a = this.authAdapter.getEthProvider()) === null || _a === void 0 ? void 0 : _a.getSigner();
-                if (!signer)
-                    throw new Error('Sign message: missing signer');
-                return yield signer._signTypedData({
-                    chainId: this.chainId,
-                    verifyingContract: this.getAddress()
-                }, constants_1.EIP712_SAFE_MESSAGE_TYPE, { message: messageToSign });
+                return yield this._signMessageWithEOA(messageToSign);
             }
+        });
+    }
+    _signMessageWithEOA(messageToSign) {
+        var _a;
+        return __awaiter(this, void 0, void 0, function* () {
+            const signer = (_a = this.authAdapter.getEthProvider()) === null || _a === void 0 ? void 0 : _a.getSigner();
+            if (!signer)
+                throw new Error('Sign message: missing signer');
+            return yield signer._signTypedData({
+                chainId: this.chainId,
+                verifyingContract: this.getAddress()
+            }, constants_1.EIP712_SAFE_MESSAGE_TYPE, { message: messageToSign });
         });
     }
     _toSponsoredAddress(targetAddress) {
@@ -375,9 +385,7 @@ class AlembicWallet {
                 throw new Error('No WebAuthn signer found');
             const safeTxHash = yield this.getSafeTransactionHash(this.getAddress(), safeTxDataTyped, this.chainId);
             const encodedWebAuthnSignature = yield WebAuthn_1.default.getWebAuthnSignature(safeTxHash, currentWebAuthnOwner.publicKey_Id);
-            return `${ethers_1.ethers.utils.defaultAbiCoder.encode(['uint256', 'uint256'], [currentWebAuthnOwner.signerAddress, 65])}00${ethers_1.ethers.utils
-                .hexZeroPad(ethers_1.ethers.utils.hexValue(ethers_1.ethers.utils.arrayify(encodedWebAuthnSignature).length), 32)
-                .slice(2)}${encodedWebAuthnSignature.slice(2)}`;
+            return this._formatWebAuthnSignatureForSafe(currentWebAuthnOwner.signerAddress, encodedWebAuthnSignature);
         });
     }
     _signMessageWithWebAuthn(messageToSign) {
@@ -385,10 +393,8 @@ class AlembicWallet {
             const currentWebAuthnOwner = this.getCurrentWebAuthnOwner();
             if (!currentWebAuthnOwner)
                 throw new Error('No WebAuthn signer found');
-            const encodedWebauthnSignature = yield WebAuthn_1.default.getWebAuthnSignature(ethers_1.ethers.utils.keccak256(messageToSign), currentWebAuthnOwner.publicKey_Id);
-            return `${ethers_1.ethers.utils.defaultAbiCoder.encode(['uint256', 'uint256'], [currentWebAuthnOwner.signerAddress, 65])}00${ethers_1.ethers.utils
-                .hexZeroPad(ethers_1.ethers.utils.hexValue(ethers_1.ethers.utils.arrayify(encodedWebauthnSignature).length), 32)
-                .slice(2)}${encodedWebauthnSignature.slice(2)}`;
+            const encodedWebAuthnSignature = yield WebAuthn_1.default.getWebAuthnSignature(ethers_1.ethers.utils.keccak256(messageToSign), currentWebAuthnOwner.publicKey_Id);
+            return this._formatWebAuthnSignatureForSafe(currentWebAuthnOwner.signerAddress, encodedWebAuthnSignature);
         });
     }
     _predictedSignerAddress(publicKey_X, publicKey_Y, chainId) {

@@ -186,18 +186,24 @@ export class AlembicWallet {
     if (await this._verifyWebAuthnOwner()) {
       return await this._signMessageWithWebAuthn(messageToSign)
     } else {
-      const signer = this.authAdapter.getEthProvider()?.getSigner()
-      if (!signer) throw new Error('Sign message: missing signer')
-
-      return await signer._signTypedData(
-        {
-          chainId: this.chainId,
-          verifyingContract: this.getAddress()
-        },
-        EIP712_SAFE_MESSAGE_TYPE,
-        { message: messageToSign }
-      )
+      return await this._signMessageWithEOA(messageToSign)
     }
+  }
+
+  private async _signMessageWithEOA(
+    messageToSign: string | Bytes
+  ): Promise<string> {
+    const signer = this.authAdapter.getEthProvider()?.getSigner()
+    if (!signer) throw new Error('Sign message: missing signer')
+
+    return await signer._signTypedData(
+      {
+        chainId: this.chainId,
+        verifyingContract: this.getAddress()
+      },
+      EIP712_SAFE_MESSAGE_TYPE,
+      { message: messageToSign }
+    )
   }
 
   /**
@@ -545,17 +551,10 @@ export class AlembicWallet {
       currentWebAuthnOwner.publicKey_Id
     )
 
-    return `${ethers.utils.defaultAbiCoder.encode(
-      ['uint256', 'uint256'],
-      [currentWebAuthnOwner.signerAddress, 65]
-    )}00${ethers.utils
-      .hexZeroPad(
-        ethers.utils.hexValue(
-          ethers.utils.arrayify(encodedWebAuthnSignature).length
-        ),
-        32
-      )
-      .slice(2)}${encodedWebAuthnSignature.slice(2)}`
+    return this._formatWebAuthnSignatureForSafe(
+      currentWebAuthnOwner.signerAddress,
+      encodedWebAuthnSignature
+    )
   }
 
   private async _signMessageWithWebAuthn(
@@ -564,22 +563,30 @@ export class AlembicWallet {
     const currentWebAuthnOwner = this.getCurrentWebAuthnOwner()
     if (!currentWebAuthnOwner) throw new Error('No WebAuthn signer found')
 
-    const encodedWebauthnSignature = await WebAuthn.getWebAuthnSignature(
+    const encodedWebAuthnSignature = await WebAuthn.getWebAuthnSignature(
       ethers.utils.keccak256(messageToSign),
       currentWebAuthnOwner.publicKey_Id
     )
 
+    return this._formatWebAuthnSignatureForSafe(
+      currentWebAuthnOwner.signerAddress,
+      encodedWebAuthnSignature
+    )
+  }
+
+  private _formatWebAuthnSignatureForSafe = (
+    signerAddress: string,
+    signature: string
+  ): string => {
     return `${ethers.utils.defaultAbiCoder.encode(
       ['uint256', 'uint256'],
-      [currentWebAuthnOwner.signerAddress, 65]
+      [signerAddress, 65]
     )}00${ethers.utils
       .hexZeroPad(
-        ethers.utils.hexValue(
-          ethers.utils.arrayify(encodedWebauthnSignature).length
-        ),
+        ethers.utils.hexValue(ethers.utils.arrayify(signature).length),
         32
       )
-      .slice(2)}${encodedWebauthnSignature.slice(2)}`
+      .slice(2)}${signature.slice(2)}`
   }
 
   private async _predictedSignerAddress(

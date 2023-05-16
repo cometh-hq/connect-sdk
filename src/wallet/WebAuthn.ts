@@ -74,12 +74,11 @@ const _sign = async (
 }
 
 const getWebAuthnSignature = async (
-  safeTxHash: string,
+  hash: string,
   publicKey_Id: string
 ): Promise<string> => {
   const formattedPublicKeyId = parseHex(publicKey_Id)
-  const metaTxHash = safeTxHash
-  const challenge = parseHex(metaTxHash.slice(2))
+  const challenge = parseHex(hash.slice(2))
 
   const {
     signature,
