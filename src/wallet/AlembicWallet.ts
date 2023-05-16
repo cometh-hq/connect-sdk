@@ -183,19 +183,21 @@ export class AlembicWallet {
   }
 
   public async signMessage(messageToSign: string | Bytes): Promise<string> {
-    const messageHash = ethers.utils.hashMessage(messageToSign)
+    if (await this._verifyWebAuthnOwner()) {
+      return await this._signMessageWithWebAuthn(messageToSign)
+    } else {
+      const signer = this.authAdapter.getEthProvider()?.getSigner()
+      if (!signer) throw new Error('Sign message: missing signer')
 
-    const signer = this.authAdapter.getEthProvider()?.getSigner()
-    if (!signer) throw new Error('Sign message: missing signer')
-
-    return await signer._signTypedData(
-      {
-        verifyingContract: this.getAddress(),
-        chainId: this.chainId
-      },
-      EIP712_SAFE_MESSAGE_TYPE,
-      { message: messageHash }
-    )
+      return await signer._signTypedData(
+        {
+          chainId: this.chainId,
+          verifyingContract: this.getAddress()
+        },
+        EIP712_SAFE_MESSAGE_TYPE,
+        { message: messageToSign }
+      )
+    }
   }
 
   /**
@@ -441,9 +443,7 @@ export class AlembicWallet {
     const publicKey_Id = webAuthnCredentials.id
 
     const message = `${publicKey_X},${publicKey_Y},${publicKey_Id}`
-    const signature = await this.signMessage(
-      ethers.utils.hexlify(ethers.utils.toUtf8Bytes(message))
-    )
+    const signature = await this.signMessage(ethers.utils.hashMessage(message))
 
     const predictedSignerAddress = await this._predictedSignerAddress(
       publicKey_X,
@@ -540,8 +540,32 @@ export class AlembicWallet {
       this.chainId
     )
 
-    const encodedWebauthnSignature = await WebAuthn.getWebAuthnSignature(
+    const encodedWebAuthnSignature = await WebAuthn.getWebAuthnSignature(
       safeTxHash,
+      currentWebAuthnOwner.publicKey_Id
+    )
+
+    return `${ethers.utils.defaultAbiCoder.encode(
+      ['uint256', 'uint256'],
+      [currentWebAuthnOwner.signerAddress, 65]
+    )}00${ethers.utils
+      .hexZeroPad(
+        ethers.utils.hexValue(
+          ethers.utils.arrayify(encodedWebAuthnSignature).length
+        ),
+        32
+      )
+      .slice(2)}${encodedWebAuthnSignature.slice(2)}`
+  }
+
+  private async _signMessageWithWebAuthn(
+    messageToSign: string | Bytes
+  ): Promise<string> {
+    const currentWebAuthnOwner = this.getCurrentWebAuthnOwner()
+    if (!currentWebAuthnOwner) throw new Error('No WebAuthn signer found')
+
+    const encodedWebauthnSignature = await WebAuthn.getWebAuthnSignature(
+      ethers.utils.keccak256(messageToSign),
       currentWebAuthnOwner.publicKey_Id
     )
 

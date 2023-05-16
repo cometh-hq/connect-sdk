@@ -75,5 +75,6 @@ export declare class AlembicWallet {
   private _waitWebAuthnSignerDeployment
   private _verifyWebAuthnOwner
   private _signTransactionwithWebAuthn
+  private _signMessageWithWebAuthn
   private _predictedSignerAddress
 }
