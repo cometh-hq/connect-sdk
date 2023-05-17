@@ -197,9 +197,18 @@ export class AlembicWallet {
    * Transaction Section
    */
 
-  private _signTransaction = async (
-    safeTxData: SafeTransactionDataPartial,
-    nonce?: number
+  public async signTransaction(
+    safeTxData: SafeTransactionDataPartial
+  ): Promise<string> {
+    if (await this._verifyWebAuthnOwner()) {
+      return await this._signTransactionwithWebAuthn(safeTxData)
+    } else {
+      return await this._signTransactionWithEOA(safeTxData)
+    }
+  }
+
+  private _signTransactionWithEOA = async (
+    safeTxData: SafeTransactionDataPartial
   ): Promise<string> => {
     const signer = this.authAdapter.getEthProvider()?.getSigner()
     if (!signer) throw new Error('Sign message: missing signer')
@@ -221,11 +230,7 @@ export class AlembicWallet {
         gasToken: ethers.constants.AddressZero,
         refundReceiver: ethers.constants.AddressZero,
         nonce: BigNumber.from(
-          nonce ??
-            (await SafeUtils.getNonce(
-              this.getAddress(),
-              this.getOwnerProvider()
-            ))
+          await SafeUtils.getNonce(this.getAddress(), this.getOwnerProvider())
         ).toString()
       }
     )
@@ -338,13 +343,7 @@ export class AlembicWallet {
       )
     }
 
-    let txSignature: string
-
-    if (await this._verifyWebAuthnOwner()) {
-      txSignature = await this._signTransactionwithWebAuthn(safeTxDataTyped)
-    } else {
-      txSignature = await this._signTransaction(safeTxDataTyped, nonce)
-    }
+    const txSignature = await this.signTransaction(safeTxDataTyped)
 
     const safeTxHash = await this.API.relayTransaction({
       safeTxData: safeTxDataTyped,
@@ -406,10 +405,7 @@ export class AlembicWallet {
       refundReceiver: ethers.constants.AddressZero
     }
 
-    const addOwnerTxSignature = await this._signTransaction(
-      addOwnerTxData,
-      await SafeUtils.getNonce(this.getAddress(), this.getOwnerProvider())
-    )
+    const addOwnerTxSignature = await this.signTransaction(addOwnerTxData)
 
     await this.API.addWebAuthnOwner(
       this.getAddress(),
