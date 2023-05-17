@@ -61,14 +61,14 @@ const createCredentials = async (userId: string): Promise<any> => {
 
 const _sign = async (
   challenge: BufferSource,
-  publicKey_Id: BufferSource
+  publicKeyId: BufferSource
 ): Promise<any> => {
   const assertionPayload: any = await navigator.credentials.get({
     publicKey: {
       challenge,
       allowCredentials: [
         {
-          id: publicKey_Id,
+          id: publicKeyId,
           type: 'public-key'
         }
       ]
@@ -79,9 +79,9 @@ const _sign = async (
 
 const getWebAuthnSignature = async (
   hash: string,
-  publicKey_Id: string
+  publicKeyId: string
 ): Promise<string> => {
-  const formattedPublicKeyId = parseHex(publicKey_Id)
+  const formattedPublicKeyId = parseHex(publicKeyId)
   const challenge = parseHex(hash.slice(2))
 
   const {
@@ -113,21 +113,21 @@ const getWebAuthnSignature = async (
 }
 
 const predictSignerAddress = async (
-  publicKey_X: string,
-  publicKey_Y: string,
+  publicKeyX: string,
+  publicKeyY: string,
   chainId: number
 ): Promise<string> => {
   const deploymentCode = ethers.utils.keccak256(
     ethers.utils.solidityPack(
       ['bytes', 'uint256', 'uint256'],
-      [P256SignerCreationCode, publicKey_X, publicKey_Y]
+      [P256SignerCreationCode, publicKeyX, publicKeyY]
     )
   )
 
   const salt = ethers.utils.keccak256(
     ethers.utils.defaultAbiCoder.encode(
       ['uint256', 'uint256'],
-      [publicKey_X, publicKey_Y]
+      [publicKeyX, publicKeyY]
     )
   )
 
@@ -139,8 +139,8 @@ const predictSignerAddress = async (
 }
 
 const waitWebAuthnSignerDeployment = async (
-  publicKey_X: string,
-  publicKey_Y: string,
+  publicKeyX: string,
+  publicKeyY: string,
   chainId: number,
   provider: Web3Provider | AlembicProvider
 ): Promise<string> => {
@@ -154,7 +154,7 @@ const waitWebAuthnSignerDeployment = async (
   while (signerDeploymentEvent.length === 0) {
     await new Promise((resolve) => setTimeout(resolve, 2000))
     signerDeploymentEvent = await P256FactoryInstance.queryFilter(
-      P256FactoryInstance.filters.NewSignerCreated(publicKey_X, publicKey_Y),
+      P256FactoryInstance.filters.NewSignerCreated(publicKeyX, publicKeyY),
       BLOCK_EVENT_GAP
     )
   }

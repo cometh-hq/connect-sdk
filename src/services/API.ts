@@ -69,18 +69,18 @@ export class API {
 
   async addWebAuthnOwner(
     walletAddress,
-    publicKey_Id,
-    publicKey_X,
-    publicKey_Y,
+    publicKeyId,
+    publicKeyX,
+    publicKeyY,
     signature,
     message,
     addOwnerTxData,
     addOwnerTxSignature
   ): Promise<WebAuthnOwner> {
     const body = {
-      publicKey_Id,
-      publicKey_X,
-      publicKey_Y,
+      publicKeyId,
+      publicKeyX,
+      publicKeyY,
       signature,
       message,
       addOwnerTxData,
@@ -94,8 +94,15 @@ export class API {
     return response.data?.webAuthnOwner
   }
 
+  async getWebAuthnOwnerByPublicKeyId(
+    publicKeyId: string
+  ): Promise<WebAuthnOwner> {
+    const response = await api.get(`/wallets/${publicKeyId}/webAuthnOwner`)
+    return response?.data?.webAuthnOwner
+  }
+
   async getWebAuthnOwners(walletAddress: string): Promise<WebAuthnOwner[]> {
-    const response = await api.get(`/wallets/${walletAddress}/webAuthnOwner`)
+    const response = await api.get(`/wallets/${walletAddress}/webAuthnOwners`)
     return response?.data?.webAuthnOwners
   }
 }

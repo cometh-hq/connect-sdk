@@ -59,9 +59,9 @@ export interface WalletUiConfig {
 export type WebAuthnOwner = {
   customerId: string
   walletAddress: string
-  publicKey_Id: string
-  publicKey_X: string
-  publicKey_Y: string
+  publicKeyId: string
+  publicKeyX: string
+  publicKeyY: string
   signature: string
   signerAddress: string
 }

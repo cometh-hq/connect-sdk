@@ -75,28 +75,36 @@ export class AlembicWallet {
     await this.authAdapter.init()
     await this.authAdapter.connect()
 
-    const signer = this.authAdapter.getEthProvider()?.getSigner()
-    if (!signer) throw new Error('No signer found')
+    const publicKeyId = window.localStorage.getItem('public-key-id')
 
-    const ownerAddress = await signer.getAddress()
-    if (!ownerAddress) throw new Error('No ownerAddress found')
+    if (publicKeyId) {
+      const currentWebAuthnOwner = await this.API.getWebAuthnOwnerByPublicKeyId(
+        <string>publicKeyId
+      )
+      this.walletAddress = currentWebAuthnOwner.walletAddress
+    } else {
+      const signer = this.authAdapter.getEthProvider()?.getSigner()
+      if (!signer) throw new Error('No signer found')
 
-    const nonce = await this.API.getNonce(ownerAddress)
+      const ownerAddress = await signer.getAddress()
+      if (!ownerAddress) throw new Error('No ownerAddress found')
 
-    const message: SiweMessage = this._createMessage(ownerAddress, nonce)
-    const messageToSign = message.prepareMessage()
-    const signature = await signer.signMessage(messageToSign)
+      const nonce = await this.API.getNonce(ownerAddress)
 
-    const walletAddress = await this.API?.connectToAlembicWallet({
-      message,
-      signature,
-      ownerAddress
-    })
+      const message: SiweMessage = this._createMessage(ownerAddress, nonce)
+      const messageToSign = message.prepareMessage()
+      const signature = await signer.signMessage(messageToSign)
+
+      this.walletAddress = await this.API?.connectToAlembicWallet({
+        message,
+        signature,
+        ownerAddress
+      })
+    }
 
     this.sponsoredAddresses = await this.API.getSponsoredAddresses()
-    this.webAuthnOwners = await this.API.getWebAuthnOwners(walletAddress)
+    this.webAuthnOwners = await this.API.getWebAuthnOwners(this.walletAddress)
     this.connected = true
-    this.walletAddress = walletAddress
   }
 
   public getConnected(): boolean {
@@ -361,10 +369,10 @@ export class AlembicWallet {
 
   public getCurrentWebAuthnOwner(): WebAuthnOwner | undefined {
     if (!this.webAuthnOwners) return undefined
-    const publicKey_Id = window.localStorage.getItem('public-key-id')
-    if (publicKey_Id === null) return undefined
+    const publicKeyId = window.localStorage.getItem('public-key-id')
+    if (publicKeyId === null) return undefined
     const currentWebAuthnOwner = this.webAuthnOwners.find(
-      (webAuthnOwner) => webAuthnOwner.publicKey_Id == publicKey_Id
+      (webAuthnOwner) => webAuthnOwner.publicKeyId == publicKeyId
     )
 
     return currentWebAuthnOwner
@@ -378,16 +386,16 @@ export class AlembicWallet {
       this.getAddress()
     )
 
-    const publicKey_X = `0x${webAuthnCredentials.point.getX().toString(16)}`
-    const publicKey_Y = `0x${webAuthnCredentials.point.getY().toString(16)}`
-    const publicKey_Id = webAuthnCredentials.id
+    const publicKeyX = `0x${webAuthnCredentials.point.getX().toString(16)}`
+    const publicKeyY = `0x${webAuthnCredentials.point.getY().toString(16)}`
+    const publicKeyId = webAuthnCredentials.id
 
-    const message = `${publicKey_X},${publicKey_Y},${publicKey_Id}`
+    const message = `${publicKeyX},${publicKeyY},${publicKeyId}`
     const signature = await this.signMessage(ethers.utils.hashMessage(message))
 
     const predictedSignerAddress = await WebAuthnUtils.predictSignerAddress(
-      publicKey_X,
-      publicKey_Y,
+      publicKeyX,
+      publicKeyY,
       this.chainId
     )
 
@@ -413,9 +421,9 @@ export class AlembicWallet {
 
     await this.API.addWebAuthnOwner(
       this.getAddress(),
-      publicKey_Id,
-      publicKey_X,
-      publicKey_Y,
+      publicKeyId,
+      publicKeyX,
+      publicKeyY,
       signature,
       message,
       JSON.stringify(addOwnerTxData),
@@ -423,8 +431,8 @@ export class AlembicWallet {
     )
 
     await WebAuthnUtils.waitWebAuthnSignerDeployment(
-      publicKey_X,
-      publicKey_Y,
+      publicKeyX,
+      publicKeyY,
       this.chainId,
       this.getOwnerProvider()
     )
@@ -465,7 +473,7 @@ export class AlembicWallet {
 
     const encodedWebAuthnSignature = await WebAuthnUtils.getWebAuthnSignature(
       safeTxHash,
-      currentWebAuthnOwner.publicKey_Id
+      currentWebAuthnOwner.publicKeyId
     )
 
     return SafeUtils.formatWebAuthnSignatureForSafe(
@@ -482,7 +490,7 @@ export class AlembicWallet {
 
     const encodedWebAuthnSignature = await WebAuthnUtils.getWebAuthnSignature(
       ethers.utils.keccak256(messageToSign),
-      currentWebAuthnOwner.publicKey_Id
+      currentWebAuthnOwner.publicKeyId
     )
 
     return SafeUtils.formatWebAuthnSignatureForSafe(
