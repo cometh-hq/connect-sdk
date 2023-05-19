@@ -1,4 +1,4 @@
-import { Web3Provider } from '@ethersproject/providers'
+import { StaticJsonRpcProvider } from '@ethersproject/providers'
 import { BigNumber, Bytes, ethers } from 'ethers'
 import { SiweMessage } from 'siwe'
 
@@ -32,6 +32,7 @@ import WebAuthnUtils from './WebAuthnUtils'
 export interface AlembicWalletConfig {
   authAdapter: AUTHAdapter
   apiKey: string
+  rpcUrl: string
   uiConfig?: {
     displayValidationModal: boolean
   }
@@ -43,8 +44,8 @@ export class AlembicWallet {
   private BASE_GAS: number
   private REWARD_PERCENTILE: number
   private API: API
+  private provider: StaticJsonRpcProvider
   private sponsoredAddresses?: SponsoredTransaction[]
-  private webAuthnOwners?: WebAuthnOwner[]
   private walletAddress?: string
   private uiConfig = {
     displayValidationModal: true
@@ -55,10 +56,11 @@ export class AlembicWallet {
   readonly P256FactoryInterface: P256SignerFactoryInterface =
     P256SignerFactory__factory.createInterface()
 
-  constructor({ authAdapter, apiKey }: AlembicWalletConfig) {
+  constructor({ authAdapter, apiKey, rpcUrl }: AlembicWalletConfig) {
     this.authAdapter = authAdapter
     this.chainId = +authAdapter.chaindId
     this.API = new API(apiKey, this.chainId)
+    this.provider = new ethers.providers.StaticJsonRpcProvider(rpcUrl)
     this.BASE_GAS = DEFAULT_BASE_GAS
     this.REWARD_PERCENTILE = DEFAULT_REWARD_PERCENTILE
   }
@@ -68,21 +70,16 @@ export class AlembicWallet {
    */
 
   public async connect(): Promise<void> {
-    // Return if does not match requirements
-    if (!this.authAdapter) throw new Error('No EOA adapter found')
-    if (!networks[this.chainId])
-      throw new Error('This network is not supported')
-    await this.authAdapter.init()
-    await this.authAdapter.connect()
+    console.log('test ')
+    if (!(await this._verifyWebAuthnOwner())) {
+      console.log('web3Auth')
+      // Return if does not match requirements
+      if (!this.authAdapter) throw new Error('No EOA adapter found')
+      if (!networks[this.chainId])
+        throw new Error('This network is not supported')
+      await this.authAdapter.init()
+      await this.authAdapter.connect()
 
-    const publicKeyId = window.localStorage.getItem('public-key-id')
-
-    if (publicKeyId) {
-      const currentWebAuthnOwner = await this.API.getWebAuthnOwnerByPublicKeyId(
-        <string>publicKeyId
-      )
-      this.walletAddress = currentWebAuthnOwner.walletAddress
-    } else {
       const signer = this.authAdapter.getEthProvider()?.getSigner()
       if (!signer) throw new Error('No signer found')
 
@@ -102,13 +99,18 @@ export class AlembicWallet {
       })
     }
 
+    console.log('then')
+
     this.sponsoredAddresses = await this.API.getSponsoredAddresses()
-    this.webAuthnOwners = await this.API.getWebAuthnOwners(this.walletAddress)
     this.connected = true
   }
 
   public getConnected(): boolean {
     return this.connected
+  }
+
+  public getProvider(): StaticJsonRpcProvider {
+    return this.provider
   }
 
   public async getUserInfos(): Promise<UserInfos> {
@@ -144,13 +146,12 @@ export class AlembicWallet {
   }
 
   private _getBalance = async (address: string): Promise<BigNumber> => {
-    const provider = this.getOwnerProvider()
-    return provider.getBalance(address)
+    return this.getProvider().getBalance(address)
   }
 
   public async logout(): Promise<void> {
-    if (!this.authAdapter) throw new Error('No EOA adapter found')
-    await this.authAdapter.logout()
+    if (this.authAdapter) await this.authAdapter.logout()
+
     this.connected = false
   }
 
@@ -171,17 +172,11 @@ export class AlembicWallet {
    * Signing Message Section
    */
 
-  public getOwnerProvider(): Web3Provider {
-    const provider = this.authAdapter.getEthProvider()
-    if (!provider) throw new Error('getOwnerProvider: missing provider')
-    return provider
-  }
-
   public async signMessage(messageToSign: string | Bytes): Promise<string> {
     if (await this._verifyWebAuthnOwner()) {
-      return await this._signMessageWithWebAuthn(messageToSign)
+      return this._signMessageWithWebAuthn(messageToSign)
     } else {
-      return await this._signMessageWithEOA(messageToSign)
+      return this._signMessageWithEOA(messageToSign)
     }
   }
 
@@ -209,9 +204,9 @@ export class AlembicWallet {
     safeTxData: SafeTransactionDataPartial
   ): Promise<string> {
     if (await this._verifyWebAuthnOwner()) {
-      return await this._signTransactionwithWebAuthn(safeTxData)
+      return this._signTransactionwithWebAuthn(safeTxData)
     } else {
-      return await this._signTransactionWithEOA(safeTxData)
+      return this._signTransactionWithEOA(safeTxData)
     }
   }
 
@@ -238,7 +233,7 @@ export class AlembicWallet {
         gasToken: ethers.constants.AddressZero,
         refundReceiver: ethers.constants.AddressZero,
         nonce: BigNumber.from(
-          await SafeUtils.getNonce(this.getAddress(), this.getOwnerProvider())
+          await SafeUtils.getNonce(this.getAddress(), this.getProvider())
         ).toString()
       }
     )
@@ -258,14 +253,14 @@ export class AlembicWallet {
     baseGas: number
     gasPrice: BigNumber
   }> {
-    const safeTxGas = await this.getOwnerProvider().estimateGas({
+    const safeTxGas = await this.getProvider().estimateGas({
       from: this.getAddress(),
       to: safeTxData.to,
       value: safeTxData.value,
       data: safeTxData.data
     })
 
-    const ethFeeHistory = await this.getOwnerProvider().send('eth_feeHistory', [
+    const ethFeeHistory = await this.getProvider().send('eth_feeHistory', [
       1,
       'latest',
       [this.REWARD_PERCENTILE]
@@ -317,11 +312,6 @@ export class AlembicWallet {
   public async sendTransaction(
     safeTxData: MetaTransactionData
   ): Promise<SendTransactionResponse> {
-    const nonce = await SafeUtils.getNonce(
-      this.getAddress(),
-      this.getOwnerProvider()
-    )
-
     const safeTxDataTyped = {
       to: safeTxData.to,
       value: safeTxData.value ?? '0x0',
@@ -332,7 +322,7 @@ export class AlembicWallet {
       gasPrice: 0,
       gasToken: ethers.constants.AddressZero,
       refundReceiver: ethers.constants.AddressZero,
-      nonce
+      nonce: await SafeUtils.getNonce(this.getAddress(), this.getProvider())
     }
 
     if (!this._toSponsoredAddress(safeTxDataTyped.to)) {
@@ -366,24 +356,25 @@ export class AlembicWallet {
    * WebAuthn Section
    */
 
-  public getCurrentWebAuthnOwner(): WebAuthnOwner | undefined {
-    if (!this.webAuthnOwners) return undefined
-    const publicKeyId = window.localStorage.getItem('public-key-id')
+  public async getCurrentWebAuthnOwner(): Promise<WebAuthnOwner | undefined> {
+    const publicKeyId = WebAuthnUtils.getCurrentPublicKeyId()
+    console.log({ publicKeyId })
     if (publicKeyId === null) return undefined
-    const currentWebAuthnOwner = this.webAuthnOwners.find(
-      (webAuthnOwner) => webAuthnOwner.publicKeyId == publicKeyId
-    )
 
+    const currentWebAuthnOwner = await this.API.getWebAuthnOwnerByPublicKeyId(
+      <string>publicKeyId
+    )
+    console.log({ currentWebAuthnOwner })
+    if (currentWebAuthnOwner === null) return undefined
+    this.walletAddress = currentWebAuthnOwner.walletAddress
     return currentWebAuthnOwner
   }
 
   public async addWebAuthnOwner(): Promise<string> {
-    const signer = this.authAdapter.getEthProvider()?.getSigner()
-    if (!signer) throw new Error('No signer found')
-
     const webAuthnCredentials = await WebAuthnUtils.createCredentials(
       this.getAddress()
     )
+    console.log({ webAuthnCredentials })
 
     const publicKeyX = `0x${webAuthnCredentials.point.getX().toString(16)}`
     const publicKeyY = `0x${webAuthnCredentials.point.getY().toString(16)}`
@@ -391,6 +382,8 @@ export class AlembicWallet {
 
     const message = `${publicKeyX},${publicKeyY},${publicKeyId}`
     const signature = await this.signMessage(ethers.utils.hashMessage(message))
+
+    console.log({ signature })
 
     const predictedSignerAddress = await WebAuthnUtils.predictSignerAddress(
       publicKeyX,
@@ -430,26 +423,26 @@ export class AlembicWallet {
       publicKeyX,
       publicKeyY,
       this.chainId,
-      this.getOwnerProvider()
+      this.getProvider()
     )
 
-    this.webAuthnOwners = await this.API.getWebAuthnOwners(this.getAddress())
+    WebAuthnUtils.updateCurrentCredentials(publicKeyId, publicKeyX, publicKeyY)
+
     return predictedSignerAddress
   }
 
   private async _verifyWebAuthnOwner(): Promise<boolean> {
-    const currentWebAuthnOwner = this.getCurrentWebAuthnOwner()
+    const currentWebAuthnOwner = await this.getCurrentWebAuthnOwner()
 
     if (!currentWebAuthnOwner) return false
 
     const safeInstance = await Safe__factory.connect(
-      this.getAddress(),
-      this.getOwnerProvider()
+      currentWebAuthnOwner.walletAddress,
+      this.getProvider()
     )
     const isSafeOwner = await safeInstance.isOwner(
       currentWebAuthnOwner.signerAddress
     )
-
     if (!isSafeOwner) return false
 
     return true
@@ -458,7 +451,7 @@ export class AlembicWallet {
   private async _signTransactionwithWebAuthn(
     safeTxDataTyped: MetaTransactionData
   ): Promise<string> {
-    const currentWebAuthnOwner = this.getCurrentWebAuthnOwner()
+    const currentWebAuthnOwner = await this.getCurrentWebAuthnOwner()
     if (!currentWebAuthnOwner) throw new Error('No WebAuthn signer found')
 
     const safeTxHash = await SafeUtils.getSafeTransactionHash(
@@ -481,7 +474,8 @@ export class AlembicWallet {
   private async _signMessageWithWebAuthn(
     messageToSign: string | Bytes
   ): Promise<string> {
-    const currentWebAuthnOwner = this.getCurrentWebAuthnOwner()
+    const currentWebAuthnOwner = await this.getCurrentWebAuthnOwner()
+
     if (!currentWebAuthnOwner) throw new Error('No WebAuthn signer found')
 
     const encodedWebAuthnSignature = await WebAuthnUtils.getWebAuthnSignature(
