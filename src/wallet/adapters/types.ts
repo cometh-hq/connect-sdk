@@ -8,7 +8,7 @@ export interface AUTHAdapter {
   getSigner(): ethers.Signer | null
   getEthProvider(): ethers.providers.Web3Provider | null
   getUserInfos(): Promise<Partial<UserInfo>>
-  readonly chaindId: string
+  readonly chainId: string
 }
 
 export type Constructor<T> = new (...args: any[]) => T

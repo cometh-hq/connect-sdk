@@ -9,11 +9,11 @@ export class Web3AuthAdapter implements AUTHAdapter {
   private web3auth: Web3Auth | null = null
   private ethProvider: ethers.providers.Web3Provider | null = null
   private web3authConfig: Web3AuthOptions
-  readonly chaindId: string
+  readonly chainId: string
 
   constructor(web3authConfig: Web3AuthCoreOptions) {
     this.web3authConfig = web3authConfig
-    this.chaindId = web3authConfig.chainConfig.chainId!
+    this.chainId = web3authConfig.chainConfig.chainId!
   }
 
   async init(): Promise<void> {

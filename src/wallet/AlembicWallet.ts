@@ -58,7 +58,7 @@ export class AlembicWallet {
 
   constructor({ authAdapter, apiKey, rpcUrl }: AlembicWalletConfig) {
     this.authAdapter = authAdapter
-    this.chainId = +authAdapter.chaindId
+    this.chainId = +authAdapter.chainId
     this.API = new API(apiKey, this.chainId)
     this.provider = new ethers.providers.StaticJsonRpcProvider(
       rpcUrl ? rpcUrl : networks[this.chainId].RPCUrl
