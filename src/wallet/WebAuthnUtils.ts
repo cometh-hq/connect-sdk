@@ -18,7 +18,7 @@ const getCurrentPublicKeyId = (): string | null => {
   return window.localStorage.getItem('public-key-id')
 }
 
-const createCredentials = async (userId: string): Promise<any> => {
+const createCredentials = async (signerName: string): Promise<any> => {
   const challenge = new TextEncoder().encode('connection')
 
   const webAuthnCredentials = await navigator.credentials
@@ -28,9 +28,9 @@ const createCredentials = async (userId: string): Promise<any> => {
           name: 'wallet'
         },
         user: {
-          id: new TextEncoder().encode(userId),
-          name: 'user',
-          displayName: 'user'
+          id: new TextEncoder().encode(signerName),
+          name: signerName,
+          displayName: signerName
         },
         challenge,
         pubKeyCredParams: [{ alg: -7, type: 'public-key' }]
@@ -56,14 +56,14 @@ const createCredentials = async (userId: string): Promise<any> => {
   return webAuthnCredentials
 }
 
-const updateCurrentCredentials = async (
+const updateCurrentWebAuthnOwner = (
   publicKeyId: string,
   publicKeyX: string,
   publicKeyY: string
-): Promise<void> => {
+): void => {
+  window.localStorage.setItem(PUBLIC_KEY_ID_KEY, publicKeyId)
   window.localStorage.setItem(PUBLIC_KEY_X, publicKeyX)
   window.localStorage.setItem(PUBLIC_KEY_Y, publicKeyY)
-  window.localStorage.setItem(PUBLIC_KEY_ID_KEY, publicKeyId)
 }
 
 const _sign = async (
@@ -172,7 +172,7 @@ const waitWebAuthnSignerDeployment = async (
 export default {
   getCurrentPublicKeyId,
   createCredentials,
-  updateCurrentCredentials,
+  updateCurrentWebAuthnOwner,
   getWebAuthnSignature,
   predictSignerAddress,
   waitWebAuthnSignerDeployment

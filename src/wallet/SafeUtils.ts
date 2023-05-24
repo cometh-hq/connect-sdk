@@ -5,7 +5,7 @@ import { BLOCK_EVENT_GAP, EIP712_SAFE_TX_TYPES } from '../constants'
 import { Safe__factory } from '../contracts/types/factories'
 import { SafeInterface } from '../contracts/types/Safe'
 import { AlembicProvider } from './AlembicProvider'
-import { MetaTransactionData } from './types'
+import { SafeTransactionDataPartial } from './types'
 
 const SafeInterface: SafeInterface = Safe__factory.createInterface()
 
@@ -83,7 +83,7 @@ const formatWebAuthnSignatureForSafe = (
 
 const getSafeTransactionHash = (
   walletAddress: string,
-  transactionData: MetaTransactionData,
+  transactionData: any,
   chainId: number
 ): string => {
   return ethers.utils._TypedDataEncoder.hash(
