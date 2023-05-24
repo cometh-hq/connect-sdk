@@ -32,7 +32,7 @@ import WebAuthnUtils from './WebAuthnUtils'
 export interface AlembicWalletConfig {
   authAdapter: AUTHAdapter
   apiKey: string
-  rpcUrl: string
+  rpcUrl?: string
   uiConfig?: {
     displayValidationModal: boolean
   }
@@ -60,7 +60,9 @@ export class AlembicWallet {
     this.authAdapter = authAdapter
     this.chainId = +authAdapter.chaindId
     this.API = new API(apiKey, this.chainId)
-    this.provider = new ethers.providers.StaticJsonRpcProvider(rpcUrl)
+    this.provider = new ethers.providers.StaticJsonRpcProvider(
+      rpcUrl ? rpcUrl : networks[this.chainId].RPCUrl
+    )
     this.BASE_GAS = DEFAULT_BASE_GAS
     this.REWARD_PERCENTILE = DEFAULT_REWARD_PERCENTILE
   }
