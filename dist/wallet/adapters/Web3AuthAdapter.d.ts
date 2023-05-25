@@ -13,7 +13,6 @@ export declare class Web3AuthAdapter implements AUTHAdapter {
   connect(): Promise<void>
   logout(): Promise<void>
   getAccount(): Promise<string | null>
-  getSigner(): ethers.Signer | null
-  getEthProvider(): ethers.providers.Web3Provider | null
+  getSigner(): ethers.providers.JsonRpcSigner | null
   getUserInfos(): Promise<Partial<UserInfo>>
 }

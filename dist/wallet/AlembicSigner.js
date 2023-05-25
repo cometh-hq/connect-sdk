@@ -23,7 +23,9 @@ class AlembicSigner extends abstract_signer_1.Signer {
         return Promise.resolve(this.smartWallet.getAddress());
     }
     getCurrentWebAuthnOwner() {
-        return this.smartWallet.getCurrentWebAuthnOwner();
+        return __awaiter(this, void 0, void 0, function* () {
+            return this.smartWallet.getCurrentWebAuthnOwner();
+        });
     }
     signMessage(message) {
         return this.smartWallet.signMessage(message);

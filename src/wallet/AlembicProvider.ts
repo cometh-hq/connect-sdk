@@ -4,7 +4,6 @@ import {
   TransactionReceipt,
   TransactionResponse
 } from '@ethersproject/providers'
-import { Signer } from 'ethers'
 
 import { DEFAULT_CHAIN_ID } from '../constants'
 import { AlembicSigner } from './AlembicSigner'
@@ -30,11 +29,11 @@ export class AlembicProvider extends BaseProvider {
     if (method === 'sendTransaction') {
       throw new Error('Not authorized method: sendTransaction')
     }
-    return await this.alembicWallet.getOwnerProvider().perform(method, params)
+    return await this.alembicWallet.getProvider().perform(method, params)
   }
 
   async send(method: string, params: any): Promise<any> {
-    return await this.alembicWallet.getOwnerProvider().send(method, params)
+    return await this.alembicWallet.getProvider().send(method, params)
   }
 
   async getTransaction(safeTxHash: string): Promise<TransactionResponse> {
@@ -56,7 +55,7 @@ export class AlembicProvider extends BaseProvider {
   }
 
   async detectNetwork(): Promise<Network> {
-    return this.alembicWallet.getOwnerProvider().detectNetwork()
+    return this.alembicWallet.getProvider().detectNetwork()
   }
 
   eth_accounts(): string[] {

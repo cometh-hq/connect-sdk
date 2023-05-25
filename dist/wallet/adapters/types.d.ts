@@ -5,8 +5,7 @@ export interface AUTHAdapter {
   logout(): Promise<void>
   connect(): Promise<void>
   getAccount(): Promise<string | null>
-  getSigner(): ethers.Signer | null
-  getEthProvider(): ethers.providers.Web3Provider | null
+  getSigner(): ethers.providers.JsonRpcSigner | null
   getUserInfos(): Promise<Partial<UserInfo>>
   readonly chaindId: string
 }

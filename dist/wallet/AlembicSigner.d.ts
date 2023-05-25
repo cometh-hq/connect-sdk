@@ -14,7 +14,7 @@ export declare class AlembicSigner extends Signer {
   private smartWallet
   constructor(smartWallet: AlembicWallet, albProvider: AlembicProvider)
   getAddress(): Promise<string>
-  getCurrentWebAuthnOwner(): WebAuthnOwner | undefined
+  getCurrentWebAuthnOwner(): Promise<WebAuthnOwner | undefined>
   signMessage(message: string | Bytes): Promise<string>
   sendTransaction(
     transaction: Deferrable<TransactionRequest>

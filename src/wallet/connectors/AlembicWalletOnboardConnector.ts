@@ -9,15 +9,17 @@ import { WalletUiConfig } from '../types'
 export function AlembicWalletOnboardConnector({
   apiKey,
   authAdapter,
+  rpcUrl,
   uiConfig
 }: {
   apiKey: string
   authAdapter: AUTHAdapter
+  rpcUrl: string
   uiConfig?: WalletUiConfig
 }): WalletInit {
   return (): WalletModule => {
     return {
-      label: 'Alembic Wallet',
+      label: 'Alembic Connect',
       getIcon: async () =>
         (await import('../../ui/images/alembicLogoDark')).default,
       getInterface: async (): Promise<WalletInterface> => {
@@ -26,6 +28,7 @@ export function AlembicWalletOnboardConnector({
         const instance = new AlembicWallet({
           authAdapter,
           apiKey,
+          rpcUrl,
           ...(uiConfig ?? { uiConfig })
         })
         const instanceProvider = new AlembicProvider(instance)

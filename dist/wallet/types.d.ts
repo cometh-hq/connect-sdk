@@ -12,13 +12,13 @@ export interface MetaTransactionData {
   readonly data: string
 }
 export interface SafeTransactionDataPartial extends MetaTransactionData {
-  readonly operation?: OperationType
-  readonly safeTxGas?: number
-  readonly baseGas?: number
-  readonly gasPrice?: number
-  readonly gasToken?: string
+  readonly operation?: OperationType | string
+  readonly safeTxGas?: number | string
+  readonly baseGas?: number | string
+  readonly gasPrice?: number | string
+  readonly gasToken?: number | string
   readonly refundReceiver?: string
-  readonly nonce?: number
+  readonly nonce?: number | string
 }
 export type UserNonceType = {
   walletAddress: string
@@ -50,9 +50,9 @@ export interface WalletUiConfig {
 export type WebAuthnOwner = {
   customerId: string
   walletAddress: string
-  publicKey_Id: string
-  publicKey_X: string
-  publicKey_Y: string
+  publicKeyId: string
+  publicKeyX: string
+  publicKeyY: string
   signature: string
   signerAddress: string
 }

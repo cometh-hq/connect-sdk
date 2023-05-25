@@ -1,25 +1,25 @@
-import { Web3Provider } from '@ethersproject/providers'
+import { StaticJsonRpcProvider } from '@ethersproject/providers'
 
 import { AlembicProvider } from './AlembicProvider'
-import { MetaTransactionData } from './types'
+import { SafeTransactionDataPartial } from './types'
 declare const _default: {
   isDeployed: (
     walletAddress: string,
-    provider: Web3Provider | AlembicProvider
+    provider: StaticJsonRpcProvider | AlembicProvider
   ) => Promise<boolean>
   getNonce: (
     walletAddress: string,
-    provider: Web3Provider | AlembicProvider
+    provider: StaticJsonRpcProvider | AlembicProvider
   ) => Promise<number>
   getSuccessExecTransactionEvent: (
     safeTxHash: string,
     walletAddress: string,
-    provider: Web3Provider | AlembicProvider
+    provider: StaticJsonRpcProvider | AlembicProvider
   ) => Promise<any>
   getFailedExecTransactionEvent: (
     safeTxHash: string,
     walletAddress: string,
-    provider: Web3Provider | AlembicProvider
+    provider: StaticJsonRpcProvider | AlembicProvider
   ) => Promise<any>
   formatWebAuthnSignatureForSafe: (
     signerAddress: string,
@@ -27,7 +27,7 @@ declare const _default: {
   ) => string
   getSafeTransactionHash: (
     walletAddress: string,
-    transactionData: MetaTransactionData,
+    transactionData: SafeTransactionDataPartial,
     chainId: number
   ) => string
 }

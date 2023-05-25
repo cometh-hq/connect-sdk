@@ -1,4 +1,4 @@
-import { Web3Provider } from '@ethersproject/providers'
+import { StaticJsonRpcProvider } from '@ethersproject/providers'
 import { BigNumber, Bytes } from 'ethers'
 
 import { P256SignerFactoryInterface } from '../contracts/types/P256SignerFactory'
@@ -14,6 +14,7 @@ import {
 export interface AlembicWalletConfig {
   authAdapter: AUTHAdapter
   apiKey: string
+  rpcUrl?: string
   uiConfig?: {
     displayValidationModal: boolean
   }
@@ -25,19 +26,20 @@ export declare class AlembicWallet {
   private BASE_GAS
   private REWARD_PERCENTILE
   private API
+  private provider
   private sponsoredAddresses?
-  private webAuthnOwners?
   private walletAddress?
   private uiConfig
   readonly SafeInterface: SafeInterface
   readonly P256FactoryInterface: P256SignerFactoryInterface
-  constructor({ authAdapter, apiKey }: AlembicWalletConfig)
+  constructor({ authAdapter, apiKey, rpcUrl }: AlembicWalletConfig)
   /**
    * Connection Section
    */
   connect(): Promise<void>
   getConnected(): boolean
-  getUserInfos(): Promise<UserInfos>
+  getProvider(): StaticJsonRpcProvider
+  getUserInfos(): Promise<Partial<UserInfos>>
   getAddress(): string
   private _createMessage
   private _getBalance
@@ -46,7 +48,6 @@ export declare class AlembicWallet {
   /**
    * Signing Message Section
    */
-  getOwnerProvider(): Web3Provider
   signMessage(messageToSign: string | Bytes): Promise<string>
   private _signMessageWithEOA
   /**
@@ -54,7 +55,7 @@ export declare class AlembicWallet {
    */
   signTransaction(safeTxData: SafeTransactionDataPartial): Promise<string>
   private _signTransactionWithEOA
-  private _toSponsoredAddress
+  private _isSponsoredAddress
   _estimateTransactionGas(safeTxData: SafeTransactionDataPartial): Promise<{
     safeTxGas: BigNumber
     baseGas: number
@@ -67,7 +68,7 @@ export declare class AlembicWallet {
   /**
    * WebAuthn Section
    */
-  getCurrentWebAuthnOwner(): WebAuthnOwner | undefined
+  getCurrentWebAuthnOwner(): Promise<WebAuthnOwner | undefined>
   addWebAuthnOwner(): Promise<string>
   private _verifyWebAuthnOwner
   private _signTransactionwithWebAuthn

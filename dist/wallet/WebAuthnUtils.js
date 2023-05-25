@@ -23,7 +23,10 @@ const curve = new elliptic_1.ec('p256');
 const PUBLIC_KEY_X = 'public-key-x';
 const PUBLIC_KEY_Y = 'public-key-y';
 const PUBLIC_KEY_ID_KEY = 'public-key-id';
-const createCredentials = (userId) => __awaiter(void 0, void 0, void 0, function* () {
+const getCurrentPublicKeyId = () => {
+    return window.localStorage.getItem('public-key-id');
+};
+const createCredentials = (signerName) => __awaiter(void 0, void 0, void 0, function* () {
     const challenge = new TextEncoder().encode('connection');
     const webAuthnCredentials = yield navigator.credentials
         .create({
@@ -32,9 +35,9 @@ const createCredentials = (userId) => __awaiter(void 0, void 0, void 0, function
                 name: 'wallet'
             },
             user: {
-                id: new TextEncoder().encode(userId),
-                name: 'user',
-                displayName: 'user'
+                id: new TextEncoder().encode(signerName),
+                name: signerName,
+                displayName: signerName
             },
             challenge,
             pubKeyCredParams: [{ alg: -7, type: 'public-key' }]
@@ -48,9 +51,6 @@ const createCredentials = (userId) => __awaiter(void 0, void 0, void 0, function
         const x = publicKey[-2];
         const y = publicKey[-3];
         const point = curve.curve.point(x, y);
-        window.localStorage.setItem(PUBLIC_KEY_X, point.getX().toString(16));
-        window.localStorage.setItem(PUBLIC_KEY_Y, point.getY().toString(16));
-        window.localStorage.setItem(PUBLIC_KEY_ID_KEY, (0, utils_1.hexArrayStr)(attestationPayload.rawId));
         return {
             point,
             id: (0, utils_1.hexArrayStr)(attestationPayload.rawId)
@@ -59,6 +59,11 @@ const createCredentials = (userId) => __awaiter(void 0, void 0, void 0, function
         .catch(console.error);
     return webAuthnCredentials;
 });
+const updateCurrentWebAuthnOwner = (publicKeyId, publicKeyX, publicKeyY) => {
+    window.localStorage.setItem(PUBLIC_KEY_ID_KEY, publicKeyId);
+    window.localStorage.setItem(PUBLIC_KEY_X, publicKeyX);
+    window.localStorage.setItem(PUBLIC_KEY_Y, publicKeyY);
+};
 const _sign = (challenge, publicKey_Id) => __awaiter(void 0, void 0, void 0, function* () {
     const assertionPayload = yield navigator.credentials.get({
         publicKey: {
@@ -104,7 +109,9 @@ const waitWebAuthnSignerDeployment = (publicKey_X, publicKey_Y, chainId, provide
     return signerDeploymentEvent[0].args.signer;
 });
 exports.default = {
+    getCurrentPublicKeyId,
     createCredentials,
+    updateCurrentWebAuthnOwner,
     getWebAuthnSignature,
     predictSignerAddress,
     waitWebAuthnSignerDeployment

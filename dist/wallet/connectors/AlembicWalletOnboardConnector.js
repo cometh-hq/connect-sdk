@@ -36,15 +36,16 @@ exports.AlembicWalletOnboardConnector = void 0;
 const ethers_1 = require("ethers");
 const AlembicProvider_1 = require("../AlembicProvider");
 const AlembicWallet_1 = require("../AlembicWallet");
-function AlembicWalletOnboardConnector({ apiKey, authAdapter, uiConfig }) {
+function AlembicWalletOnboardConnector({ apiKey, authAdapter, rpcUrl, uiConfig }) {
     return () => {
         return {
-            label: 'Alembic Wallet',
+            label: 'Alembic Connect',
             getIcon: () => __awaiter(this, void 0, void 0, function* () { return (yield Promise.resolve().then(() => __importStar(require('../../ui/images/alembicLogoDark')))).default; }),
             getInterface: () => __awaiter(this, void 0, void 0, function* () {
                 const { createEIP1193Provider } = yield Promise.resolve().then(() => __importStar(require('@web3-onboard/common')));
                 const instance = new AlembicWallet_1.AlembicWallet(Object.assign({ authAdapter,
-                    apiKey }, (uiConfig !== null && uiConfig !== void 0 ? uiConfig : { uiConfig })));
+                    apiKey,
+                    rpcUrl }, (uiConfig !== null && uiConfig !== void 0 ? uiConfig : { uiConfig })));
                 const instanceProvider = new AlembicProvider_1.AlembicProvider(instance);
                 yield instance.connect();
                 const provider = createEIP1193Provider(instanceProvider, {

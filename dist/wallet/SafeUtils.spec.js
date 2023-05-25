@@ -24,7 +24,7 @@ describe('SafeUtils', () => {
             to: COUNTER_TEST_ADDRESS,
             value: '0x00',
             data: '0x06661abd',
-            operation: 0,
+            operation: ethers_1.BigNumber.from(0).toString(),
             safeTxGas: ethers_1.BigNumber.from(0).toString(),
             baseGas: ethers_1.BigNumber.from(0).toString(),
             gasPrice: ethers_1.BigNumber.from(0).toString(),

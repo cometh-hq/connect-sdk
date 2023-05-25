@@ -32,12 +32,12 @@ class AlembicProvider extends providers_1.BaseProvider {
             if (method === 'sendTransaction') {
                 throw new Error('Not authorized method: sendTransaction');
             }
-            return yield this.alembicWallet.getOwnerProvider().perform(method, params);
+            return yield this.alembicWallet.getProvider().perform(method, params);
         });
     }
     send(method, params) {
         return __awaiter(this, void 0, void 0, function* () {
-            return yield this.alembicWallet.getOwnerProvider().send(method, params);
+            return yield this.alembicWallet.getProvider().send(method, params);
         });
     }
     getTransaction(safeTxHash) {
@@ -63,7 +63,7 @@ class AlembicProvider extends providers_1.BaseProvider {
     }
     detectNetwork() {
         return __awaiter(this, void 0, void 0, function* () {
-            return this.alembicWallet.getOwnerProvider().detectNetwork();
+            return this.alembicWallet.getProvider().detectNetwork();
         });
     }
     eth_accounts() {

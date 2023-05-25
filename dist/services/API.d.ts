@@ -27,13 +27,15 @@ export declare class API {
   }: RelayTransactionType): Promise<string>
   addWebAuthnOwner(
     walletAddress: any,
-    publicKey_Id: any,
-    publicKey_X: any,
-    publicKey_Y: any,
+    signerName: any,
+    publicKeyId: any,
+    publicKeyX: any,
+    publicKeyY: any,
     signature: any,
     message: any,
     addOwnerTxData: any,
     addOwnerTxSignature: any
   ): Promise<WebAuthnOwner>
+  getWebAuthnOwnerByPublicKeyId(publicKeyId: string): Promise<WebAuthnOwner>
   getWebAuthnOwners(walletAddress: string): Promise<WebAuthnOwner[]>
 }

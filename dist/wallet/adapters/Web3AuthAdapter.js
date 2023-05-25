@@ -61,10 +61,6 @@ class Web3AuthAdapter {
         const signer = this.ethProvider.getSigner();
         return signer !== null && signer !== void 0 ? signer : null;
     }
-    getEthProvider() {
-        var _a;
-        return (_a = this.ethProvider) !== null && _a !== void 0 ? _a : null;
-    }
     getUserInfos() {
         return __awaiter(this, void 0, void 0, function* () {
             if (!this.web3auth)

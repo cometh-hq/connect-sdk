@@ -57,13 +57,14 @@ class API {
             return (_e = response.data) === null || _e === void 0 ? void 0 : _e.safeTxHash;
         });
     }
-    addWebAuthnOwner(walletAddress, publicKey_Id, publicKey_X, publicKey_Y, signature, message, addOwnerTxData, addOwnerTxSignature) {
+    addWebAuthnOwner(walletAddress, signerName, publicKeyId, publicKeyX, publicKeyY, signature, message, addOwnerTxData, addOwnerTxSignature) {
         var _a;
         return __awaiter(this, void 0, void 0, function* () {
             const body = {
-                publicKey_Id,
-                publicKey_X,
-                publicKey_Y,
+                signerName,
+                publicKeyId,
+                publicKeyX,
+                publicKeyY,
                 signature,
                 message,
                 addOwnerTxData,
@@ -73,10 +74,17 @@ class API {
             return (_a = response.data) === null || _a === void 0 ? void 0 : _a.webAuthnOwner;
         });
     }
+    getWebAuthnOwnerByPublicKeyId(publicKeyId) {
+        var _a;
+        return __awaiter(this, void 0, void 0, function* () {
+            const response = yield exports.api.get(`/webAuthnOwners/${publicKeyId}`);
+            return (_a = response === null || response === void 0 ? void 0 : response.data) === null || _a === void 0 ? void 0 : _a.webAuthnOwner;
+        });
+    }
     getWebAuthnOwners(walletAddress) {
         var _a;
         return __awaiter(this, void 0, void 0, function* () {
-            const response = yield exports.api.get(`/wallets/${walletAddress}/webAuthnOwner`);
+            const response = yield exports.api.get(`/webAuthnOwners/${walletAddress}/all`);
             return (_a = response === null || response === void 0 ? void 0 : response.data) === null || _a === void 0 ? void 0 : _a.webAuthnOwners;
         });
     }
