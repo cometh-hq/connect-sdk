@@ -72,7 +72,8 @@ class AlembicWallet {
                 if (!constants_1.networks[this.chainId])
                     throw new Error('This network is not supported');
                 yield this.authAdapter.init();
-                yield this.authAdapter.connect();
+                if (this.authAdapter.connect)
+                    yield this.authAdapter.connect();
                 const signer = this.authAdapter.getSigner();
                 if (!signer)
                     throw new Error('No signer found');
@@ -253,8 +254,8 @@ class AlembicWallet {
                 refundReceiver: ethers_1.ethers.constants.AddressZero,
                 nonce: yield SafeUtils_1.default.getNonce(this.getAddress(), this.getProvider())
             };
+            const { safeTxGas, baseGas, gasPrice } = yield this._estimateTransactionGas(safeTxDataTyped);
             if (!this._isSponsoredAddress(safeTxDataTyped.to)) {
-                const { safeTxGas, baseGas, gasPrice } = yield this._estimateTransactionGas(safeTxDataTyped);
                 safeTxDataTyped.safeTxGas = +safeTxGas; // gwei
                 safeTxDataTyped.baseGas = baseGas; // gwei
                 safeTxDataTyped.gasPrice = +gasPrice; // wei

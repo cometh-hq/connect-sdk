@@ -1,7 +1,8 @@
+import { ExternalProvider, JsonRpcSigner } from '@ethersproject/providers'
 import { UserInfo } from '@web3auth/base'
 import { Web3AuthCoreOptions } from '@web3auth/core'
 import { Web3Auth, Web3AuthOptions } from '@web3auth/modal'
-import { ethers, Signer } from 'ethers'
+import { ethers } from 'ethers'
 
 import { AUTHAdapter } from './types'
 
@@ -31,7 +32,7 @@ export class Web3AuthAdapter implements AUTHAdapter {
     if (!this.web3auth) throw new Error('No Web3Auth instance found')
     await this.web3auth.connect()
     this.ethProvider = new ethers.providers.Web3Provider(
-      this.web3auth?.provider as any
+      this.web3auth?.provider as ExternalProvider
     )
   }
 
@@ -43,14 +44,12 @@ export class Web3AuthAdapter implements AUTHAdapter {
   async getAccount(): Promise<string | null> {
     const signer = this.getSigner()
     if (!signer) throw new Error('No signer found')
-    const account = await signer.getAddress()
-    return account ?? null
+    return await signer.getAddress()
   }
 
-  getSigner(): ethers.providers.JsonRpcSigner {
+  getSigner(): JsonRpcSigner {
     if (!this.ethProvider) throw new Error('No Web3Auth provider found')
-    const signer = this.ethProvider.getSigner()
-    return signer ?? null
+    return this.ethProvider.getSigner()
   }
 
   async getUserInfos(): Promise<Partial<UserInfo>> {

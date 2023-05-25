@@ -1,14 +1,10 @@
-import { throwStatement } from '@babel/types'
-import { ExternalProvider } from '@ethersproject/providers'
-import { ethers } from 'ethers'
+import { ethers, Wallet } from 'ethers'
 
-import { networks } from '../../constants'
+import { UserInfos } from '../types'
 import { AUTHAdapter } from './types'
 
 export class BurnerWalletAdaptor implements AUTHAdapter {
-  private ethProvider: ethers.providers.JsonRpcProvider | null = null
-  private signer: ethers.providers.JsonRpcSigner | undefined = undefined
-  private wallet: ethers.Wallet | null = null
+  private wallet: ethers.Wallet | undefined = undefined
   readonly chainId: string
 
   constructor(chainId: string) {
@@ -21,38 +17,28 @@ export class BurnerWalletAdaptor implements AUTHAdapter {
     if (currentPrivateKey) {
       this.wallet = new ethers.Wallet(currentPrivateKey)
     } else {
-      this.wallet = ethers.Wallet.createRandom("'https://polygon-rpc.com'")
-
+      this.wallet = ethers.Wallet.createRandom()
       window.localStorage.setItem('burner-private-key', this.wallet.privateKey)
     }
   }
 
-  async connect(): Promise<void> {
-    if (this.wallet) {
-      this.ethProvider = new ethers.providers.Web3Provider(
-        this.wallet.provider as any
-      )
-      this.signer = this.ethProvider?.getSigner(this.wallet.address)
-    }
-  }
-
   async logout(): Promise<void> {
-    if (!this.signer) throw new Error('No Burner Wallet instance found')
-    this.signer = undefined
+    if (!this.wallet) throw new Error('No Burner Wallet instance found')
+    this.wallet = undefined
   }
 
-  async getAccount(): Promise<string | null> {
+  async getAccount(): Promise<string> {
     const signer = this.getSigner()
     if (!signer) throw new Error('No signer found')
-    const account = await signer.getAddress()
-    return account ?? null
+    return await signer.getAddress()
   }
 
-  getSigner(): ethers.providers.JsonRpcSigner | null {
-    return this.signer ?? null
+  getSigner(): Wallet {
+    if (!this.wallet) throw new Error('No Burner Wallet instance found')
+    return this.wallet
   }
 
-  async getUserInfos(): Promise<Partial<any>> {
+  async getUserInfos(): Promise<Partial<UserInfos>> {
     if (!this.wallet) throw new Error('No Burner Wallet instance found')
     const walletAddress = await this.wallet.address
     return { walletAddress: walletAddress } ?? {}

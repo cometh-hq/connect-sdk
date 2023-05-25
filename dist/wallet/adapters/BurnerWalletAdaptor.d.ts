@@ -1,16 +1,14 @@
-import { ethers } from 'ethers'
+import { Wallet } from 'ethers'
 
+import { UserInfos } from '../types'
 import { AUTHAdapter } from './types'
 export declare class BurnerWalletAdaptor implements AUTHAdapter {
-  private ethProvider
-  private signer
   private wallet
   readonly chainId: string
   constructor(chainId: string)
   init(): Promise<void>
-  connect(): Promise<void>
   logout(): Promise<void>
-  getAccount(): Promise<string | null>
-  getSigner(): ethers.providers.JsonRpcSigner | null
-  getUserInfos(): Promise<Partial<any>>
+  getAccount(): Promise<string>
+  getSigner(): Wallet
+  getUserInfos(): Promise<Partial<UserInfos>>
 }

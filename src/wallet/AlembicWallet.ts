@@ -77,7 +77,7 @@ export class AlembicWallet {
       if (!networks[this.chainId])
         throw new Error('This network is not supported')
       await this.authAdapter.init()
-      await this.authAdapter.connect()
+      if (this.authAdapter.connect) await this.authAdapter.connect()
 
       const signer = this.authAdapter.getSigner()
       if (!signer) throw new Error('No signer found')
@@ -328,10 +328,11 @@ export class AlembicWallet {
       nonce: await SafeUtils.getNonce(this.getAddress(), this.getProvider())
     }
 
-    if (!this._isSponsoredAddress(safeTxDataTyped.to)) {
-      const { safeTxGas, baseGas, gasPrice } =
-        await this._estimateTransactionGas(safeTxDataTyped)
+    const { safeTxGas, baseGas, gasPrice } = await this._estimateTransactionGas(
+      safeTxDataTyped
+    )
 
+    if (!this._isSponsoredAddress(safeTxDataTyped.to)) {
       safeTxDataTyped.safeTxGas = +safeTxGas // gwei
       safeTxDataTyped.baseGas = baseGas // gwei
       safeTxDataTyped.gasPrice = +gasPrice // wei

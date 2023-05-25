@@ -1,6 +1,6 @@
+import { JsonRpcSigner } from '@ethersproject/providers'
 import { UserInfo } from '@web3auth/base'
 import { Web3AuthCoreOptions } from '@web3auth/core'
-import { ethers } from 'ethers'
 
 import { AUTHAdapter } from './types'
 export declare class Web3AuthAdapter implements AUTHAdapter {
@@ -13,6 +13,6 @@ export declare class Web3AuthAdapter implements AUTHAdapter {
   connect(): Promise<void>
   logout(): Promise<void>
   getAccount(): Promise<string | null>
-  getSigner(): ethers.providers.JsonRpcSigner
+  getSigner(): JsonRpcSigner
   getUserInfos(): Promise<Partial<UserInfo>>
 }

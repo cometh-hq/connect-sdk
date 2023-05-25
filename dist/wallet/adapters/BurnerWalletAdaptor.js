@@ -13,9 +13,7 @@ exports.BurnerWalletAdaptor = void 0;
 const ethers_1 = require("ethers");
 class BurnerWalletAdaptor {
     constructor(chainId) {
-        this.ethProvider = null;
-        this.signer = undefined;
-        this.wallet = null;
+        this.wallet = undefined;
         this.chainId = chainId;
     }
     init() {
@@ -25,25 +23,16 @@ class BurnerWalletAdaptor {
                 this.wallet = new ethers_1.ethers.Wallet(currentPrivateKey);
             }
             else {
-                this.wallet = ethers_1.ethers.Wallet.createRandom("'https://polygon-rpc.com'");
+                this.wallet = ethers_1.ethers.Wallet.createRandom();
                 window.localStorage.setItem('burner-private-key', this.wallet.privateKey);
-            }
-        });
-    }
-    connect() {
-        var _a;
-        return __awaiter(this, void 0, void 0, function* () {
-            if (this.wallet) {
-                this.ethProvider = new ethers_1.ethers.providers.Web3Provider(this.wallet.provider);
-                this.signer = (_a = this.ethProvider) === null || _a === void 0 ? void 0 : _a.getSigner(this.wallet.address);
             }
         });
     }
     logout() {
         return __awaiter(this, void 0, void 0, function* () {
-            if (!this.signer)
+            if (!this.wallet)
                 throw new Error('No Burner Wallet instance found');
-            this.signer = undefined;
+            this.wallet = undefined;
         });
     }
     getAccount() {
@@ -51,13 +40,13 @@ class BurnerWalletAdaptor {
             const signer = this.getSigner();
             if (!signer)
                 throw new Error('No signer found');
-            const account = yield signer.getAddress();
-            return account !== null && account !== void 0 ? account : null;
+            return yield signer.getAddress();
         });
     }
     getSigner() {
-        var _a;
-        return (_a = this.signer) !== null && _a !== void 0 ? _a : null;
+        if (!this.wallet)
+            throw new Error('No Burner Wallet instance found');
+        return this.wallet;
     }
     getUserInfos() {
         var _a;

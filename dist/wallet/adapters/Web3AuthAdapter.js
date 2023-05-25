@@ -51,15 +51,13 @@ class Web3AuthAdapter {
             const signer = this.getSigner();
             if (!signer)
                 throw new Error('No signer found');
-            const account = yield signer.getAddress();
-            return account !== null && account !== void 0 ? account : null;
+            return yield signer.getAddress();
         });
     }
     getSigner() {
         if (!this.ethProvider)
             throw new Error('No Web3Auth provider found');
-        const signer = this.ethProvider.getSigner();
-        return signer !== null && signer !== void 0 ? signer : null;
+        return this.ethProvider.getSigner();
     }
     getUserInfos() {
         return __awaiter(this, void 0, void 0, function* () {
