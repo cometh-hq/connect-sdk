@@ -10,6 +10,6 @@ export declare function AlembicWalletOnboardConnector({
 }: {
   apiKey: string
   authAdapter: AUTHAdapter
-  rpcUrl: string
+  rpcUrl?: string
   uiConfig?: WalletUiConfig
 }): WalletInit
