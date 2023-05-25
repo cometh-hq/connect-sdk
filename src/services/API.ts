@@ -99,12 +99,12 @@ export class API {
   async getWebAuthnOwnerByPublicKeyId(
     publicKeyId: string
   ): Promise<WebAuthnOwner> {
-    const response = await api.get(`/wallets/${publicKeyId}/webAuthnOwner`)
+    const response = await api.get(`/webAuthnOwners/${publicKeyId}`)
     return response?.data?.webAuthnOwner
   }
 
   async getWebAuthnOwners(walletAddress: string): Promise<WebAuthnOwner[]> {
-    const response = await api.get(`/wallets/${walletAddress}/webAuthnOwners`)
+    const response = await api.get(`/webAuthnOwners/${walletAddress}/all`)
     return response?.data?.webAuthnOwners
   }
 }

@@ -36,14 +36,10 @@ export class BurnerWalletAdaptor implements AUTHAdapter {
     return account ?? null
   }
 
-  getSigner(): ethers.Signer | null {
+  getSigner(): ethers.providers.JsonRpcSigner | null {
     if (!this.ethProvider) throw new Error('No Web3Auth provider found')
     const signer = this.ethProvider.getSigner()
     return signer ?? null
-  }
-
-  getEthProvider(): ethers.providers.Web3Provider | null {
-    return this.ethProvider ?? null
   }
 
   async getUserInfos(): Promise<Partial<any>> {

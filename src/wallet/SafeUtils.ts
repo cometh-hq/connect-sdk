@@ -83,7 +83,7 @@ const formatWebAuthnSignatureForSafe = (
 
 const getSafeTransactionHash = (
   walletAddress: string,
-  transactionData: any,
+  transactionData: SafeTransactionDataPartial,
   chainId: number
 ): string => {
   return ethers.utils._TypedDataEncoder.hash(

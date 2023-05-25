@@ -9,5 +9,4 @@ export interface AUTHAdapter {
   getUserInfos(): Promise<Partial<UserInfo>>
   readonly chainId: string
 }
-
 export type Constructor<T> = new (...args: any[]) => T
