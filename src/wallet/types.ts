@@ -16,13 +16,13 @@ export interface MetaTransactionData {
 }
 
 export interface SafeTransactionDataPartial extends MetaTransactionData {
-  readonly operation?: OperationType
-  readonly safeTxGas?: number
-  readonly baseGas?: number
-  readonly gasPrice?: number
-  readonly gasToken?: string
+  readonly operation?: OperationType | string
+  readonly safeTxGas?: number | string
+  readonly baseGas?: number | string
+  readonly gasPrice?: number | string
+  readonly gasToken?: number | string
   readonly refundReceiver?: string
-  readonly nonce?: number
+  readonly nonce?: number | string
 }
 
 export type UserNonceType = {

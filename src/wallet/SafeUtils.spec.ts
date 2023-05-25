@@ -15,7 +15,7 @@ describe('SafeUtils', () => {
       to: COUNTER_TEST_ADDRESS,
       value: '0x00',
       data: '0x06661abd',
-      operation: 0,
+      operation: BigNumber.from(0).toString(),
       safeTxGas: BigNumber.from(0).toString(),
       baseGas: BigNumber.from(0).toString(),
       gasPrice: BigNumber.from(0).toString(),
