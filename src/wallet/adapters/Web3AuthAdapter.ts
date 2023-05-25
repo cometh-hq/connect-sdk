@@ -1,7 +1,7 @@
 import { UserInfo } from '@web3auth/base'
 import { Web3AuthCoreOptions } from '@web3auth/core'
 import { Web3Auth, Web3AuthOptions } from '@web3auth/modal'
-import { ethers } from 'ethers'
+import { ethers, Signer } from 'ethers'
 
 import { AUTHAdapter } from './types'
 
@@ -47,7 +47,7 @@ export class Web3AuthAdapter implements AUTHAdapter {
     return account ?? null
   }
 
-  getSigner(): ethers.providers.JsonRpcSigner | null {
+  getSigner(): ethers.providers.JsonRpcSigner {
     if (!this.ethProvider) throw new Error('No Web3Auth provider found')
     const signer = this.ethProvider.getSigner()
     return signer ?? null

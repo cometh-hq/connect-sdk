@@ -11,28 +11,39 @@ var __awaiter = (this && this.__awaiter) || function (thisArg, _arguments, P, ge
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.BurnerWalletAdaptor = void 0;
 const ethers_1 = require("ethers");
-const constants_1 = require("../../constants");
 class BurnerWalletAdaptor {
-    constructor(chainId, rpcUrl) {
+    constructor(chainId) {
         this.ethProvider = null;
+        this.signer = undefined;
         this.wallet = null;
         this.chainId = chainId;
-        this.ethProvider = new ethers_1.ethers.providers.Web3Provider(rpcUrl ? rpcUrl : constants_1.networks[this.chainId].RPCUrl);
     }
     init() {
         return __awaiter(this, void 0, void 0, function* () {
-            this.wallet = ethers_1.ethers.Wallet.createRandom();
+            const currentPrivateKey = window.localStorage.getItem('burner-private-key');
+            if (currentPrivateKey) {
+                this.wallet = new ethers_1.ethers.Wallet(currentPrivateKey);
+            }
+            else {
+                this.wallet = ethers_1.ethers.Wallet.createRandom("'https://polygon-rpc.com'");
+                window.localStorage.setItem('burner-private-key', this.wallet.privateKey);
+            }
         });
     }
     connect() {
+        var _a;
         return __awaiter(this, void 0, void 0, function* () {
-            const wallet = ethers_1.ethers.Wallet.createRandom();
+            if (this.wallet) {
+                this.ethProvider = new ethers_1.ethers.providers.Web3Provider(this.wallet.provider);
+                this.signer = (_a = this.ethProvider) === null || _a === void 0 ? void 0 : _a.getSigner(this.wallet.address);
+            }
         });
     }
     logout() {
         return __awaiter(this, void 0, void 0, function* () {
-            /*    if (!this.web3auth) throw new Error('No Web3Auth instance found')
-            await this.web3auth.logout() */
+            if (!this.signer)
+                throw new Error('No Burner Wallet instance found');
+            this.signer = undefined;
         });
     }
     getAccount() {
@@ -45,20 +56,14 @@ class BurnerWalletAdaptor {
         });
     }
     getSigner() {
-        if (!this.ethProvider)
-            throw new Error('No Web3Auth provider found');
-        const signer = this.ethProvider.getSigner();
-        return signer !== null && signer !== void 0 ? signer : null;
-    }
-    getEthProvider() {
         var _a;
-        return (_a = this.ethProvider) !== null && _a !== void 0 ? _a : null;
+        return (_a = this.signer) !== null && _a !== void 0 ? _a : null;
     }
     getUserInfos() {
         var _a;
         return __awaiter(this, void 0, void 0, function* () {
             if (!this.wallet)
-                throw new Error('No BurnerWallet instance found');
+                throw new Error('No Burner Wallet instance found');
             const walletAddress = yield this.wallet.address;
             return (_a = { walletAddress: walletAddress }) !== null && _a !== void 0 ? _a : {};
         });

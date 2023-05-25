@@ -1,32 +1,44 @@
+import { throwStatement } from '@babel/types'
+import { ExternalProvider } from '@ethersproject/providers'
 import { ethers } from 'ethers'
 
 import { networks } from '../../constants'
-import { UserInfos } from '../types'
 import { AUTHAdapter } from './types'
 
 export class BurnerWalletAdaptor implements AUTHAdapter {
-  private ethProvider: ethers.providers.Web3Provider | null = null
+  private ethProvider: ethers.providers.JsonRpcProvider | null = null
+  private signer: ethers.providers.JsonRpcSigner | undefined = undefined
   private wallet: ethers.Wallet | null = null
   readonly chainId: string
 
-  constructor(chainId: string, rpcUrl: string) {
+  constructor(chainId: string) {
     this.chainId = chainId
-    this.ethProvider = new ethers.providers.Web3Provider(
-      rpcUrl ? rpcUrl : networks[this.chainId].RPCUrl
-    )
   }
 
   async init(): Promise<void> {
-    this.wallet = ethers.Wallet.createRandom()
+    const currentPrivateKey = window.localStorage.getItem('burner-private-key')
+
+    if (currentPrivateKey) {
+      this.wallet = new ethers.Wallet(currentPrivateKey)
+    } else {
+      this.wallet = ethers.Wallet.createRandom("'https://polygon-rpc.com'")
+
+      window.localStorage.setItem('burner-private-key', this.wallet.privateKey)
+    }
   }
 
   async connect(): Promise<void> {
-    const wallet = ethers.Wallet.createRandom()
+    if (this.wallet) {
+      this.ethProvider = new ethers.providers.Web3Provider(
+        this.wallet.provider as any
+      )
+      this.signer = this.ethProvider?.getSigner(this.wallet.address)
+    }
   }
 
   async logout(): Promise<void> {
-    /*    if (!this.web3auth) throw new Error('No Web3Auth instance found')
-    await this.web3auth.logout() */
+    if (!this.signer) throw new Error('No Burner Wallet instance found')
+    this.signer = undefined
   }
 
   async getAccount(): Promise<string | null> {
@@ -37,13 +49,11 @@ export class BurnerWalletAdaptor implements AUTHAdapter {
   }
 
   getSigner(): ethers.providers.JsonRpcSigner | null {
-    if (!this.ethProvider) throw new Error('No Web3Auth provider found')
-    const signer = this.ethProvider.getSigner()
-    return signer ?? null
+    return this.signer ?? null
   }
 
   async getUserInfos(): Promise<Partial<any>> {
-    if (!this.wallet) throw new Error('No BurnerWallet instance found')
+    if (!this.wallet) throw new Error('No Burner Wallet instance found')
     const walletAddress = await this.wallet.address
     return { walletAddress: walletAddress } ?? {}
   }
