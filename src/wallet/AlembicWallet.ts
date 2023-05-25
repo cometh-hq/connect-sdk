@@ -378,7 +378,9 @@ export class AlembicWallet {
       this.getAddress()
     )
 
-    const signerName = `Alembic Wallet - ${getWebAuthnOwners.length + 1}`
+    const signerName = `Alembic Wallet - ${
+      getWebAuthnOwners ? getWebAuthnOwners.length + 1 : 1
+    }`
 
     const webAuthnCredentials = await WebAuthnUtils.createCredentials(
       signerName

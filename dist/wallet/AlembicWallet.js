@@ -284,7 +284,7 @@ class AlembicWallet {
     addWebAuthnOwner() {
         return __awaiter(this, void 0, void 0, function* () {
             const getWebAuthnOwners = yield this.API.getWebAuthnOwners(this.getAddress());
-            const signerName = `Alembic Wallet - ${getWebAuthnOwners.length + 1}`;
+            const signerName = `Alembic Wallet - ${getWebAuthnOwners ? getWebAuthnOwners.length + 1 : 1}`;
             const webAuthnCredentials = yield WebAuthnUtils_1.default.createCredentials(signerName);
             const publicKeyX = `0x${webAuthnCredentials.point.getX().toString(16)}`;
             const publicKeyY = `0x${webAuthnCredentials.point.getY().toString(16)}`;
