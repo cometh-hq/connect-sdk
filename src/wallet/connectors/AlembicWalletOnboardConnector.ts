@@ -19,7 +19,7 @@ export function AlembicWalletOnboardConnector({
 }): WalletInit {
   return (): WalletModule => {
     return {
-      label: 'Alembic Wallet',
+      label: 'Alembic Connect',
       getIcon: async () =>
         (await import('../../ui/images/alembicLogoDark')).default,
       getInterface: async (): Promise<WalletInterface> => {

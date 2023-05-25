@@ -79,7 +79,7 @@ export class AlembicWallet {
       await this.authAdapter.init()
       await this.authAdapter.connect()
 
-      const signer = this.authAdapter.getEthProvider()?.getSigner()
+      const signer = this.authAdapter.getSigner()
       if (!signer) throw new Error('No signer found')
 
       const ownerAddress = await signer.getAddress()
@@ -96,6 +96,10 @@ export class AlembicWallet {
         signature,
         ownerAddress
       })
+    } else {
+      const currentWebAuthnOwner = await this.getCurrentWebAuthnOwner()
+      if (currentWebAuthnOwner)
+        this.walletAddress = currentWebAuthnOwner.walletAddress
     }
 
     this.sponsoredAddresses = await this.API.getSponsoredAddresses()
@@ -110,14 +114,16 @@ export class AlembicWallet {
     return this.provider
   }
 
-  public async getUserInfos(): Promise<UserInfos> {
-    if (!this.authAdapter) throw new Error('Cannot provide user infos')
-    const userInfos = await this.authAdapter.getUserInfos()
-
-    return {
-      ...userInfos,
-      ownerAddress: await this.authAdapter.getSigner()?.getAddress(),
-      walletAddress: this.getAddress()
+  public async getUserInfos(): Promise<Partial<UserInfos>> {
+    try {
+      const userInfos = await this.authAdapter.getUserInfos()
+      return {
+        ...userInfos,
+        ownerAddress: await this.authAdapter.getSigner()?.getAddress(),
+        walletAddress: this.getAddress()
+      }
+    } catch {
+      return { walletAddress: this.getAddress() }
     }
   }
 
@@ -180,7 +186,7 @@ export class AlembicWallet {
   private async _signMessageWithEOA(
     messageToSign: string | Bytes
   ): Promise<string> {
-    const signer = this.authAdapter.getEthProvider()?.getSigner()
+    const signer = this.authAdapter.getSigner()
     if (!signer) throw new Error('Sign message: missing signer')
 
     return await signer._signTypedData(
@@ -210,7 +216,7 @@ export class AlembicWallet {
   private _signTransactionWithEOA = async (
     safeTxData: SafeTransactionDataPartial
   ): Promise<string> => {
-    const signer = this.authAdapter.getEthProvider()?.getSigner()
+    const signer = this.authAdapter.getSigner()
     if (!signer) throw new Error('Sign message: missing signer')
 
     return await signer._signTypedData(
@@ -236,7 +242,7 @@ export class AlembicWallet {
     )
   }
 
-  private _toSponsoredAddress(targetAddress: string): boolean {
+  private _isSponsoredAddress(targetAddress: string): boolean {
     const sponsoredAddress = this.sponsoredAddresses?.find(
       (sponsoredAddress) => sponsoredAddress.targetAddress === targetAddress
     )
@@ -322,7 +328,7 @@ export class AlembicWallet {
       nonce: await SafeUtils.getNonce(this.getAddress(), this.getProvider())
     }
 
-    if (!this._toSponsoredAddress(safeTxDataTyped.to)) {
+    if (!this._isSponsoredAddress(safeTxDataTyped.to)) {
       const { safeTxGas, baseGas, gasPrice } =
         await this._estimateTransactionGas(safeTxDataTyped)
 
@@ -364,13 +370,16 @@ export class AlembicWallet {
       <string>publicKeyId
     )
 
-    if (currentWebAuthnOwner === null) return undefined
-    this.walletAddress = currentWebAuthnOwner.walletAddress
-
     return currentWebAuthnOwner
   }
 
-  public async addWebAuthnOwner(signerName: string): Promise<string> {
+  public async addWebAuthnOwner(): Promise<string> {
+    const getWebAuthnOwners = await this.API.getWebAuthnOwners(
+      this.getAddress()
+    )
+
+    const signerName = `Alembic Wallet - ${getWebAuthnOwners.length + 1}`
+
     const webAuthnCredentials = await WebAuthnUtils.createCredentials(
       signerName
     )
