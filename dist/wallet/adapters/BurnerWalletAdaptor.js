@@ -13,48 +13,45 @@ exports.BurnerWalletAdaptor = void 0;
 const ethers_1 = require("ethers");
 class BurnerWalletAdaptor {
     constructor(chainId) {
-        this.wallet = undefined;
         this.chainId = chainId;
     }
     init() {
         return __awaiter(this, void 0, void 0, function* () {
-            const currentPrivateKey = window.localStorage.getItem('burner-private-key');
+            const currentPrivateKey = window.localStorage.getItem('burnerWallet-private-key');
             if (currentPrivateKey) {
                 this.wallet = new ethers_1.ethers.Wallet(currentPrivateKey);
             }
             else {
                 this.wallet = ethers_1.ethers.Wallet.createRandom();
-                window.localStorage.setItem('burner-private-key', this.wallet.privateKey);
+                window.localStorage.setItem('burnerWallet-private-key', this.wallet.privateKey);
             }
         });
     }
     logout() {
         return __awaiter(this, void 0, void 0, function* () {
             if (!this.wallet)
-                throw new Error('No Burner Wallet instance found');
+                throw new Error('No Wallet instance found');
             this.wallet = undefined;
         });
     }
     getAccount() {
         return __awaiter(this, void 0, void 0, function* () {
-            const signer = this.getSigner();
-            if (!signer)
-                throw new Error('No signer found');
-            return yield signer.getAddress();
+            if (!this.wallet)
+                throw new Error('No Wallet instance found');
+            return this.wallet.getAddress();
         });
     }
     getSigner() {
         if (!this.wallet)
-            throw new Error('No Burner Wallet instance found');
+            throw new Error('No Wallet instance found');
         return this.wallet;
     }
     getUserInfos() {
         var _a;
         return __awaiter(this, void 0, void 0, function* () {
             if (!this.wallet)
-                throw new Error('No Burner Wallet instance found');
-            const walletAddress = yield this.wallet.address;
-            return (_a = { walletAddress: walletAddress }) !== null && _a !== void 0 ? _a : {};
+                throw new Error('No Wallet instance found');
+            return (_a = { walletAddress: yield this.wallet.address }) !== null && _a !== void 0 ? _a : {};
         });
     }
 }

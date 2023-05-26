@@ -4,7 +4,7 @@ import { UserInfos } from '../types'
 import { AUTHAdapter } from './types'
 
 export class BurnerWalletAdaptor implements AUTHAdapter {
-  private wallet: ethers.Wallet | undefined = undefined
+  private wallet: Wallet | undefined
   readonly chainId: string
 
   constructor(chainId: string) {
@@ -12,35 +12,38 @@ export class BurnerWalletAdaptor implements AUTHAdapter {
   }
 
   async init(): Promise<void> {
-    const currentPrivateKey = window.localStorage.getItem('burner-private-key')
+    const currentPrivateKey = window.localStorage.getItem(
+      'burnerWallet-private-key'
+    )
 
     if (currentPrivateKey) {
       this.wallet = new ethers.Wallet(currentPrivateKey)
     } else {
       this.wallet = ethers.Wallet.createRandom()
-      window.localStorage.setItem('burner-private-key', this.wallet.privateKey)
+      window.localStorage.setItem(
+        'burnerWallet-private-key',
+        this.wallet.privateKey
+      )
     }
   }
 
   async logout(): Promise<void> {
-    if (!this.wallet) throw new Error('No Burner Wallet instance found')
+    if (!this.wallet) throw new Error('No Wallet instance found')
     this.wallet = undefined
   }
 
   async getAccount(): Promise<string> {
-    const signer = this.getSigner()
-    if (!signer) throw new Error('No signer found')
-    return await signer.getAddress()
+    if (!this.wallet) throw new Error('No Wallet instance found')
+    return this.wallet.getAddress()
   }
 
   getSigner(): Wallet {
-    if (!this.wallet) throw new Error('No Burner Wallet instance found')
+    if (!this.wallet) throw new Error('No Wallet instance found')
     return this.wallet
   }
 
   async getUserInfos(): Promise<Partial<UserInfos>> {
-    if (!this.wallet) throw new Error('No Burner Wallet instance found')
-    const walletAddress = await this.wallet.address
-    return { walletAddress: walletAddress } ?? {}
+    if (!this.wallet) throw new Error('No Wallet instance found')
+    return { walletAddress: await this.wallet.address } ?? {}
   }
 }
