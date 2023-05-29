@@ -1,5 +1,8 @@
+import { Interface } from '@ethersproject/abi'
 import { Web3Provider } from '@ethersproject/providers'
+import { pack } from '@ethersproject/solidity'
 import { BigNumber, Bytes, ethers } from 'ethers'
+import { hexDataLength } from 'ethers/lib/utils'
 import { SiweMessage } from 'siwe'
 
 import {
@@ -28,6 +31,8 @@ import {
   WebAuthnOwner
 } from './types'
 import WebAuthnUtils from './WebAuthnUtils'
+
+export const MULTI_SEND_ABI = ['function multiSend(bytes memory transactions)']
 
 export interface AlembicWalletConfig {
   authAdapter: AUTHAdapter
@@ -223,15 +228,17 @@ export class AlembicWallet {
         to: safeTxData.to,
         value: BigNumber.from(safeTxData.value).toString(),
         data: safeTxData.data,
-        operation: 0,
+        operation: safeTxData.operation,
         safeTxGas: BigNumber.from(safeTxData.safeTxGas).toString(),
         baseGas: BigNumber.from(safeTxData.baseGas).toString(),
         gasPrice: BigNumber.from(safeTxData.gasPrice).toString(),
         gasToken: ethers.constants.AddressZero,
         refundReceiver: ethers.constants.AddressZero,
-        nonce: BigNumber.from(
-          await SafeUtils.getNonce(this.getAddress(), this.getOwnerProvider())
-        ).toString()
+        nonce:
+          safeTxData.nonce ??
+          BigNumber.from(
+            await SafeUtils.getNonce(this.getAddress(), this.getOwnerProvider())
+          ).toString()
       }
     )
   }
@@ -250,12 +257,13 @@ export class AlembicWallet {
     baseGas: number
     gasPrice: BigNumber
   }> {
-    const safeTxGas = await this.getOwnerProvider().estimateGas({
+    const safeTxGas = BigNumber.from(200000)
+    /*await this.getOwnerProvider().estimateGas({
       from: this.getAddress(),
       to: safeTxData.to,
       value: safeTxData.value,
       data: safeTxData.data
-    })
+    })*/
 
     const ethFeeHistory = await this.getOwnerProvider().send('eth_feeHistory', [
       1,
@@ -352,6 +360,78 @@ export class AlembicWallet {
     })
 
     return { safeTxHash }
+  }
+
+  public async sendBatchTransactions(
+    safeTransactionData: MetaTransactionData[]
+  ): Promise<SendTransactionResponse> {
+    const nonce = await SafeUtils.getNonce(
+      this.getAddress(),
+      this.getOwnerProvider()
+    )
+
+    const safeTxDataTyped = {
+      to: networks[this.chainId].multisendContractAddress,
+      value: '0',
+      data: await this._encodeMulti(safeTransactionData),
+      operation: 1,
+      safeTxGas: 0,
+      baseGas: 0,
+      gasPrice: 0,
+      gasToken: ethers.constants.AddressZero,
+      refundReceiver: ethers.constants.AddressZero,
+      nonce
+    }
+
+    const { safeTxGas, baseGas, gasPrice } = await this._estimateTransactionGas(
+      safeTxDataTyped
+    )
+
+    safeTxDataTyped.safeTxGas = +safeTxGas // gwei
+    safeTxDataTyped.baseGas = baseGas // gwei
+    safeTxDataTyped.gasPrice = +gasPrice // wei
+
+    await this._calculateAndShowMaxFee(
+      safeTxDataTyped.value,
+      safeTxGas,
+      baseGas,
+      gasPrice
+    )
+
+    const txSignature = await this.signTransaction(safeTxDataTyped)
+
+    const safeTxHash = await this.API.relayTransaction({
+      safeTxData: safeTxDataTyped,
+      signatures: txSignature,
+      walletAddress: this.getAddress()
+    })
+
+    return { safeTxHash }
+  }
+
+  public async _encodeMulti(
+    transactions: MetaTransactionData[]
+  ): Promise<string> {
+    const transactionsEncoded = `0x${transactions
+      .map(this.encodePacked)
+      .map(this.remove0x)
+      .join('')}`
+
+    const multiSendContract = new Interface(MULTI_SEND_ABI)
+    return multiSendContract.encodeFunctionData('multiSend', [
+      transactionsEncoded
+    ])
+  }
+
+  encodePacked(tx: MetaTransactionData): string {
+    return pack(
+      ['uint8', 'address', 'uint256', 'uint256', 'bytes'],
+      [tx.operation || 0, tx.to, tx.value, hexDataLength(tx.data), tx.data]
+    )
+  }
+
+  remove0x(hexString: string): string {
+    return hexString.substr(2)
   }
 
   /**

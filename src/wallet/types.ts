@@ -13,6 +13,7 @@ export interface MetaTransactionData {
   readonly to: string
   readonly value: string
   readonly data: string
+  readonly operation?: OperationType
 }
 
 export interface SafeTransactionDataPartial extends MetaTransactionData {

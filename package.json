@@ -59,9 +59,11 @@
   },
   "dependencies": {
     "@alembic/ui": "^0.0.2",
+    "@ethersproject/abi": "^5.0.0",
     "@ethersproject/abstract-provider": "^5.7.0",
     "@ethersproject/abstract-signer": "^5.7.0",
     "@ethersproject/providers": "^5.7.2",
+    "@ethersproject/solidity": "^5.0.0",
     "@simplewebauthn/server": "^7.2.0",
     "@types/babel__core": "^7.20.0",
     "@walletconnect/client": "1.8.0",

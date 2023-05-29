@@ -9,7 +9,7 @@ import { Deferrable, defineReadOnly, resolveProperties } from 'ethers/lib/utils'
 
 import { AlembicProvider } from './AlembicProvider'
 import { AlembicWallet } from './AlembicWallet'
-import { WebAuthnOwner } from './types'
+import { MetaTransactionData, WebAuthnOwner } from './types'
 
 export class AlembicSigner extends Signer {
   constructor(
@@ -45,6 +45,18 @@ export class AlembicSigner extends Signer {
     }
 
     const transactionResponse = await this.smartWallet.sendTransaction(safeTx)
+
+    if (!this.provider) throw new Error('missing provider')
+
+    return await this.provider.getTransaction(transactionResponse.safeTxHash)
+  }
+
+  async sendBatchTransactions(
+    transactions: MetaTransactionData[]
+  ): Promise<TransactionResponse> {
+    const transactionResponse = await this.smartWallet.sendBatchTransactions(
+      transactions
+    )
 
     if (!this.provider) throw new Error('missing provider')
 
