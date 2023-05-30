@@ -285,6 +285,9 @@ class AlembicWallet {
     }
     addWebAuthnOwner() {
         return __awaiter(this, void 0, void 0, function* () {
+            const isDeployed = yield SafeUtils_1.default.isDeployed(this.getAddress(), this.getProvider());
+            if (!isDeployed)
+                throw new Error('You need to make a transaction before deploying a webAuth signer');
             const getWebAuthnOwners = yield this.API.getWebAuthnOwners(this.getAddress());
             const signerName = `Alembic Connect - ${getWebAuthnOwners ? getWebAuthnOwners.length + 1 : 1}`;
             const webAuthnCredentials = yield WebAuthnUtils_1.default.createCredentials(signerName);
