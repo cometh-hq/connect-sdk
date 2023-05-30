@@ -452,6 +452,15 @@ export class AlembicWallet {
   }
 
   public async addWebAuthnOwner(): Promise<string> {
+    const isDeployed = await SafeUtils.isDeployed(
+      this.getAddress(),
+      this.getProvider()
+    )
+    if (!isDeployed)
+      throw new Error(
+        'You need to make a transaction before deploying a webAuth signer'
+      )
+
     const getWebAuthnOwners = await this.API.getWebAuthnOwners(
       this.getAddress()
     )
