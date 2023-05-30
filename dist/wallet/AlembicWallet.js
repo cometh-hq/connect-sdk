@@ -54,7 +54,7 @@ class AlembicWallet {
             });
         });
         this.authAdapter = authAdapter;
-        this.chainId = +authAdapter.chaindId;
+        this.chainId = +authAdapter.chainId;
         this.API = new services_1.API(apiKey, this.chainId);
         this.provider = new ethers_1.ethers.providers.StaticJsonRpcProvider(rpcUrl ? rpcUrl : constants_1.networks[this.chainId].RPCUrl);
         this.BASE_GAS = constants_1.DEFAULT_BASE_GAS;
@@ -71,7 +71,6 @@ class AlembicWallet {
                     throw new Error('No EOA adapter found');
                 if (!constants_1.networks[this.chainId])
                     throw new Error('This network is not supported');
-                yield this.authAdapter.init();
                 yield this.authAdapter.connect();
                 const signer = this.authAdapter.getSigner();
                 if (!signer)
@@ -253,8 +252,8 @@ class AlembicWallet {
                 refundReceiver: ethers_1.ethers.constants.AddressZero,
                 nonce: yield SafeUtils_1.default.getNonce(this.getAddress(), this.getProvider())
             };
+            const { safeTxGas, baseGas, gasPrice } = yield this._estimateTransactionGas(safeTxDataTyped);
             if (!this._isSponsoredAddress(safeTxDataTyped.to)) {
-                const { safeTxGas, baseGas, gasPrice } = yield this._estimateTransactionGas(safeTxDataTyped);
                 safeTxDataTyped.safeTxGas = +safeTxGas; // gwei
                 safeTxDataTyped.baseGas = baseGas; // gwei
                 safeTxDataTyped.gasPrice = +gasPrice; // wei
@@ -278,13 +277,16 @@ class AlembicWallet {
             if (publicKeyId === null)
                 return undefined;
             const currentWebAuthnOwner = yield this.API.getWebAuthnOwnerByPublicKeyId(publicKeyId);
+            if (currentWebAuthnOwner === null)
+                return undefined;
+            this.walletAddress = currentWebAuthnOwner.walletAddress;
             return currentWebAuthnOwner;
         });
     }
     addWebAuthnOwner() {
         return __awaiter(this, void 0, void 0, function* () {
             const getWebAuthnOwners = yield this.API.getWebAuthnOwners(this.getAddress());
-            const signerName = `Alembic Wallet - ${getWebAuthnOwners ? getWebAuthnOwners.length + 1 : 1}`;
+            const signerName = `Alembic Connect - ${getWebAuthnOwners ? getWebAuthnOwners.length + 1 : 1}`;
             const webAuthnCredentials = yield WebAuthnUtils_1.default.createCredentials(signerName);
             const publicKeyX = `0x${webAuthnCredentials.point.getX().toString(16)}`;
             const publicKeyY = `0x${webAuthnCredentials.point.getY().toString(16)}`;

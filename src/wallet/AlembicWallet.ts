@@ -58,7 +58,7 @@ export class AlembicWallet {
 
   constructor({ authAdapter, apiKey, rpcUrl }: AlembicWalletConfig) {
     this.authAdapter = authAdapter
-    this.chainId = +authAdapter.chaindId
+    this.chainId = +authAdapter.chainId
     this.API = new API(apiKey, this.chainId)
     this.provider = new ethers.providers.StaticJsonRpcProvider(
       rpcUrl ? rpcUrl : networks[this.chainId].RPCUrl
@@ -76,7 +76,7 @@ export class AlembicWallet {
       if (!this.authAdapter) throw new Error('No EOA adapter found')
       if (!networks[this.chainId])
         throw new Error('This network is not supported')
-      await this.authAdapter.init()
+
       await this.authAdapter.connect()
 
       const signer = this.authAdapter.getSigner()
@@ -328,10 +328,11 @@ export class AlembicWallet {
       nonce: await SafeUtils.getNonce(this.getAddress(), this.getProvider())
     }
 
-    if (!this._isSponsoredAddress(safeTxDataTyped.to)) {
-      const { safeTxGas, baseGas, gasPrice } =
-        await this._estimateTransactionGas(safeTxDataTyped)
+    const { safeTxGas, baseGas, gasPrice } = await this._estimateTransactionGas(
+      safeTxDataTyped
+    )
 
+    if (!this._isSponsoredAddress(safeTxDataTyped.to)) {
       safeTxDataTyped.safeTxGas = +safeTxGas // gwei
       safeTxDataTyped.baseGas = baseGas // gwei
       safeTxDataTyped.gasPrice = +gasPrice // wei
@@ -370,6 +371,9 @@ export class AlembicWallet {
       <string>publicKeyId
     )
 
+    if (currentWebAuthnOwner === null) return undefined
+    this.walletAddress = currentWebAuthnOwner.walletAddress
+
     return currentWebAuthnOwner
   }
 
@@ -378,7 +382,7 @@ export class AlembicWallet {
       this.getAddress()
     )
 
-    const signerName = `Alembic Wallet - ${
+    const signerName = `Alembic Connect - ${
       getWebAuthnOwners ? getWebAuthnOwners.length + 1 : 1
     }`
 

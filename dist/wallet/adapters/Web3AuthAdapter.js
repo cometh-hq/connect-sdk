@@ -17,9 +17,10 @@ class Web3AuthAdapter {
         this.web3auth = null;
         this.ethProvider = null;
         this.web3authConfig = web3authConfig;
-        this.chaindId = web3authConfig.chainConfig.chainId;
+        this.chainId = web3authConfig.chainConfig.chainId;
     }
-    init() {
+    connect() {
+        var _a;
         return __awaiter(this, void 0, void 0, function* () {
             if (!this.web3authConfig)
                 throw new Error('Missing config for web3Auth');
@@ -28,11 +29,6 @@ class Web3AuthAdapter {
                 throw new Error('No Web3Auth created');
             yield web3auth.initModal();
             this.web3auth = web3auth;
-        });
-    }
-    connect() {
-        var _a;
-        return __awaiter(this, void 0, void 0, function* () {
             if (!this.web3auth)
                 throw new Error('No Web3Auth instance found');
             yield this.web3auth.connect();
@@ -51,15 +47,13 @@ class Web3AuthAdapter {
             const signer = this.getSigner();
             if (!signer)
                 throw new Error('No signer found');
-            const account = yield signer.getAddress();
-            return account !== null && account !== void 0 ? account : null;
+            return yield signer.getAddress();
         });
     }
     getSigner() {
         if (!this.ethProvider)
             throw new Error('No Web3Auth provider found');
-        const signer = this.ethProvider.getSigner();
-        return signer !== null && signer !== void 0 ? signer : null;
+        return this.ethProvider.getSigner();
     }
     getUserInfos() {
         return __awaiter(this, void 0, void 0, function* () {
