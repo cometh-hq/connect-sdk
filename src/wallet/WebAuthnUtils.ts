@@ -1,4 +1,4 @@
-import { Web3Provider } from '@ethersproject/providers'
+import { StaticJsonRpcProvider } from '@ethersproject/providers'
 import { parseAuthenticatorData } from '@simplewebauthn/server/helpers'
 import CBOR from 'cbor-js'
 import { ec as EC } from 'elliptic'
@@ -14,7 +14,11 @@ const PUBLIC_KEY_X = 'public-key-x'
 const PUBLIC_KEY_Y = 'public-key-y'
 const PUBLIC_KEY_ID_KEY = 'public-key-id'
 
-const createCredentials = async (userId: string): Promise<any> => {
+const getCurrentPublicKeyId = (): string | null => {
+  return window.localStorage.getItem('public-key-id')
+}
+
+const createCredentials = async (signerName: string): Promise<any> => {
   const challenge = new TextEncoder().encode('connection')
 
   const webAuthnCredentials = await navigator.credentials
@@ -24,9 +28,9 @@ const createCredentials = async (userId: string): Promise<any> => {
           name: 'wallet'
         },
         user: {
-          id: new TextEncoder().encode(userId),
-          name: 'user',
-          displayName: 'user'
+          id: new TextEncoder().encode(signerName),
+          name: signerName,
+          displayName: signerName
         },
         challenge,
         pubKeyCredParams: [{ alg: -7, type: 'public-key' }]
@@ -42,13 +46,6 @@ const createCredentials = async (userId: string): Promise<any> => {
       const y = publicKey[-3]
       const point = curve.curve.point(x, y)
 
-      window.localStorage.setItem(PUBLIC_KEY_X, point.getX().toString(16))
-      window.localStorage.setItem(PUBLIC_KEY_Y, point.getY().toString(16))
-      window.localStorage.setItem(
-        PUBLIC_KEY_ID_KEY,
-        hexArrayStr(attestationPayload.rawId)
-      )
-
       return {
         point,
         id: hexArrayStr(attestationPayload.rawId)
@@ -57,6 +54,16 @@ const createCredentials = async (userId: string): Promise<any> => {
     .catch(console.error)
 
   return webAuthnCredentials
+}
+
+const updateCurrentWebAuthnOwner = (
+  publicKeyId: string,
+  publicKeyX: string,
+  publicKeyY: string
+): void => {
+  window.localStorage.setItem(PUBLIC_KEY_ID_KEY, publicKeyId)
+  window.localStorage.setItem(PUBLIC_KEY_X, publicKeyX)
+  window.localStorage.setItem(PUBLIC_KEY_Y, publicKeyY)
 }
 
 const _sign = async (
@@ -142,7 +149,7 @@ const waitWebAuthnSignerDeployment = async (
   publicKey_X: string,
   publicKey_Y: string,
   chainId: number,
-  provider: Web3Provider | AlembicProvider
+  provider: StaticJsonRpcProvider | AlembicProvider
 ): Promise<string> => {
   const P256FactoryInstance = await P256SignerFactory__factory.connect(
     networks[chainId].P256FactoryContractAddress,
@@ -163,7 +170,9 @@ const waitWebAuthnSignerDeployment = async (
 }
 
 export default {
+  getCurrentPublicKeyId,
   createCredentials,
+  updateCurrentWebAuthnOwner,
   getWebAuthnSignature,
   predictSignerAddress,
   waitWebAuthnSignerDeployment

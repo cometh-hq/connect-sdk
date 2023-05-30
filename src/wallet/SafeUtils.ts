@@ -1,17 +1,17 @@
-import { Web3Provider } from '@ethersproject/providers'
+import { StaticJsonRpcProvider } from '@ethersproject/providers'
 import { ethers } from 'ethers'
 
 import { BLOCK_EVENT_GAP, EIP712_SAFE_TX_TYPES } from '../constants'
 import { Safe__factory } from '../contracts/types/factories'
 import { SafeInterface } from '../contracts/types/Safe'
 import { AlembicProvider } from './AlembicProvider'
-import { MetaTransactionData } from './types'
+import { SafeTransactionDataPartial } from './types'
 
 const SafeInterface: SafeInterface = Safe__factory.createInterface()
 
 const isDeployed = async (
   walletAddress: string,
-  provider: Web3Provider | AlembicProvider
+  provider: StaticJsonRpcProvider | AlembicProvider
 ): Promise<boolean> => {
   try {
     await Safe__factory.connect(walletAddress, provider).deployed()
@@ -23,7 +23,7 @@ const isDeployed = async (
 
 const getNonce = async (
   walletAddress: string,
-  provider: Web3Provider | AlembicProvider
+  provider: StaticJsonRpcProvider | AlembicProvider
 ): Promise<number> => {
   return (await isDeployed(walletAddress, provider))
     ? (await Safe__factory.connect(walletAddress, provider).nonce()).toNumber()
@@ -33,7 +33,7 @@ const getNonce = async (
 const getSuccessExecTransactionEvent = async (
   safeTxHash: string,
   walletAddress: string,
-  provider: Web3Provider | AlembicProvider
+  provider: StaticJsonRpcProvider | AlembicProvider
 ): Promise<any> => {
   const safeInstance = await Safe__factory.connect(walletAddress, provider)
 
@@ -51,7 +51,7 @@ const getSuccessExecTransactionEvent = async (
 const getFailedExecTransactionEvent = async (
   safeTxHash: string,
   walletAddress: string,
-  provider: Web3Provider | AlembicProvider
+  provider: StaticJsonRpcProvider | AlembicProvider
 ): Promise<any> => {
   const safeInstance = await Safe__factory.connect(walletAddress, provider)
 
@@ -83,7 +83,7 @@ const formatWebAuthnSignatureForSafe = (
 
 const getSafeTransactionHash = (
   walletAddress: string,
-  transactionData: MetaTransactionData,
+  transactionData: SafeTransactionDataPartial,
   chainId: number
 ): string => {
   return ethers.utils._TypedDataEncoder.hash(
