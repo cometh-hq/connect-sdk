@@ -7,6 +7,7 @@ import { AccessList } from 'ethers/lib/utils'
 
 import { AlembicProvider } from './AlembicProvider'
 import { AlembicWallet } from './AlembicWallet'
+import SafeUtils from './SafeUtils'
 
 export class RelayTransactionResponse implements TransactionResponse {
   hash: string
@@ -56,11 +57,15 @@ export class RelayTransactionResponse implements TransactionResponse {
 
     while (!txSuccessEvent && !txFailureEvent) {
       await new Promise((resolve) => setTimeout(resolve, 2000))
-      txSuccessEvent = await this.alembicWallet.getSuccessExecTransactionEvent(
-        this.safeTxHash
+      txSuccessEvent = await SafeUtils.getSuccessExecTransactionEvent(
+        this.safeTxHash,
+        this.from,
+        this.provider
       )
-      txFailureEvent = await this.alembicWallet.getFailedExecTransactionEvent(
-        this.safeTxHash
+      txFailureEvent = await SafeUtils.getFailedExecTransactionEvent(
+        this.safeTxHash,
+        this.from,
+        this.provider
       )
     }
 

@@ -1,16 +1,24 @@
+import { StaticJsonRpcProvider } from '@ethersproject/providers'
 import { parseAuthenticatorData } from '@simplewebauthn/server/helpers'
 import CBOR from 'cbor-js'
 import { ec as EC } from 'elliptic'
 import { ethers } from 'ethers'
 
+import { BLOCK_EVENT_GAP, networks, P256SignerCreationCode } from '../constants'
+import { P256SignerFactory__factory } from '../contracts/types/factories'
 import { derToRS, findSequence, hexArrayStr, parseHex } from '../utils/utils'
+import { AlembicProvider } from './AlembicProvider'
 
 const curve = new EC('p256')
 const PUBLIC_KEY_X = 'public-key-x'
 const PUBLIC_KEY_Y = 'public-key-y'
 const PUBLIC_KEY_ID_KEY = 'public-key-id'
 
-const createCredentials = async (userId: string): Promise<any> => {
+const getCurrentPublicKeyId = (): string | null => {
+  return window.localStorage.getItem('public-key-id')
+}
+
+const createCredentials = async (signerName: string): Promise<any> => {
   const challenge = new TextEncoder().encode('connection')
 
   const webAuthnCredentials = await navigator.credentials
@@ -20,9 +28,9 @@ const createCredentials = async (userId: string): Promise<any> => {
           name: 'wallet'
         },
         user: {
-          id: new TextEncoder().encode(userId),
-          name: 'user',
-          displayName: 'user'
+          id: new TextEncoder().encode(signerName),
+          name: signerName,
+          displayName: signerName
         },
         challenge,
         pubKeyCredParams: [{ alg: -7, type: 'public-key' }]
@@ -38,13 +46,6 @@ const createCredentials = async (userId: string): Promise<any> => {
       const y = publicKey[-3]
       const point = curve.curve.point(x, y)
 
-      window.localStorage.setItem(PUBLIC_KEY_X, point.getX().toString(16))
-      window.localStorage.setItem(PUBLIC_KEY_Y, point.getY().toString(16))
-      window.localStorage.setItem(
-        PUBLIC_KEY_ID_KEY,
-        hexArrayStr(attestationPayload.rawId)
-      )
-
       return {
         point,
         id: hexArrayStr(attestationPayload.rawId)
@@ -53,6 +54,16 @@ const createCredentials = async (userId: string): Promise<any> => {
     .catch(console.error)
 
   return webAuthnCredentials
+}
+
+const updateCurrentWebAuthnOwner = (
+  publicKeyId: string,
+  publicKeyX: string,
+  publicKeyY: string
+): void => {
+  window.localStorage.setItem(PUBLIC_KEY_ID_KEY, publicKeyId)
+  window.localStorage.setItem(PUBLIC_KEY_X, publicKeyX)
+  window.localStorage.setItem(PUBLIC_KEY_Y, publicKeyY)
 }
 
 const _sign = async (
@@ -74,12 +85,11 @@ const _sign = async (
 }
 
 const getWebAuthnSignature = async (
-  safeTxHash: string,
+  hash: string,
   publicKey_Id: string
 ): Promise<string> => {
   const formattedPublicKeyId = parseHex(publicKey_Id)
-  const metaTxHash = safeTxHash
-  const challenge = parseHex(metaTxHash.slice(2))
+  const challenge = parseHex(hash.slice(2))
 
   const {
     signature,
@@ -109,7 +119,61 @@ const getWebAuthnSignature = async (
   return encodedSignature
 }
 
+const predictSignerAddress = async (
+  publicKey_X: string,
+  publicKey_Y: string,
+  chainId: number
+): Promise<string> => {
+  const deploymentCode = ethers.utils.keccak256(
+    ethers.utils.solidityPack(
+      ['bytes', 'uint256', 'uint256'],
+      [P256SignerCreationCode, publicKey_X, publicKey_Y]
+    )
+  )
+
+  const salt = ethers.utils.keccak256(
+    ethers.utils.defaultAbiCoder.encode(
+      ['uint256', 'uint256'],
+      [publicKey_X, publicKey_Y]
+    )
+  )
+
+  return ethers.utils.getCreate2Address(
+    networks[chainId].P256FactoryContractAddress,
+    salt,
+    deploymentCode
+  )
+}
+
+const waitWebAuthnSignerDeployment = async (
+  publicKey_X: string,
+  publicKey_Y: string,
+  chainId: number,
+  provider: StaticJsonRpcProvider | AlembicProvider
+): Promise<string> => {
+  const P256FactoryInstance = await P256SignerFactory__factory.connect(
+    networks[chainId].P256FactoryContractAddress,
+    provider
+  )
+
+  let signerDeploymentEvent: any = []
+
+  while (signerDeploymentEvent.length === 0) {
+    await new Promise((resolve) => setTimeout(resolve, 2000))
+    signerDeploymentEvent = await P256FactoryInstance.queryFilter(
+      P256FactoryInstance.filters.NewSignerCreated(publicKey_X, publicKey_Y),
+      BLOCK_EVENT_GAP
+    )
+  }
+
+  return signerDeploymentEvent[0].args.signer
+}
+
 export default {
+  getCurrentPublicKeyId,
   createCredentials,
-  getWebAuthnSignature
+  updateCurrentWebAuthnOwner,
+  getWebAuthnSignature,
+  predictSignerAddress,
+  waitWebAuthnSignerDeployment
 }

@@ -1,15 +1,14 @@
-import { ethers } from 'ethers'
+import { JsonRpcSigner } from '@ethersproject/providers'
+import { Wallet } from 'ethers'
 
 import { UserInfos } from '../types'
 export interface AUTHAdapter {
-  init(): Promise<void>
   logout(): Promise<void>
   connect(): Promise<void>
   getAccount(): Promise<string | null>
-  getSigner(): ethers.Signer | null
-  getEthProvider(): ethers.providers.Web3Provider | null
+  getSigner(): JsonRpcSigner | Wallet
   getUserInfos(): Promise<Partial<UserInfos>>
-  readonly chaindId: string
+  readonly chainId: string
 }
 
 export type Constructor<T> = new (...args: any[]) => T
