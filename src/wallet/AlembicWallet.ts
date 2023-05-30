@@ -30,8 +30,6 @@ import {
 } from './types'
 import WebAuthnUtils from './WebAuthnUtils'
 
-export const MULTI_SEND_ABI = ['function multiSend(bytes memory transactions)']
-
 export interface AlembicWalletConfig {
   authAdapter: AUTHAdapter
   apiKey: string
