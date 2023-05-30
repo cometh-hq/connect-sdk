@@ -252,21 +252,7 @@ export class AlembicWallet {
     return sponsoredAddress ? true : false
   }
 
-  public async _estimateTransactionGas(
-    safeTxData: SafeTransactionDataPartial
-  ): Promise<{
-    safeTxGas: BigNumber
-    baseGas: number
-    gasPrice: BigNumber
-  }> {
-    const safeTxGas = BigNumber.from(200000)
-    /*await this.getOwnerProvider().estimateGas({
-      from: this.getAddress(),
-      to: safeTxData.to,
-      value: safeTxData.value,
-      data: safeTxData.data
-    })*/
-
+  public async _getGasPrice(): Promise<BigNumber> {
     const ethFeeHistory = await this.getProvider().send('eth_feeHistory', [
       1,
       'latest',
@@ -280,12 +266,30 @@ export class AlembicWallet {
     const gasPrice = BigNumber.from(reward.add(BaseFee)).add(
       BigNumber.from(reward.add(BaseFee)).div(10)
     )
+    return gasPrice
+  }
 
-    return {
-      safeTxGas,
-      baseGas: this.BASE_GAS,
-      gasPrice: gasPrice
+  public async _estimateTransactionGas(
+    safeTxData: SafeTransactionDataPartial
+  ): Promise<BigNumber> {
+    return await this.getProvider().estimateGas({
+      from: this.getAddress(),
+      to: safeTxData.to,
+      value: safeTxData.value,
+      data: safeTxData.data
+    })
+  }
+
+  public async _estimateMultisendTransactionGas(
+    safeTransactionData: MetaTransactionData[]
+  ): Promise<BigNumber> {
+    let safeTxGas = BigNumber.from(0)
+    for (let i = 0; i < safeTransactionData.length; i++) {
+      safeTxGas = safeTxGas.add(
+        await this.getProvider().estimateGas(safeTransactionData[i])
+      )
     }
+    return safeTxGas
   }
 
   private async _calculateAndShowMaxFee(
@@ -332,19 +336,19 @@ export class AlembicWallet {
       nonce: await SafeUtils.getNonce(this.getAddress(), this.getProvider())
     }
 
-    const { safeTxGas, baseGas, gasPrice } = await this._estimateTransactionGas(
-      safeTxDataTyped
-    )
+    const safeTxGas = await this._estimateTransactionGas(safeTxDataTyped)
+
+    const gasPrice = await this._getGasPrice()
 
     if (!this._isSponsoredAddress(safeTxDataTyped.to)) {
       safeTxDataTyped.safeTxGas = +safeTxGas // gwei
-      safeTxDataTyped.baseGas = baseGas // gwei
+      safeTxDataTyped.baseGas = this.BASE_GAS // gwei
       safeTxDataTyped.gasPrice = +gasPrice // wei
 
       await this._calculateAndShowMaxFee(
         safeTxDataTyped.value,
         safeTxGas,
-        baseGas,
+        this.BASE_GAS,
         gasPrice
       )
     }
@@ -383,18 +387,19 @@ export class AlembicWallet {
       nonce
     }
 
-    const { safeTxGas, baseGas, gasPrice } = await this._estimateTransactionGas(
-      safeTxDataTyped
+    const safeTxGas = await this._estimateMultisendTransactionGas(
+      safeTransactionData
     )
+    const gasPrice = await this._getGasPrice()
 
     safeTxDataTyped.safeTxGas = +safeTxGas // gwei
-    safeTxDataTyped.baseGas = baseGas // gwei
+    safeTxDataTyped.baseGas = this.BASE_GAS // gwei
     safeTxDataTyped.gasPrice = +gasPrice // wei
 
     await this._calculateAndShowMaxFee(
       safeTxDataTyped.value,
       safeTxGas,
-      baseGas,
+      this.BASE_GAS,
       gasPrice
     )
 
