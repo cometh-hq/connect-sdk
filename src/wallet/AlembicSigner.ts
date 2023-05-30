@@ -9,7 +9,7 @@ import { Deferrable, defineReadOnly, resolveProperties } from 'ethers/lib/utils'
 
 import { AlembicProvider } from './AlembicProvider'
 import { AlembicWallet } from './AlembicWallet'
-import { MetaTransactionData, WebAuthnOwner } from './types'
+import { WebAuthnOwner } from './types'
 
 export class AlembicSigner extends Signer {
   constructor(
