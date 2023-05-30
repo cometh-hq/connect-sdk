@@ -19,7 +19,8 @@ class Web3AuthAdapter {
         this.web3authConfig = web3authConfig;
         this.chainId = web3authConfig.chainConfig.chainId;
     }
-    init() {
+    connect() {
+        var _a;
         return __awaiter(this, void 0, void 0, function* () {
             if (!this.web3authConfig)
                 throw new Error('Missing config for web3Auth');
@@ -28,11 +29,6 @@ class Web3AuthAdapter {
                 throw new Error('No Web3Auth created');
             yield web3auth.initModal();
             this.web3auth = web3auth;
-        });
-    }
-    connect() {
-        var _a;
-        return __awaiter(this, void 0, void 0, function* () {
             if (!this.web3auth)
                 throw new Error('No Web3Auth instance found');
             yield this.web3auth.connect();

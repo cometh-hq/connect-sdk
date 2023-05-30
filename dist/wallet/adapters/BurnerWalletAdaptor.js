@@ -15,7 +15,7 @@ class BurnerWalletAdaptor {
     constructor(chainId) {
         this.chainId = chainId;
     }
-    init() {
+    connect() {
         return __awaiter(this, void 0, void 0, function* () {
             const currentPrivateKey = window.localStorage.getItem('burnerWallet-private-key');
             if (currentPrivateKey) {

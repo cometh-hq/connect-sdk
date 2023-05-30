@@ -17,7 +17,7 @@ export class Web3AuthAdapter implements AUTHAdapter {
     this.chainId = web3authConfig.chainConfig.chainId!
   }
 
-  async init(): Promise<void> {
+  async connect(): Promise<void> {
     if (!this.web3authConfig) throw new Error('Missing config for web3Auth')
 
     const web3auth = new Web3Auth(this.web3authConfig)
@@ -26,9 +26,6 @@ export class Web3AuthAdapter implements AUTHAdapter {
     await web3auth.initModal()
 
     this.web3auth = web3auth
-  }
-
-  async connect(): Promise<void> {
     if (!this.web3auth) throw new Error('No Web3Auth instance found')
     await this.web3auth.connect()
     this.ethProvider = new ethers.providers.Web3Provider(

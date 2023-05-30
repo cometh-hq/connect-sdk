@@ -6,7 +6,7 @@ export declare class BurnerWalletAdaptor implements AUTHAdapter {
   private wallet
   readonly chainId: string
   constructor(chainId: string)
-  init(): Promise<void>
+  connect(): Promise<void>
   logout(): Promise<void>
   getAccount(): Promise<string>
   getSigner(): Wallet

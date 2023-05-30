@@ -76,8 +76,8 @@ export class AlembicWallet {
       if (!this.authAdapter) throw new Error('No EOA adapter found')
       if (!networks[this.chainId])
         throw new Error('This network is not supported')
-      await this.authAdapter.init()
-      if (this.authAdapter.connect) await this.authAdapter.connect()
+
+      await this.authAdapter.connect()
 
       const signer = this.authAdapter.getSigner()
       if (!signer) throw new Error('No signer found')

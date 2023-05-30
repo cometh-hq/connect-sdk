@@ -11,7 +11,7 @@ export class BurnerWalletAdaptor implements AUTHAdapter {
     this.chainId = chainId
   }
 
-  async init(): Promise<void> {
+  async connect(): Promise<void> {
     const currentPrivateKey = window.localStorage.getItem(
       'burnerWallet-private-key'
     )

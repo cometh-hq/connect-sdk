@@ -9,7 +9,6 @@ export declare class Web3AuthAdapter implements AUTHAdapter {
   private web3authConfig
   readonly chainId: string
   constructor(web3authConfig: Web3AuthCoreOptions)
-  init(): Promise<void>
   connect(): Promise<void>
   logout(): Promise<void>
   getAccount(): Promise<string | null>
