@@ -252,6 +252,19 @@ export class AlembicWallet {
     return sponsoredAddress ? true : false
   }
 
+  private async _isSponsoredMultisendTransaction(
+    safeTransactionData: MetaTransactionData[]
+  ): Promise<boolean> {
+    for (let i = 0; i < safeTransactionData.length; i++) {
+      const sponsoredAddress = this.sponsoredAddresses?.find(
+        (sponsoredAddress) =>
+          sponsoredAddress.targetAddress === safeTransactionData[i].to
+      )
+      if (!sponsoredAddress) return false
+    }
+    return true
+  }
+
   public async _getGasPrice(): Promise<BigNumber> {
     const ethFeeHistory = await this.getProvider().send('eth_feeHistory', [
       1,
@@ -336,11 +349,11 @@ export class AlembicWallet {
       nonce: await SafeUtils.getNonce(this.getAddress(), this.getProvider())
     }
 
-    const safeTxGas = await this._estimateTransactionGas(safeTxDataTyped)
-
-    const gasPrice = await this._getGasPrice()
-
     if (!this._isSponsoredAddress(safeTxDataTyped.to)) {
+      const safeTxGas = await this._estimateTransactionGas(safeTxDataTyped)
+
+      const gasPrice = await this._getGasPrice()
+
       safeTxDataTyped.safeTxGas = +safeTxGas // gwei
       safeTxDataTyped.baseGas = this.BASE_GAS // gwei
       safeTxDataTyped.gasPrice = +gasPrice // wei
@@ -369,6 +382,9 @@ export class AlembicWallet {
   public async sendBatchTransactions(
     safeTransactionData: MetaTransactionData[]
   ): Promise<SendTransactionResponse> {
+    if (safeTransactionData.length === 0) {
+      throw new Error('Empty array provided, no transaction to send')
+    }
     const nonce = await SafeUtils.getNonce(
       this.getAddress(),
       this.getProvider()
@@ -387,21 +403,23 @@ export class AlembicWallet {
       nonce
     }
 
-    const safeTxGas = await this._estimateMultisendTransactionGas(
-      safeTransactionData
-    )
-    const gasPrice = await this._getGasPrice()
+    if (!(await this._isSponsoredMultisendTransaction(safeTransactionData))) {
+      const safeTxGas = await this._estimateMultisendTransactionGas(
+        safeTransactionData
+      )
+      const gasPrice = await this._getGasPrice()
 
-    safeTxDataTyped.safeTxGas = +safeTxGas // gwei
-    safeTxDataTyped.baseGas = this.BASE_GAS // gwei
-    safeTxDataTyped.gasPrice = +gasPrice // wei
+      safeTxDataTyped.safeTxGas = +safeTxGas // gwei
+      safeTxDataTyped.baseGas = this.BASE_GAS // gwei
+      safeTxDataTyped.gasPrice = +gasPrice // wei
 
-    await this._calculateAndShowMaxFee(
-      safeTxDataTyped.value,
-      safeTxGas,
-      this.BASE_GAS,
-      gasPrice
-    )
+      await this._calculateAndShowMaxFee(
+        safeTxDataTyped.value,
+        safeTxGas,
+        this.BASE_GAS,
+        gasPrice
+      )
+    }
 
     const txSignature = await this.signTransaction(safeTxDataTyped)
 
