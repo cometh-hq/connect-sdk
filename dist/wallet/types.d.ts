@@ -1,4 +1,3 @@
-import { UserInfo } from '@web3auth/base'
 export declare enum RelayStatus {
   MINED = 'mined'
 }
@@ -33,9 +32,10 @@ export type RelayTransactionType = {
   signatures: string
   walletAddress: string
 }
-export type UserInfos = Partial<UserInfo> & {
+export type UserInfos = {
   ownerAddress: string | undefined
   walletAddress: string
+  email: string | null
 }
 export type TransactionStatus = {
   hash: string

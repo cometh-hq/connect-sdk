@@ -1,14 +1,20 @@
 import { JsonRpcSigner } from '@ethersproject/providers'
-import { Web3AuthCoreOptions } from '@web3auth/core'
+import { MagicSDKAdditionalConfiguration } from 'magic-sdk'
 
 import { UserInfos } from '../types'
 import { AUTHAdapter } from './types'
-export declare class Web3AuthAdapter implements AUTHAdapter {
-  private web3auth
+export interface MagicLinkAdapterConfig {
+  apiKey: string
+  options: MagicSDKAdditionalConfiguration & {
+    chainId: string
+  }
+}
+export declare class MagicLinkAdapter implements AUTHAdapter {
+  private magic
   private ethProvider
-  private web3authConfig
+  private magicConfig
   readonly chainId: string
-  constructor(web3authConfig: Web3AuthCoreOptions)
+  constructor(magicConfig: MagicLinkAdapterConfig)
   connect(): Promise<void>
   logout(): Promise<void>
   getAccount(): Promise<string | null>

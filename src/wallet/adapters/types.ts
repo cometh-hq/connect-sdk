@@ -1,12 +1,13 @@
 import { JsonRpcSigner } from '@ethersproject/providers'
-import { UserInfo } from '@web3auth/base'
 import { Wallet } from 'ethers'
+
+import { UserInfos } from '../types'
 export interface AUTHAdapter {
   logout(): Promise<void>
   connect(): Promise<void>
   getAccount(): Promise<string | null>
   getSigner(): JsonRpcSigner | Wallet
-  getUserInfos(): Promise<Partial<UserInfo>>
+  getUserInfos(): Promise<Partial<UserInfos>>
   readonly chainId: string
 }
 
