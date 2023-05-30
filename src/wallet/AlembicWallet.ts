@@ -1,8 +1,6 @@
-import { Interface } from '@ethersproject/abi'
 import { StaticJsonRpcProvider } from '@ethersproject/providers'
-import { pack } from '@ethersproject/solidity'
 import { BigNumber, Bytes, ethers } from 'ethers'
-import { hexDataLength } from 'ethers/lib/utils'
+import { encodeMulti } from 'ethers-multisend'
 import { SiweMessage } from 'siwe'
 
 import {
@@ -377,7 +375,7 @@ export class AlembicWallet {
     const safeTxDataTyped = {
       to: networks[this.chainId].multisendContractAddress,
       value: '0',
-      data: await this._encodeMulti(safeTransactionData),
+      data: encodeMulti(safeTransactionData).data,
       operation: 1,
       safeTxGas: 0,
       baseGas: 0,
@@ -411,31 +409,6 @@ export class AlembicWallet {
     })
 
     return { safeTxHash }
-  }
-
-  public async _encodeMulti(
-    transactions: MetaTransactionData[]
-  ): Promise<string> {
-    const transactionsEncoded = `0x${transactions
-      .map(this.encodePacked)
-      .map(this.remove0x)
-      .join('')}`
-
-    const multiSendContract = new Interface(MULTI_SEND_ABI)
-    return multiSendContract.encodeFunctionData('multiSend', [
-      transactionsEncoded
-    ])
-  }
-
-  encodePacked(tx: SafeTransactionDataPartial): string {
-    return pack(
-      ['uint8', 'address', 'uint256', 'uint256', 'bytes'],
-      [tx.operation || 0, tx.to, tx.value, hexDataLength(tx.data), tx.data]
-    )
-  }
-
-  remove0x(hexString: string): string {
-    return hexString.substr(2)
   }
 
   /**
