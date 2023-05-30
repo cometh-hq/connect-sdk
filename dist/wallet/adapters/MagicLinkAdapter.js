@@ -56,7 +56,7 @@ class MagicLinkAdapter {
         return __awaiter(this, void 0, void 0, function* () {
             if (!this.magic)
                 throw new Error('No magicLink instance found');
-            const userInfos = yield this.magic.user.getMetadata();
+            const userInfos = yield this.magic.user.getInfo();
             return userInfos !== null && userInfos !== void 0 ? userInfos : {};
         });
     }

@@ -53,7 +53,7 @@ export class MagicLinkAdapter implements AUTHAdapter {
 
   async getUserInfos(): Promise<Partial<UserInfos>> {
     if (!this.magic) throw new Error('No magicLink instance found')
-    const userInfos = await this.magic.user.getMetadata()
+    const userInfos = await this.magic.user.getInfo()
     return userInfos ?? {}
   }
 }
