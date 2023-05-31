@@ -22,6 +22,7 @@ import { AUTHAdapter } from './adapters'
 import SafeUtils from './SafeUtils'
 import {
   MetaTransactionData,
+  OperationType,
   SafeTransactionDataPartial,
   SendTransactionResponse,
   SponsoredTransaction,
@@ -381,6 +382,7 @@ export class AlembicWallet {
       value: '0',
       data: encodeMulti(safeTransactionData).data
     }
+    safeTxDataTyped.operation = 1
 
     if (!(await this._isSponsoredMultisendTransaction(safeTransactionData))) {
       safeTxDataTyped = await this._setTransactionGas(
