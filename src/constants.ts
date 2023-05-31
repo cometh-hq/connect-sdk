@@ -6,12 +6,14 @@ export const networks = {
   137: {
     RPCUrl: process.env.RPC_URL_POLYGON || 'https://polygon-rpc.com',
     networkName: 'Polygon',
-    P256FactoryContractAddress: '0x7Dd57c4113477c0710c1F043Df900ca1c6AcE922'
+    P256FactoryContractAddress: '0x7Dd57c4113477c0710c1F043Df900ca1c6AcE922',
+    multisendContractAddress: '0xA238CBeb142c10Ef7Ad8442C6D1f9E89e07e7761'
   },
   80001: {
     RPCUrl: process.env.RPC_URL_MUMBAI || 'https://rpc-mumbai.maticvigil.com',
     networkName: 'Mumbai',
-    P256FactoryContractAddress: '0x1F944424217a962b6001Db9F44a2C87e37865790'
+    P256FactoryContractAddress: '0x1F944424217a962b6001Db9F44a2C87e37865790',
+    multisendContractAddress: '0xA238CBeb142c10Ef7Ad8442C6D1f9E89e07e7761'
   }
 }
 export const DEFAULT_BASE_GAS = 80000

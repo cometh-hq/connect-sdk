@@ -1,22 +1,23 @@
-import { UserInfo } from '@web3auth/base'
+import { ExternalProvider, JsonRpcSigner } from '@ethersproject/providers'
 import { Web3AuthCoreOptions } from '@web3auth/core'
 import { Web3Auth, Web3AuthOptions } from '@web3auth/modal'
 import { ethers } from 'ethers'
 
+import { UserInfos } from '../types'
 import { AUTHAdapter } from './types'
 
 export class Web3AuthAdapter implements AUTHAdapter {
   private web3auth: Web3Auth | null = null
   private ethProvider: ethers.providers.Web3Provider | null = null
   private web3authConfig: Web3AuthOptions
-  readonly chaindId: string
+  readonly chainId: string
 
   constructor(web3authConfig: Web3AuthCoreOptions) {
     this.web3authConfig = web3authConfig
-    this.chaindId = web3authConfig.chainConfig.chainId!
+    this.chainId = web3authConfig.chainConfig.chainId!
   }
 
-  async init(): Promise<void> {
+  async connect(): Promise<void> {
     if (!this.web3authConfig) throw new Error('Missing config for web3Auth')
 
     const web3auth = new Web3Auth(this.web3authConfig)
@@ -25,13 +26,10 @@ export class Web3AuthAdapter implements AUTHAdapter {
     await web3auth.initModal()
 
     this.web3auth = web3auth
-  }
-
-  async connect(): Promise<void> {
     if (!this.web3auth) throw new Error('No Web3Auth instance found')
     await this.web3auth.connect()
     this.ethProvider = new ethers.providers.Web3Provider(
-      this.web3auth?.provider as any
+      this.web3auth?.provider as ExternalProvider
     )
   }
 
@@ -43,17 +41,15 @@ export class Web3AuthAdapter implements AUTHAdapter {
   async getAccount(): Promise<string | null> {
     const signer = this.getSigner()
     if (!signer) throw new Error('No signer found')
-    const account = await signer.getAddress()
-    return account ?? null
+    return await signer.getAddress()
   }
 
-  getSigner(): ethers.providers.JsonRpcSigner | null {
+  getSigner(): JsonRpcSigner {
     if (!this.ethProvider) throw new Error('No Web3Auth provider found')
-    const signer = this.ethProvider.getSigner()
-    return signer ?? null
+    return this.ethProvider.getSigner()
   }
 
-  async getUserInfos(): Promise<Partial<UserInfo>> {
+  async getUserInfos(): Promise<Partial<UserInfos>> {
     if (!this.web3auth) throw new Error('No Web3Auth instance found')
     const userInfos = await this.web3auth.getUserInfo()
     return userInfos ?? {}
