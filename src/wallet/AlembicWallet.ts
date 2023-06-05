@@ -178,6 +178,10 @@ export class AlembicWallet {
    */
 
   public async signMessage(messageToSign: string | Bytes): Promise<string> {
+    if (typeof messageToSign === 'string') {
+      messageToSign = ethers.utils.hashMessage(messageToSign)
+    }
+
     if (await this._verifyWebAuthnOwner()) {
       return this._signMessageWithWebAuthn(messageToSign)
     } else {
