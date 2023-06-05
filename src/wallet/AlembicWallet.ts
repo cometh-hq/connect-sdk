@@ -237,7 +237,11 @@ export class AlembicWallet {
         gasPrice: BigNumber.from(safeTxData.gasPrice).toString(),
         gasToken: ethers.constants.AddressZero,
         refundReceiver: ethers.constants.AddressZero,
-        nonce: safeTxData.nonce
+        nonce: BigNumber.from(
+          safeTxData.nonce
+            ? safeTxData.nonce
+            : await SafeUtils.getNonce(this.getAddress(), this.getProvider())
+        ).toString()
       }
     )
   }
@@ -546,7 +550,9 @@ export class AlembicWallet {
         gasToken: ethers.constants.AddressZero,
         refundReceiver: ethers.constants.AddressZero,
         nonce: BigNumber.from(
-          await SafeUtils.getNonce(this.getAddress(), this.getProvider())
+          safeTxDataTyped.nonce
+            ? safeTxDataTyped.nonce
+            : await SafeUtils.getNonce(this.getAddress(), this.getProvider())
         ).toString()
       },
       this.chainId
