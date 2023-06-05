@@ -22,7 +22,6 @@ import { AUTHAdapter } from './adapters'
 import SafeUtils from './SafeUtils'
 import {
   MetaTransactionData,
-  OperationType,
   SafeTransactionDataPartial,
   SendTransactionResponse,
   SponsoredTransaction,
@@ -250,18 +249,15 @@ export class AlembicWallet {
     )
   }
 
-  private _isSponsoredAddress(targetAddress: string): boolean {
-    const sponsoredAddress = this.sponsoredAddresses?.find(
-      (sponsoredAddress) => sponsoredAddress.targetAddress === targetAddress
-    )
-    return sponsoredAddress ? true : false
-  }
-
-  private async _isSponsoredMultisendTransaction(
+  private async _isSponsoredTransaction(
     safeTransactionData: MetaTransactionData[]
   ): Promise<boolean> {
     for (let i = 0; i < safeTransactionData.length; i++) {
-      if (!this._isSponsoredAddress(safeTransactionData[i].to)) return false
+      const sponsoredAddress = this.sponsoredAddresses?.find(
+        (sponsoredAddress) =>
+          sponsoredAddress.targetAddress === safeTransactionData[i].to
+      )
+      if (!sponsoredAddress) return false
     }
     return true
   }
@@ -285,9 +281,8 @@ export class AlembicWallet {
 
   public async _setTransactionGas(
     safeTxDataTyped: SafeTransactionDataPartial,
-    safeTransactionData: MetaTransactionData[]
+    safeTxGas: BigNumber
   ): Promise<SafeTransactionDataPartial> {
-    const safeTxGas = await this._estimateSafeTxGas(safeTransactionData)
     const gasPrice = await this._getGasPrice()
 
     await this._calculateAndShowMaxFee(
@@ -359,43 +354,20 @@ export class AlembicWallet {
   public async sendTransaction(
     safeTxData: MetaTransactionData
   ): Promise<SendTransactionResponse> {
-    let safeTxDataTyped = {
-      ...(await this._prepareTransaction()),
-      to: safeTxData.to,
-      value: safeTxData.value ?? '0',
-      data: safeTxData.data
-    }
-
-    if (!this._isSponsoredAddress(safeTxDataTyped.to)) {
-      safeTxDataTyped = await this._setTransactionGas(safeTxDataTyped, [
-        safeTxData
-      ])
-    }
-
-    const safeTxHash = await this._signAndSendTransaction(safeTxDataTyped)
-
-    return { safeTxHash }
-  }
-
-  public async sendBatchTransactions(
-    safeTransactionData: MetaTransactionData[]
-  ): Promise<SendTransactionResponse> {
-    if (safeTransactionData.length === 0) {
-      throw new Error('Empty array provided, no transaction to send')
-    }
+    const safeTxGas = await this._estimateSafeTxGas([safeTxData])
 
     let safeTxDataTyped = {
-      ...(await this._prepareTransaction()),
-      to: networks[this.chainId].multisendContractAddress,
-      value: '0',
-      data: encodeMulti(safeTransactionData).data
+      ...(await this._prepareTransaction(
+        safeTxData.to,
+        safeTxData.value,
+        safeTxData.data
+      ))
     }
-    safeTxDataTyped.operation = 1
 
-    if (!(await this._isSponsoredMultisendTransaction(safeTransactionData))) {
+    if (!this._isSponsoredTransaction([safeTxDataTyped])) {
       safeTxDataTyped = await this._setTransactionGas(
         safeTxDataTyped,
-        safeTransactionData
+        safeTxGas
       )
     }
 
@@ -404,12 +376,47 @@ export class AlembicWallet {
     return { safeTxHash }
   }
 
-  public async _prepareTransaction(): Promise<SafeTransactionDataPartial> {
+  public async sendBatchTransactions(
+    safeTxData: MetaTransactionData[]
+  ): Promise<SendTransactionResponse> {
+    if (safeTxData.length === 0) {
+      throw new Error('Empty array provided, no transaction to send')
+    }
+
+    const safeTxGas = await this._estimateSafeTxGas(safeTxData)
+
+    let safeTxDataTyped = {
+      ...(await this._prepareTransaction(
+        networks[this.chainId].multisendContractAddress,
+        '0',
+        encodeMulti(safeTxData).data,
+        1
+      ))
+    }
+
+    if (!(await this._isSponsoredTransaction(safeTxData))) {
+      safeTxDataTyped = await this._setTransactionGas(
+        safeTxDataTyped,
+        safeTxGas
+      )
+    }
+
+    const safeTxHash = await this._signAndSendTransaction(safeTxDataTyped)
+
+    return { safeTxHash }
+  }
+
+  public async _prepareTransaction(
+    to: string,
+    value: string,
+    data: string,
+    operation?: number
+  ): Promise<SafeTransactionDataPartial> {
     return {
-      to: '',
-      value: '0',
-      data: '0x',
-      operation: 0,
+      to: to,
+      value: value ?? '0',
+      data: data,
+      operation: operation ?? 0,
       safeTxGas: 0,
       baseGas: 0,
       gasPrice: 0,
@@ -488,7 +495,7 @@ export class AlembicWallet {
     const addOwnerTxSignature = await this.signTransaction(addOwnerTxData)
 
     const message = `${publicKeyX},${publicKeyY},${publicKeyId}`
-    const signature = await this.signMessage(ethers.utils.hashMessage(message))
+    const signature = await this.signMessage(message)
 
     await this.API.addWebAuthnOwner(
       this.getAddress(),
