@@ -357,6 +357,8 @@ export class AlembicWallet {
   public async sendTransaction(
     safeTxData: MetaTransactionData
   ): Promise<SendTransactionResponse> {
+    const safeTxGas = await this._estimateSafeTxGas([safeTxData])
+
     let safeTxDataTyped = {
       ...(await this._prepareTransaction(
         safeTxData.to,
@@ -366,7 +368,6 @@ export class AlembicWallet {
     }
 
     if (!(await this._isSponsoredTransaction([safeTxDataTyped]))) {
-      const safeTxGas = await this._estimateSafeTxGas([safeTxData])
       safeTxDataTyped = await this._setTransactionGas(
         safeTxDataTyped,
         safeTxGas
