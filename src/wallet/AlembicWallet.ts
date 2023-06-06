@@ -305,7 +305,10 @@ export class AlembicWallet {
     let safeTxGas = BigNumber.from(0)
     for (let i = 0; i < safeTransactionData.length; i++) {
       safeTxGas = safeTxGas.add(
-        await this.getProvider().estimateGas(safeTransactionData[i])
+        await this.getProvider().estimateGas({
+          ...safeTransactionData[i],
+          from: this.getAddress()
+        })
       )
     }
     return safeTxGas
@@ -364,7 +367,7 @@ export class AlembicWallet {
       ))
     }
 
-    if (!this._isSponsoredTransaction([safeTxDataTyped])) {
+    if (!(await this._isSponsoredTransaction([safeTxDataTyped]))) {
       safeTxDataTyped = await this._setTransactionGas(
         safeTxDataTyped,
         safeTxGas
