@@ -336,7 +336,19 @@ export class AlembicWallet {
         )
       )
 
-      if (!(await new GasModal().initModal((+totalFees).toFixed(3)))) {
+      const balance = ethers.utils.formatEther(
+        ethers.utils.parseUnits(
+          BigNumber.from(await this._getBalance(this.getAddress())).toString(),
+          'wei'
+        )
+      )
+
+      if (
+        !(await new GasModal().initModal(
+          (+balance).toFixed(3),
+          (+totalFees).toFixed(3)
+        ))
+      ) {
         throw new Error('Transaction denied')
       }
     }
