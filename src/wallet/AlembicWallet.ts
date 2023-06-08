@@ -17,14 +17,16 @@ import {
 import { P256SignerFactoryInterface } from '../contracts/types/P256SignerFactory'
 import { SafeInterface } from '../contracts/types/Safe'
 import { API } from '../services'
-import { GasModal } from '../ui'
 import { AUTHAdapter } from './adapters'
+import BlockchainUtils from './BlockchainUtils'
+import GasUtils from './GasUtils'
 import SafeUtils from './SafeUtils'
 import {
   MetaTransactionData,
   SafeTransactionDataPartial,
   SendTransactionResponse,
   SponsoredTransaction,
+  UIConfig,
   UserInfos,
   WebAuthnOwner
 } from './types'
@@ -34,9 +36,7 @@ export interface AlembicWalletConfig {
   authAdapter: AUTHAdapter
   apiKey: string
   rpcUrl?: string
-  uiConfig?: {
-    displayValidationModal: boolean
-  }
+  uiConfig?: UIConfig
 }
 export class AlembicWallet {
   private authAdapter: AUTHAdapter
@@ -61,9 +61,7 @@ export class AlembicWallet {
     this.authAdapter = authAdapter
     this.chainId = +authAdapter.chainId
     this.API = new API(apiKey, this.chainId)
-    this.provider = new ethers.providers.StaticJsonRpcProvider(
-      rpcUrl ? rpcUrl : networks[this.chainId].RPCUrl
-    )
+    this.provider = BlockchainUtils.getProvider(this.chainId, rpcUrl)
     this.BASE_GAS = DEFAULT_BASE_GAS
     this.REWARD_PERCENTILE = DEFAULT_REWARD_PERCENTILE
   }
@@ -147,10 +145,6 @@ export class AlembicWallet {
     })
 
     return message
-  }
-
-  private _getBalance = async (address: string): Promise<BigNumber> => {
-    return this.getProvider().getBalance(address)
   }
 
   public async logout(): Promise<void> {
@@ -262,98 +256,6 @@ export class AlembicWallet {
     return true
   }
 
-  public async _getGasPrice(): Promise<BigNumber> {
-    const ethFeeHistory = await this.getProvider().send('eth_feeHistory', [
-      1,
-      'latest',
-      [this.REWARD_PERCENTILE]
-    ])
-    const [reward, BaseFee] = [
-      BigNumber.from(ethFeeHistory.reward[0][0]),
-      BigNumber.from(ethFeeHistory.baseFeePerGas[0])
-    ]
-
-    const gasPrice = BigNumber.from(reward.add(BaseFee)).add(
-      BigNumber.from(reward.add(BaseFee)).div(10)
-    )
-    return gasPrice
-  }
-
-  public async _setTransactionGas(
-    safeTxDataTyped: SafeTransactionDataPartial,
-    safeTxGas: BigNumber
-  ): Promise<SafeTransactionDataPartial> {
-    const gasPrice = await this._getGasPrice()
-
-    await this._calculateAndShowMaxFee(
-      safeTxDataTyped.value,
-      safeTxGas,
-      this.BASE_GAS,
-      gasPrice
-    )
-    return {
-      ...safeTxDataTyped,
-      safeTxGas: +safeTxGas, // gwei
-      baseGas: this.BASE_GAS, // gwei
-      gasPrice: +gasPrice // wei
-    }
-  }
-
-  public async _estimateSafeTxGas(
-    safeTransactionData: MetaTransactionData[]
-  ): Promise<BigNumber> {
-    let safeTxGas = BigNumber.from(0)
-    for (let i = 0; i < safeTransactionData.length; i++) {
-      safeTxGas = safeTxGas.add(
-        await this.getProvider().estimateGas({
-          ...safeTransactionData[i],
-          from: this.getAddress()
-        })
-      )
-    }
-    return safeTxGas
-  }
-
-  private async _calculateAndShowMaxFee(
-    txValue: string,
-    safeTxGas: BigNumber,
-    baseGas: number,
-    gasPrice: BigNumber
-  ): Promise<void> {
-    const walletBalance = await this._getBalance(this.getAddress())
-    const totalGasCost = BigNumber.from(safeTxGas)
-      .add(BigNumber.from(baseGas))
-      .mul(BigNumber.from(gasPrice))
-
-    if (walletBalance.lt(totalGasCost.add(BigNumber.from(txValue))))
-      throw new Error('Not enough balance to send this value and pay for gas')
-
-    if (this.uiConfig.displayValidationModal) {
-      const totalFees = ethers.utils.formatEther(
-        ethers.utils.parseUnits(
-          BigNumber.from(safeTxGas).add(baseGas).mul(gasPrice).toString(),
-          'wei'
-        )
-      )
-
-      const balance = ethers.utils.formatEther(
-        ethers.utils.parseUnits(
-          BigNumber.from(await this._getBalance(this.getAddress())).toString(),
-          'wei'
-        )
-      )
-
-      if (
-        !(await new GasModal().initModal(
-          (+balance).toFixed(3),
-          (+totalFees).toFixed(3)
-        ))
-      ) {
-        throw new Error('Transaction denied')
-      }
-    }
-  }
-
   public async _signAndSendTransaction(
     safeTxDataTyped: SafeTransactionDataPartial
   ): Promise<string> {
@@ -369,7 +271,11 @@ export class AlembicWallet {
   public async sendTransaction(
     safeTxData: MetaTransactionData
   ): Promise<SendTransactionResponse> {
-    const safeTxGas = await this._estimateSafeTxGas([safeTxData])
+    const safeTxGas = await GasUtils.estimateSafeTxGas(
+      this.getAddress(),
+      [safeTxData],
+      this.provider
+    )
 
     let safeTxDataTyped = {
       ...(await this._prepareTransaction(
@@ -380,9 +286,14 @@ export class AlembicWallet {
     }
 
     if (!(await this._isSponsoredTransaction([safeTxDataTyped]))) {
-      safeTxDataTyped = await this._setTransactionGas(
+      safeTxDataTyped = await GasUtils.setTransactionGas(
         safeTxDataTyped,
-        safeTxGas
+        safeTxGas,
+        this.provider,
+        this.REWARD_PERCENTILE,
+        this.BASE_GAS,
+        this.getAddress(),
+        this.uiConfig
       )
     }
 
@@ -398,7 +309,11 @@ export class AlembicWallet {
       throw new Error('Empty array provided, no transaction to send')
     }
 
-    const safeTxGas = await this._estimateSafeTxGas(safeTxData)
+    const safeTxGas = await GasUtils.estimateSafeTxGas(
+      this.getAddress(),
+      safeTxData,
+      this.provider
+    )
 
     let safeTxDataTyped = {
       ...(await this._prepareTransaction(
@@ -410,9 +325,14 @@ export class AlembicWallet {
     }
 
     if (!(await this._isSponsoredTransaction(safeTxData))) {
-      safeTxDataTyped = await this._setTransactionGas(
+      safeTxDataTyped = await GasUtils.setTransactionGas(
         safeTxDataTyped,
-        safeTxGas
+        safeTxGas,
+        this.getProvider(),
+        this.REWARD_PERCENTILE,
+        this.BASE_GAS,
+        this.getAddress(),
+        this.uiConfig
       )
     }
 
