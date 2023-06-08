@@ -64,3 +64,7 @@ export type WebAuthnOwner = {
   signature: string
   signerAddress: string
 }
+
+export type UIConfig = {
+  displayValidationModal: boolean
+}
