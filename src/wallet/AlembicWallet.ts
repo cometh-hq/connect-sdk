@@ -28,6 +28,7 @@ import {
   UserInfos,
   WebAuthnOwner
 } from './types'
+import { WebAuthnSigner } from './WebAuthnSigner'
 import WebAuthnUtils from './WebAuthnUtils'
 
 export interface AlembicWalletConfig {
@@ -39,7 +40,7 @@ export interface AlembicWalletConfig {
   }
 }
 export class AlembicWallet {
-  private authAdapter: AUTHAdapter
+  public authAdapter: AUTHAdapter
   readonly chainId: number
   private connected = false
   private BASE_GAS: number
@@ -51,6 +52,7 @@ export class AlembicWallet {
   private uiConfig = {
     displayValidationModal: true
   }
+  private signer: any
 
   // Contracts Interfaces
   readonly SafeInterface: SafeInterface = Safe__factory.createInterface()
@@ -80,17 +82,17 @@ export class AlembicWallet {
 
       await this.authAdapter.connect()
 
-      const signer = this.authAdapter.getSigner()
-      if (!signer) throw new Error('No signer found')
+      this.signer = this.authAdapter.getSigner()
+      if (!this.signer) throw new Error('No signer found')
 
-      const ownerAddress = await signer.getAddress()
+      const ownerAddress = await this.signer.getAddress()
       if (!ownerAddress) throw new Error('No ownerAddress found')
 
       const nonce = await this.API.getNonce(ownerAddress)
 
       const message: SiweMessage = this._createMessage(ownerAddress, nonce)
       const messageToSign = message.prepareMessage()
-      const signature = await signer.signMessage(messageToSign)
+      const signature = await this.signer.signMessage(messageToSign)
 
       this.walletAddress = await this.API?.connectToAlembicWallet({
         message,
@@ -181,8 +183,10 @@ export class AlembicWallet {
       messageToSign = ethers.utils.hashMessage(messageToSign)
     }
 
+    if (!this.signer) throw new Error('Sign message: missing signer')
+
     if (await this._verifyWebAuthnOwner()) {
-      return this._signMessageWithWebAuthn(messageToSign)
+      return this.signer.signMessage(messageToSign)
     } else {
       return this._signMessageWithEOA(messageToSign)
     }
@@ -192,7 +196,7 @@ export class AlembicWallet {
     messageToSign: string | Bytes
   ): Promise<string> {
     const signer = this.authAdapter.getSigner()
-    if (!signer) throw new Error('Sign message: missing signer')
+    if (!this.signer) throw new Error('Sign message: missing signer')
 
     return await signer._signTypedData(
       {
@@ -212,7 +216,7 @@ export class AlembicWallet {
     safeTxData: SafeTransactionDataPartial
   ): Promise<string> {
     if (await this._verifyWebAuthnOwner()) {
-      return this._signTransactionwithWebAuthn(safeTxData)
+      return this.signer.signTransaction(safeTxData)
     } else {
       return this._signTransactionWithEOA(safeTxData)
     }
@@ -554,62 +558,8 @@ export class AlembicWallet {
     )
     if (!isSafeOwner) return false
 
+    this.signer = new WebAuthnSigner(this)
+
     return true
-  }
-
-  private async _signTransactionwithWebAuthn(
-    safeTxDataTyped: SafeTransactionDataPartial
-  ): Promise<string> {
-    const currentWebAuthnOwner = await this.getCurrentWebAuthnOwner()
-    if (!currentWebAuthnOwner) throw new Error('No WebAuthn signer found')
-
-    const safeTxHash = await SafeUtils.getSafeTransactionHash(
-      this.getAddress(),
-      {
-        to: safeTxDataTyped.to,
-        value: BigNumber.from(safeTxDataTyped.value).toString(),
-        data: safeTxDataTyped.data,
-        operation: BigNumber.from(safeTxDataTyped.operation).toString(),
-        safeTxGas: BigNumber.from(safeTxDataTyped.safeTxGas).toString(),
-        baseGas: BigNumber.from(safeTxDataTyped.baseGas).toString(),
-        gasPrice: BigNumber.from(safeTxDataTyped.gasPrice).toString(),
-        gasToken: ethers.constants.AddressZero,
-        refundReceiver: ethers.constants.AddressZero,
-        nonce: BigNumber.from(
-          safeTxDataTyped.nonce
-            ? safeTxDataTyped.nonce
-            : await SafeUtils.getNonce(this.getAddress(), this.getProvider())
-        ).toString()
-      },
-      this.chainId
-    )
-
-    const encodedWebAuthnSignature = await WebAuthnUtils.getWebAuthnSignature(
-      safeTxHash,
-      currentWebAuthnOwner.publicKeyId
-    )
-
-    return SafeUtils.formatWebAuthnSignatureForSafe(
-      currentWebAuthnOwner.signerAddress,
-      encodedWebAuthnSignature
-    )
-  }
-
-  private async _signMessageWithWebAuthn(
-    messageToSign: string | Bytes
-  ): Promise<string> {
-    const currentWebAuthnOwner = await this.getCurrentWebAuthnOwner()
-
-    if (!currentWebAuthnOwner) throw new Error('No WebAuthn signer found')
-
-    const encodedWebAuthnSignature = await WebAuthnUtils.getWebAuthnSignature(
-      ethers.utils.keccak256(messageToSign),
-      currentWebAuthnOwner.publicKeyId
-    )
-
-    return SafeUtils.formatWebAuthnSignatureForSafe(
-      currentWebAuthnOwner.signerAddress,
-      encodedWebAuthnSignature
-    )
   }
 }
