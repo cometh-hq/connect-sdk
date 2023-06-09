@@ -6,20 +6,16 @@ import { SiweMessage } from 'siwe'
 import {
   DEFAULT_BASE_GAS,
   DEFAULT_REWARD_PERCENTILE,
-  EIP712_SAFE_MESSAGE_TYPE,
-  EIP712_SAFE_TX_TYPES,
   networks
 } from '../constants'
-import {
-  P256SignerFactory__factory,
-  Safe__factory
-} from '../contracts/types/factories'
-import { P256SignerFactoryInterface } from '../contracts/types/P256SignerFactory'
-import { SafeInterface } from '../contracts/types/Safe'
 import { API } from '../services'
+import safeService from '../services/safeService'
+import siweService from '../services/siweService'
+import webAuthnService from '../services/webAuthnService'
 import { GasModal } from '../ui'
 import { AUTHAdapter } from './adapters'
-import SafeUtils from './SafeUtils'
+import { AuthAdapterSigner } from './signers/AuthAdapterSigner'
+import { WebAuthnSigner } from './signers/WebAuthnSigner'
 import {
   MetaTransactionData,
   SafeTransactionDataPartial,
@@ -28,8 +24,6 @@ import {
   UserInfos,
   WebAuthnOwner
 } from './types'
-import { WebAuthnSigner } from './WebAuthnSigner'
-import WebAuthnUtils from './WebAuthnUtils'
 
 export interface AlembicWalletConfig {
   authAdapter: AUTHAdapter
@@ -54,11 +48,6 @@ export class AlembicWallet {
   }
   private signer: any
 
-  // Contracts Interfaces
-  readonly SafeInterface: SafeInterface = Safe__factory.createInterface()
-  readonly P256FactoryInterface: P256SignerFactoryInterface =
-    P256SignerFactory__factory.createInterface()
-
   constructor({ authAdapter, apiKey, rpcUrl }: AlembicWalletConfig) {
     this.authAdapter = authAdapter
     this.chainId = +authAdapter.chainId
@@ -82,27 +71,33 @@ export class AlembicWallet {
 
       await this.authAdapter.connect()
 
-      this.signer = this.authAdapter.getSigner()
-      if (!this.signer) throw new Error('No signer found')
-
-      const ownerAddress = await this.signer.getAddress()
+      const ownerAddress = await this.authAdapter.getSigner().getAddress()
       if (!ownerAddress) throw new Error('No ownerAddress found')
 
       const nonce = await this.API.getNonce(ownerAddress)
 
-      const message: SiweMessage = this._createMessage(ownerAddress, nonce)
+      const message: SiweMessage = siweService.createMessage(
+        ownerAddress,
+        nonce,
+        this.chainId
+      )
       const messageToSign = message.prepareMessage()
-      const signature = await this.signer.signMessage(messageToSign)
+      const signature = await this.authAdapter
+        .getSigner()
+        .signMessage(messageToSign)
 
       this.walletAddress = await this.API?.connectToAlembicWallet({
         message,
         signature,
         ownerAddress
       })
+      this.signer = new AuthAdapterSigner(this)
     } else {
       const currentWebAuthnOwner = await this.getCurrentWebAuthnOwner()
-      if (currentWebAuthnOwner)
+      if (currentWebAuthnOwner) {
         this.walletAddress = currentWebAuthnOwner.walletAddress
+        this.signer = new WebAuthnSigner(this)
+      }
     }
 
     this.sponsoredAddresses = await this.API.getSponsoredAddresses()
@@ -134,23 +129,6 @@ export class AlembicWallet {
     return this.walletAddress ?? ''
   }
 
-  private _createMessage(address, nonce): SiweMessage {
-    const domain = window.location.host
-    const origin = window.location.origin
-    const statement = `Sign in with Ethereum to Alembic`
-    const message = new SiweMessage({
-      domain,
-      address,
-      statement,
-      uri: origin,
-      version: '1',
-      chainId: this.chainId,
-      nonce: nonce?.connectionNonce
-    })
-
-    return message
-  }
-
   private _getBalance = async (address: string): Promise<BigNumber> => {
     return this.getProvider().getBalance(address)
   }
@@ -162,14 +140,7 @@ export class AlembicWallet {
   }
 
   public async addOwner(newOwner: string): Promise<SendTransactionResponse> {
-    const tx = {
-      to: this.getAddress(),
-      value: '0x0',
-      data: this.SafeInterface.encodeFunctionData('addOwnerWithThreshold', [
-        newOwner,
-        1
-      ])
-    }
+    const tx = await safeService.prepareAddOwnerTx(this.getAddress(), newOwner)
 
     return await this.sendTransaction(tx)
   }
@@ -185,72 +156,15 @@ export class AlembicWallet {
 
     if (!this.signer) throw new Error('Sign message: missing signer')
 
-    if (await this._verifyWebAuthnOwner()) {
-      return this.signer.signMessage(messageToSign)
-    } else {
-      return this._signMessageWithEOA(messageToSign)
-    }
+    return this.signer.signMessage(messageToSign)
   }
-
-  private async _signMessageWithEOA(
-    messageToSign: string | Bytes
-  ): Promise<string> {
-    const signer = this.authAdapter.getSigner()
-    if (!this.signer) throw new Error('Sign message: missing signer')
-
-    return await signer._signTypedData(
-      {
-        chainId: this.chainId,
-        verifyingContract: this.getAddress()
-      },
-      EIP712_SAFE_MESSAGE_TYPE,
-      { message: messageToSign }
-    )
-  }
-
-  /**
-   * Transaction Section
-   */
 
   public async signTransaction(
     safeTxData: SafeTransactionDataPartial
   ): Promise<string> {
-    if (await this._verifyWebAuthnOwner()) {
-      return this.signer.signTransaction(safeTxData)
-    } else {
-      return this._signTransactionWithEOA(safeTxData)
-    }
-  }
+    if (!this.signer) throw new Error('Sign message: missing signer')
 
-  private _signTransactionWithEOA = async (
-    safeTxData: SafeTransactionDataPartial
-  ): Promise<string> => {
-    const signer = this.authAdapter.getSigner()
-    if (!signer) throw new Error('Sign message: missing signer')
-
-    return await signer._signTypedData(
-      {
-        chainId: this.chainId,
-        verifyingContract: this.getAddress()
-      },
-      EIP712_SAFE_TX_TYPES,
-      {
-        to: safeTxData.to,
-        value: BigNumber.from(safeTxData.value).toString(),
-        data: safeTxData.data,
-        operation: safeTxData.operation,
-        safeTxGas: BigNumber.from(safeTxData.safeTxGas).toString(),
-        baseGas: BigNumber.from(safeTxData.baseGas).toString(),
-        gasPrice: BigNumber.from(safeTxData.gasPrice).toString(),
-        gasToken: ethers.constants.AddressZero,
-        refundReceiver: ethers.constants.AddressZero,
-        nonce: BigNumber.from(
-          safeTxData.nonce
-            ? safeTxData.nonce
-            : await SafeUtils.getNonce(this.getAddress(), this.getProvider())
-        ).toString()
-      }
-    )
+    return this.signer.signTransaction(safeTxData)
   }
 
   private async _isSponsoredTransaction(
@@ -441,7 +355,7 @@ export class AlembicWallet {
       gasPrice: 0,
       gasToken: ethers.constants.AddressZero,
       refundReceiver: ethers.constants.AddressZero,
-      nonce: await SafeUtils.getNonce(this.getAddress(), this.getProvider())
+      nonce: await safeService.getNonce(this.getAddress(), this.getProvider())
     }
   }
 
@@ -450,7 +364,7 @@ export class AlembicWallet {
    */
 
   public async getCurrentWebAuthnOwner(): Promise<WebAuthnOwner | undefined> {
-    const publicKeyId = WebAuthnUtils.getCurrentPublicKeyId()
+    const publicKeyId = webAuthnService.getCurrentPublicKeyId()
 
     if (publicKeyId === null) return undefined
 
@@ -459,13 +373,12 @@ export class AlembicWallet {
     )
 
     if (currentWebAuthnOwner === null) return undefined
-    this.walletAddress = currentWebAuthnOwner.walletAddress
 
     return currentWebAuthnOwner
   }
 
   public async addWebAuthnOwner(): Promise<string> {
-    const isDeployed = await SafeUtils.isDeployed(
+    const isDeployed = await safeService.isDeployed(
       this.getAddress(),
       this.getProvider()
     )
@@ -482,7 +395,7 @@ export class AlembicWallet {
       getWebAuthnOwners ? getWebAuthnOwners.length + 1 : 1
     }`
 
-    const webAuthnCredentials = await WebAuthnUtils.createCredentials(
+    const webAuthnCredentials = await webAuthnService.createCredentials(
       signerName
     )
 
@@ -490,26 +403,16 @@ export class AlembicWallet {
     const publicKeyY = `0x${webAuthnCredentials.point.getY().toString(16)}`
     const publicKeyId = webAuthnCredentials.id
 
-    const predictedSignerAddress = await WebAuthnUtils.predictSignerAddress(
+    const predictedSignerAddress = await webAuthnService.predictSignerAddress(
       publicKeyX,
       publicKeyY,
       this.chainId
     )
 
-    const addOwnerTxData = {
-      to: this.getAddress(),
-      value: '0x00',
-      data: this.SafeInterface.encodeFunctionData('addOwnerWithThreshold', [
-        predictedSignerAddress,
-        1
-      ]),
-      operation: 0,
-      safeTxGas: 0,
-      baseGas: 0,
-      gasPrice: 0,
-      gasToken: ethers.constants.AddressZero,
-      refundReceiver: ethers.constants.AddressZero
-    }
+    const addOwnerTxData = await safeService.prepareAddOwnerTx(
+      this.getAddress(),
+      predictedSignerAddress
+    )
 
     const addOwnerTxSignature = await this.signTransaction(addOwnerTxData)
 
@@ -528,18 +431,20 @@ export class AlembicWallet {
       addOwnerTxSignature
     )
 
-    await WebAuthnUtils.waitWebAuthnSignerDeployment(
+    await webAuthnService.waitWebAuthnSignerDeployment(
       publicKeyX,
       publicKeyY,
       this.chainId,
       this.getProvider()
     )
 
-    WebAuthnUtils.updateCurrentWebAuthnOwner(
+    webAuthnService.updateCurrentWebAuthnOwner(
       publicKeyId,
       publicKeyX,
       publicKeyY
     )
+
+    this.signer = new WebAuthnSigner(this)
 
     return predictedSignerAddress
   }
@@ -549,16 +454,13 @@ export class AlembicWallet {
 
     if (!currentWebAuthnOwner) return false
 
-    const safeInstance = await Safe__factory.connect(
+    const isSafeOwner = await safeService.isSafeOwner(
       currentWebAuthnOwner.walletAddress,
+      currentWebAuthnOwner.signerAddress,
       this.getProvider()
     )
-    const isSafeOwner = await safeInstance.isOwner(
-      currentWebAuthnOwner.signerAddress
-    )
-    if (!isSafeOwner) return false
 
-    this.signer = new WebAuthnSigner(this)
+    if (!isSafeOwner) return false
 
     return true
   }

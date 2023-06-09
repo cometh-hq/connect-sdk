@@ -5,9 +5,9 @@ import {
 import { BigNumber } from 'ethers'
 import { AccessList } from 'ethers/lib/utils'
 
+import safeService from '../services/safeService'
 import { AlembicProvider } from './AlembicProvider'
 import { AlembicWallet } from './AlembicWallet'
-import SafeUtils from './SafeUtils'
 
 export class RelayTransactionResponse implements TransactionResponse {
   hash: string
@@ -57,12 +57,12 @@ export class RelayTransactionResponse implements TransactionResponse {
 
     while (!txSuccessEvent && !txFailureEvent) {
       await new Promise((resolve) => setTimeout(resolve, 2000))
-      txSuccessEvent = await SafeUtils.getSuccessExecTransactionEvent(
+      txSuccessEvent = await safeService.getSuccessExecTransactionEvent(
         this.safeTxHash,
         this.from,
         this.provider
       )
-      txFailureEvent = await SafeUtils.getFailedExecTransactionEvent(
+      txFailureEvent = await safeService.getFailedExecTransactionEvent(
         this.safeTxHash,
         this.from,
         this.provider

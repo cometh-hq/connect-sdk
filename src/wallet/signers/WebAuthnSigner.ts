@@ -2,10 +2,10 @@ import { Provider } from '@ethersproject/abstract-provider'
 import { Signer } from '@ethersproject/abstract-signer'
 import { BigNumber, Bytes, ethers } from 'ethers'
 
-import { AlembicWallet } from './AlembicWallet'
-import SafeUtils from './SafeUtils'
-import { SafeTransactionDataPartial, WebAuthnOwner } from './types'
-import WebAuthnUtils from './WebAuthnUtils'
+import safeService from '../../services/safeService'
+import webAuthnService from '../../services/webAuthnService'
+import { AlembicWallet } from '../AlembicWallet'
+import { SafeTransactionDataPartial, WebAuthnOwner } from '../types'
 
 export class WebAuthnSigner extends Signer {
   private chainId
@@ -18,6 +18,10 @@ export class WebAuthnSigner extends Signer {
     return Promise.resolve(this.smartWallet.getAddress())
   }
 
+  getProvider(): Promise<ethers.providers.StaticJsonRpcProvider> {
+    return Promise.resolve(this.smartWallet.getProvider())
+  }
+
   async getCurrentWebAuthnOwner(): Promise<WebAuthnOwner | undefined> {
     return this.smartWallet.getCurrentWebAuthnOwner()
   }
@@ -28,7 +32,7 @@ export class WebAuthnSigner extends Signer {
     const currentWebAuthnOwner = await this.getCurrentWebAuthnOwner()
     if (!currentWebAuthnOwner) throw new Error('No WebAuthn signer found')
 
-    const safeTxHash = await SafeUtils.getSafeTransactionHash(
+    const safeTxHash = await safeService.getSafeTransactionHash(
       await this.getAddress(),
       {
         to: safeTxDataTyped.to,
@@ -43,21 +47,21 @@ export class WebAuthnSigner extends Signer {
         nonce: BigNumber.from(
           safeTxDataTyped.nonce
             ? safeTxDataTyped.nonce
-            : await SafeUtils.getNonce(
+            : await safeService.getNonce(
                 await this.getAddress(),
-                this.smartWallet.getProvider()
+                await this.getProvider()
               )
         ).toString()
       },
       this.chainId
     )
 
-    const encodedWebAuthnSignature = await WebAuthnUtils.getWebAuthnSignature(
+    const encodedWebAuthnSignature = await webAuthnService.getWebAuthnSignature(
       safeTxHash,
       currentWebAuthnOwner.publicKeyId
     )
 
-    return SafeUtils.formatWebAuthnSignatureForSafe(
+    return safeService.formatWebAuthnSignatureForSafe(
       currentWebAuthnOwner.signerAddress,
       encodedWebAuthnSignature
     )
@@ -68,12 +72,12 @@ export class WebAuthnSigner extends Signer {
 
     if (!currentWebAuthnOwner) throw new Error('No WebAuthn signer found')
 
-    const encodedWebAuthnSignature = await WebAuthnUtils.getWebAuthnSignature(
+    const encodedWebAuthnSignature = await webAuthnService.getWebAuthnSignature(
       ethers.utils.keccak256(messageToSign),
       currentWebAuthnOwner.publicKeyId
     )
 
-    return SafeUtils.formatWebAuthnSignatureForSafe(
+    return safeService.formatWebAuthnSignatureForSafe(
       currentWebAuthnOwner.signerAddress,
       encodedWebAuthnSignature
     )
