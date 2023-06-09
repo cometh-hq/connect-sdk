@@ -8,7 +8,7 @@ import { AlembicWallet } from '../AlembicWallet'
 import { SafeTransactionDataPartial, WebAuthnOwner } from '../types'
 
 export class AuthAdapterSigner extends Signer {
-  private chainId
+  private chainId: number
   constructor(private smartWallet: AlembicWallet) {
     super()
     this.chainId = this.smartWallet.chainId

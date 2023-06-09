@@ -1,6 +1,12 @@
 import { SiweMessage } from 'siwe'
 
-const createMessage = (address, nonce, chainId): SiweMessage => {
+import { UserNonceType } from '../wallet'
+
+const createMessage = (
+  address: string,
+  nonce: UserNonceType,
+  chainId: number
+): SiweMessage => {
   const domain = window.location.host
   const origin = window.location.origin
   const statement = `Sign in with Ethereum to Alembic`
@@ -10,7 +16,7 @@ const createMessage = (address, nonce, chainId): SiweMessage => {
     statement,
     uri: origin,
     version: '1',
-    chainId: chainId,
+    chainId,
     nonce: nonce?.connectionNonce
   })
 

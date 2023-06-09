@@ -8,7 +8,7 @@ import { AlembicWallet } from '../AlembicWallet'
 import { SafeTransactionDataPartial, WebAuthnOwner } from '../types'
 
 export class WebAuthnSigner extends Signer {
-  private chainId
+  private chainId: number
   constructor(private smartWallet: AlembicWallet) {
     super()
     this.chainId = this.smartWallet.chainId
@@ -32,7 +32,7 @@ export class WebAuthnSigner extends Signer {
     const currentWebAuthnOwner = await this.getCurrentWebAuthnOwner()
     if (!currentWebAuthnOwner) throw new Error('No WebAuthn signer found')
 
-    const safeTxHash = await safeService.getSafeTransactionHash(
+    const safeTxHash = safeService.getSafeTransactionHash(
       await this.getAddress(),
       {
         to: safeTxDataTyped.to,

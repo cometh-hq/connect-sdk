@@ -46,7 +46,7 @@ export class AlembicWallet {
   private uiConfig = {
     displayValidationModal: true
   }
-  private signer: any
+  private signer: AuthAdapterSigner | WebAuthnSigner | undefined
 
   constructor({ authAdapter, apiKey, rpcUrl }: AlembicWalletConfig) {
     this.authAdapter = authAdapter
