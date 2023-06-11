@@ -1,16 +1,23 @@
-import { ethers } from 'ethers'
+import { StaticJsonRpcProvider } from '@ethersproject/providers'
+import { BigNumber } from 'ethers'
 
 import { networks } from '../constants'
 
 const getProvider = (
   chainId: number,
   rpcUrl?: string
-): ethers.providers.StaticJsonRpcProvider => {
-  return new ethers.providers.StaticJsonRpcProvider(
-    rpcUrl ? rpcUrl : networks[chainId].RPCUrl
-  )
+): StaticJsonRpcProvider => {
+  return new StaticJsonRpcProvider(rpcUrl ? rpcUrl : networks[chainId].RPCUrl)
+}
+
+const getBalance = async (
+  address: string,
+  provider: StaticJsonRpcProvider
+): Promise<BigNumber> => {
+  return provider.getBalance(address)
 }
 
 export default {
-  getProvider
+  getProvider,
+  getBalance
 }

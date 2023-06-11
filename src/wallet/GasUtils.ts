@@ -4,6 +4,8 @@ import { BigNumber, ethers } from 'ethers'
 import { Safe__factory } from '../contracts/types/factories'
 import { SafeInterface } from '../contracts/types/Safe'
 import { GasModal } from '../ui/GasModal'
+import BlockchainUtils from './BlockchainUtils'
+import GasModalUtils from './GasModalUtils'
 import {
   MetaTransactionData,
   SafeTransactionDataPartial,
@@ -86,7 +88,10 @@ const calculateAndShowMaxFee = async (
   provider: StaticJsonRpcProvider,
   uiConfig: UIConfig
 ): Promise<void> => {
-  const walletBalance = await getBalance(walletAddress, provider)
+  const walletBalance = await BlockchainUtils.getBalance(
+    walletAddress,
+    provider
+  )
   const totalGasCost = BigNumber.from(safeTxGas)
     .add(BigNumber.from(baseGas))
     .mul(BigNumber.from(gasPrice))
@@ -104,33 +109,22 @@ const calculateAndShowMaxFee = async (
 
     const balance = ethers.utils.formatEther(
       ethers.utils.parseUnits(
-        BigNumber.from(await getBalance(walletAddress, provider)).toString(),
+        BigNumber.from(
+          await BlockchainUtils.getBalance(walletAddress, provider)
+        ).toString(),
         'wei'
       )
     )
 
-    if (
-      !(await new GasModal().initModal(
-        (+balance).toFixed(3),
-        (+totalFees).toFixed(3)
-      ))
-    ) {
+    if (!GasModalUtils.showGasModal(balance, totalFees)) {
       throw new Error('Transaction denied')
     }
   }
-}
-
-const getBalance = async (
-  address: string,
-  provider: StaticJsonRpcProvider
-): Promise<BigNumber> => {
-  return provider.getBalance(address)
 }
 
 export default {
   getGasPrice,
   setTransactionGas,
   estimateSafeTxGas,
-  calculateAndShowMaxFee,
-  getBalance
+  calculateAndShowMaxFee
 }

@@ -1,4 +1,4 @@
-import BlockchainUtils from '../../src/wallet/BlockchainUtils'
+import BlockchainUtils from '../../wallet/BlockchainUtils'
 import { getFunctionMock } from './testUtils'
 
 type ProviderMockPack = {
@@ -14,12 +14,14 @@ type ProviderMockPack = {
 type ProviderMock = {
   estimateGas: jest.Mock
   send: jest.Mock
+  getBalance: jest.Mock
 }
 
 export const getProviderMockPack = (): ProviderMockPack => {
   const providerMocks = {
     estimateGas: jest.fn(),
-    send: jest.fn()
+    send: jest.fn(),
+    getBalance: jest.fn()
   }
 
   const setupProviderMocks = (): void => {

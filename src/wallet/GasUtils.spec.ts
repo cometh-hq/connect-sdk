@@ -1,7 +1,9 @@
 import { BigNumber, ethers } from 'ethers'
 
-import { getProviderMockPack } from '../../tests/unit/providerMock'
+import { getProviderMockPack } from '../tests/unit/providerMock'
+import { getFunctionMock } from '../tests/unit/testUtils'
 import BlockchainUtils from './BlockchainUtils'
+import GasModalUtils from './GasModalUtils'
 import GasUtils from './GasUtils'
 
 const EOA_ADDRESS = '0x4B758d3Af4c8B2662bC485420077413DDdd62E33'
@@ -10,16 +12,21 @@ const CHAIN_ID = 137
 const RPC_URL = ''
 
 jest.mock('./BlockchainUtils', () => ({
-  getProvider: jest.fn()
+  getProvider: jest.fn(),
+  getBalance: jest.fn()
 }))
 
-jest.mock('@/ui/GasModal', () => ({
-  initModal: jest.fn(() => ({}))
+jest.mock('./GasModalUtils', () => ({
+  showGasModal: jest.fn()
 }))
 
 describe('GasUtils', () => {
-  const reward = 10
-  const baseFeePerGas = 100
+  const reward = BigNumber.from(10)
+  const baseFeePerGas = BigNumber.from(100)
+  const mockedEstimateGas = BigNumber.from(123)
+  const mockedBalanceString = '0.12345'
+  const mockedBalance = ethers.utils.parseUnits(mockedBalanceString, 'ether')
+
   const {
     providerMocks,
     setupProviderMocks,
@@ -27,11 +34,13 @@ describe('GasUtils', () => {
   } = getProviderMockPack()
   beforeEach(() => {
     setupProviderMocks()
-    providerMocks.estimateGas.mockReturnValue(BigNumber.from(123))
+    providerMocks.estimateGas.mockReturnValue(mockedEstimateGas)
     providerMocks.send.mockReturnValue({
-      reward: [[BigNumber.from(reward)]],
-      baseFeePerGas: [BigNumber.from(baseFeePerGas)]
+      reward: [[reward]],
+      baseFeePerGas: [baseFeePerGas]
     })
+    getFunctionMock(BlockchainUtils.getBalance).mockResolvedValue(mockedBalance)
+    getFunctionMock(GasModalUtils.showGasModal).mockResolvedValue(true)
   })
   describe('estimateSafeTxGas', () => {
     const walletAddress = WALLET_ADDRESS
@@ -79,7 +88,7 @@ describe('GasUtils', () => {
         BlockchainUtils.getProvider(CHAIN_ID, RPC_URL)
       )
 
-      expect(safeTxGas).toEqual(BigNumber.from(123))
+      expect(safeTxGas).toEqual(mockedEstimateGas)
     })
 
     it('Given a multisend transaction, when predicting the safeTxGas, then return the correct value', async () => {
@@ -98,7 +107,80 @@ describe('GasUtils', () => {
         BlockchainUtils.getProvider(CHAIN_ID, RPC_URL)
       )
 
-      expect(safeTxGas).toEqual(BigNumber.from(3 * 123))
+      expect(safeTxGas).toEqual(mockedEstimateGas.mul(3))
+    })
+  })
+  describe('calculateAndShowMaxFee', () => {
+    it('Given the correct parameters, when calculating and showing the max fees, then call getBalance with the right parameters', async () => {
+      await GasUtils.calculateAndShowMaxFee(
+        '1',
+        BigNumber.from(0),
+        0,
+        BigNumber.from(0),
+        WALLET_ADDRESS,
+        BlockchainUtils.getProvider(CHAIN_ID, RPC_URL),
+        { displayValidationModal: true }
+      )
+      expect(BlockchainUtils.getBalance).toHaveBeenCalledWith(
+        WALLET_ADDRESS,
+        providerMocks
+      )
+    })
+    it('Given the correct parameters, when calculating and showing the max fees, then call the gas modal with the right parameters', async () => {
+      const safeTxGas = 20000
+      const baseGas = 80000
+      const gasPrice = 140
+      await GasUtils.calculateAndShowMaxFee(
+        '1',
+        BigNumber.from(safeTxGas),
+        baseGas,
+        BigNumber.from(gasPrice),
+        WALLET_ADDRESS,
+        BlockchainUtils.getProvider(CHAIN_ID, RPC_URL),
+        { displayValidationModal: true }
+      )
+      expect(GasModalUtils.showGasModal).toHaveBeenCalledWith(
+        mockedBalanceString,
+        ethers.utils.formatEther(
+          BigNumber.from((safeTxGas + baseGas) * gasPrice)
+        )
+      )
+    })
+    it('Given a very high gas price and low balance, when calculating and showing the max fees, then throw an error', async () => {
+      const safeTxGas = 2000000
+      const baseGas = 8000000
+      const gasPrice = 14000000000
+      await expect(
+        GasUtils.calculateAndShowMaxFee(
+          '1',
+          BigNumber.from(safeTxGas),
+          baseGas,
+          BigNumber.from(gasPrice),
+          WALLET_ADDRESS,
+          BlockchainUtils.getProvider(CHAIN_ID, RPC_URL),
+          { displayValidationModal: true }
+        )
+      ).rejects.toThrow(
+        new Error('Not enough balance to send this value and pay for gas')
+      )
+    })
+    it('Given a sending amount matching the whole balance, when calculating and showing the max fees, then throw an error', async () => {
+      const safeTxGas = 20000
+      const baseGas = 80000
+      const gasPrice = 140
+      await expect(
+        GasUtils.calculateAndShowMaxFee(
+          ethers.utils.parseUnits(mockedBalanceString, 'ether').toString(),
+          BigNumber.from(safeTxGas),
+          baseGas,
+          BigNumber.from(gasPrice),
+          WALLET_ADDRESS,
+          BlockchainUtils.getProvider(CHAIN_ID, RPC_URL),
+          { displayValidationModal: true }
+        )
+      ).rejects.toThrow(
+        new Error('Not enough balance to send this value and pay for gas')
+      )
     })
   })
 })

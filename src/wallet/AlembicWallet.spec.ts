@@ -1,4 +1,4 @@
-import { API } from '../services/API'
+import { API } from '../services'
 import { BurnerWalletAdaptor } from './adapters'
 import { AlembicWallet } from './AlembicWallet'
 
