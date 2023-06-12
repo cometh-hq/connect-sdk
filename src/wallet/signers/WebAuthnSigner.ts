@@ -40,7 +40,7 @@ export class WebAuthnSigner extends Signer {
     if (!currentWebAuthnOwner) throw new Error('No WebAuthn signer found')
 
     const data =
-      types == EIP712_SAFE_TX_TYPES
+      types === EIP712_SAFE_TX_TYPES
         ? ethers.utils._TypedDataEncoder.hash(domain, types, value)
         : ethers.utils.keccak256(value.message)
 
