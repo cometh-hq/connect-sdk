@@ -64,41 +64,40 @@ export class AlembicWallet {
    */
 
   public async connect(): Promise<void> {
-    if (!(await this._verifyWebAuthnOwner())) {
+    if (await this._verifyWebAuthnOwner()) {
+      const currentWebAuthnOwner = await this.getCurrentWebAuthnOwner()
+      if (!currentWebAuthnOwner) throw new Error('No WebAuthn Signer found')
+
+      this.walletAddress = currentWebAuthnOwner.walletAddress
+      this.signer = new WebAuthnSigner(this)
+    } else {
       if (!this.authAdapter) throw new Error('No EOA adapter found')
       if (!networks[this.chainId])
         throw new Error('This network is not supported')
 
       await this.authAdapter.connect()
-
       const ownerAddress = await this.authAdapter.getSigner().getAddress()
-      if (!ownerAddress) throw new Error('No ownerAddress found')
 
-      const nonce = await this.API.getNonce(ownerAddress)
-
-      const message: SiweMessage = siweService.createMessage(
-        ownerAddress,
-        nonce,
-        this.chainId
-      )
-      const messageToSign = message.prepareMessage()
-      const signature = await this.authAdapter
-        .getSigner()
-        .signMessage(messageToSign)
-
-      this.walletAddress = await this.API?.connectToAlembicWallet({
-        message,
-        signature,
-        ownerAddress
-      })
+      this.walletAddress = await this.API.getWalletAddress(ownerAddress)
       this.signer = new AuthAdapterSigner(this)
-    } else {
-      const currentWebAuthnOwner = await this.getCurrentWebAuthnOwner()
-      if (currentWebAuthnOwner) {
-        this.walletAddress = currentWebAuthnOwner.walletAddress
-        this.signer = new WebAuthnSigner(this)
-      }
     }
+
+    if (!this.walletAddress) throw new Error('No walletAddress found')
+
+    const nonce = await this.API.getNonce(this.walletAddress)
+    const message: SiweMessage = siweService.createMessage(
+      this.walletAddress,
+      nonce,
+      this.chainId
+    )
+    const messageToSign = message.prepareMessage()
+    const signature = await this.signMessage(messageToSign)
+
+    await this.API.connectToAlembicWallet({
+      message,
+      signature,
+      walletAddress: this.walletAddress
+    })
 
     this.sponsoredAddresses = await this.API.getSponsoredAddresses()
     this.connected = true

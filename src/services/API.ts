@@ -24,6 +24,11 @@ export class API {
     return response?.data?.userNonce
   }
 
+  async getWalletAddress(ownerAddress: string): Promise<string> {
+    const response = await api.get(`/wallets/${ownerAddress}/getWalletAddress`)
+    return response?.data?.walletAddress
+  }
+
   async getSponsoredAddresses(): Promise<SponsoredTransaction[]> {
     const response = await api.get(`/sponsored-address`)
     return response?.data?.sponsoredAddresses
@@ -32,16 +37,16 @@ export class API {
   async connectToAlembicWallet({
     message,
     signature,
-    ownerAddress
+    walletAddress
   }: {
     message: SiweMessage
     signature: string
-    ownerAddress: string
+    walletAddress: string
   }): Promise<string> {
     const body = {
       message,
       signature,
-      ownerAddress
+      walletAddress
     }
 
     const response = await api.post(`/wallets/connect`, body)
