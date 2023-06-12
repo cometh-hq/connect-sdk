@@ -1,5 +1,5 @@
-import { StaticJsonRpcProvider } from '@ethersproject/providers'
-import { BigNumber, Bytes, ethers } from 'ethers'
+import { JsonRpcSigner, StaticJsonRpcProvider } from '@ethersproject/providers'
+import { BigNumber, Bytes, ethers, Wallet } from 'ethers'
 import { encodeMulti } from 'ethers-multisend'
 import { SiweMessage } from 'siwe'
 
@@ -47,7 +47,7 @@ export class AlembicWallet {
   private uiConfig = {
     displayValidationModal: true
   }
-  private signer: any
+  private signer: JsonRpcSigner | Wallet | WebAuthnSigner | null
 
   constructor({ authAdapter, apiKey, rpcUrl }: AlembicWalletConfig) {
     this.authAdapter = authAdapter
@@ -58,6 +58,7 @@ export class AlembicWallet {
     )
     this.BASE_GAS = DEFAULT_BASE_GAS
     this.REWARD_PERCENTILE = DEFAULT_REWARD_PERCENTILE
+    this.signer = null
   }
 
   /**
@@ -73,6 +74,8 @@ export class AlembicWallet {
       await this.authAdapter.connect()
 
       this.signer = await this.authAdapter.getSigner()
+
+      if (!this.signer) throw new Error('No signer found')
 
       const ownerAddress = await this.signer.getAddress()
       if (!ownerAddress) throw new Error('No ownerAddress found')
@@ -96,7 +99,10 @@ export class AlembicWallet {
       const currentWebAuthnOwner = await this.getCurrentWebAuthnOwner()
       if (currentWebAuthnOwner) {
         this.walletAddress = currentWebAuthnOwner.walletAddress
-        this.signer = new WebAuthnSigner(this)
+        this.signer = new WebAuthnSigner(
+          currentWebAuthnOwner.signerAddress,
+          currentWebAuthnOwner.publicKeyId
+        )
       }
     }
 
@@ -476,7 +482,7 @@ export class AlembicWallet {
       publicKeyY
     )
 
-    this.signer = new WebAuthnSigner(this)
+    this.signer = new WebAuthnSigner(predictedSignerAddress, publicKeyId)
 
     return predictedSignerAddress
   }

@@ -4,31 +4,24 @@ import {
   TypedDataDomain,
   TypedDataField
 } from '@ethersproject/abstract-signer'
-import { BigNumber, Bytes, ethers } from 'ethers'
+import { Bytes, ethers } from 'ethers'
 
 import { EIP712_SAFE_MESSAGE_TYPE, EIP712_SAFE_TX_TYPES } from '../../constants'
 import safeService from '../../services/safeService'
 import webAuthnService from '../../services/webAuthnService'
-import { AlembicWallet } from '../AlembicWallet'
-import { SafeTransactionDataPartial, WebAuthnOwner } from '../types'
+import { SafeTransactionDataPartial } from '../types'
 
 export class WebAuthnSigner extends Signer {
-  private chainId: number
-  constructor(private smartWallet: AlembicWallet) {
+  private signerAddress: string
+  private publicKeyId: string
+  constructor(signerAddress: string, publicKeyId: string) {
     super()
-    this.chainId = this.smartWallet.chainId
+    this.signerAddress = signerAddress
+    this.publicKeyId = publicKeyId
   }
 
-  getAddress(): Promise<string> {
-    return Promise.resolve(this.smartWallet.getAddress())
-  }
-
-  getProvider(): Promise<ethers.providers.StaticJsonRpcProvider> {
-    return Promise.resolve(this.smartWallet.getProvider())
-  }
-
-  async getCurrentWebAuthnOwner(): Promise<WebAuthnOwner | undefined> {
-    return this.smartWallet.getCurrentWebAuthnOwner()
+  async getAddress(): Promise<string> {
+    return this.signerAddress
   }
 
   async _signTypedData(
@@ -36,8 +29,8 @@ export class WebAuthnSigner extends Signer {
     types: Record<string, Array<TypedDataField>>,
     value: Record<string, any>
   ): Promise<string> {
-    const currentWebAuthnOwner = await this.getCurrentWebAuthnOwner()
-    if (!currentWebAuthnOwner) throw new Error('No WebAuthn signer found')
+    if (types !== EIP712_SAFE_TX_TYPES && types !== EIP712_SAFE_MESSAGE_TYPE)
+      throw new Error('types data not supported')
 
     const data =
       types === EIP712_SAFE_TX_TYPES
@@ -46,11 +39,11 @@ export class WebAuthnSigner extends Signer {
 
     const encodedWebAuthnSignature = await webAuthnService.getWebAuthnSignature(
       data,
-      currentWebAuthnOwner.publicKeyId
+      this.publicKeyId
     )
 
     return safeService.formatWebAuthnSignatureForSafe(
-      currentWebAuthnOwner.signerAddress,
+      this.signerAddress,
       encodedWebAuthnSignature
     )
   }
