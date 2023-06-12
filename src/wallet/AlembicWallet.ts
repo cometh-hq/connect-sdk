@@ -151,7 +151,9 @@ export class AlembicWallet {
 
   public async signMessage(messageToSign: string | Bytes): Promise<string> {
     if (typeof messageToSign === 'string') {
-      messageToSign = ethers.utils.hashMessage(messageToSign)
+      messageToSign = ethers.utils.keccak256(
+        ethers.utils.toUtf8Bytes(messageToSign)
+      )
     }
 
     if (!this.signer) throw new Error('Sign message: missing signer')

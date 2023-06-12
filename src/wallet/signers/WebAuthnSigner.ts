@@ -1,30 +1,16 @@
 import { Provider } from '@ethersproject/abstract-provider'
-import { Signer } from '@ethersproject/abstract-signer'
-import { BigNumber, BigNumberish, Bytes, BytesLike, ethers } from 'ethers'
-
 import {
-  DEFAULT_BASE_GAS,
-  DEFAULT_REWARD_PERCENTILE,
-  EIP712_SAFE_MESSAGE_TYPE,
-  EIP712_SAFE_TX_TYPES,
-  networks
-} from '../../constants'
+  Signer,
+  TypedDataDomain,
+  TypedDataField
+} from '@ethersproject/abstract-signer'
+import { BigNumber, Bytes, ethers } from 'ethers'
+
+import { EIP712_SAFE_MESSAGE_TYPE, EIP712_SAFE_TX_TYPES } from '../../constants'
 import safeService from '../../services/safeService'
 import webAuthnService from '../../services/webAuthnService'
 import { AlembicWallet } from '../AlembicWallet'
 import { SafeTransactionDataPartial, WebAuthnOwner } from '../types'
-
-export interface TypedDataDomain {
-  name?: string
-  version?: string
-  chainId?: BigNumberish
-  verifyingContract?: string
-  salt?: BytesLike
-}
-export interface TypedDataField {
-  name: string
-  type: string
-}
 
 export class WebAuthnSigner extends Signer {
   private chainId: number
@@ -49,44 +35,14 @@ export class WebAuthnSigner extends Signer {
     domain: TypedDataDomain,
     types: Record<string, Array<TypedDataField>>,
     value: Record<string, any>
-  ): Promise<any> {
+  ): Promise<string> {
     const currentWebAuthnOwner = await this.getCurrentWebAuthnOwner()
     if (!currentWebAuthnOwner) throw new Error('No WebAuthn signer found')
 
-    let toSign: any
-
-    console.log(value.message)
-
-    if (types == EIP712_SAFE_TX_TYPES) {
-      toSign = safeService.getSafeTransactionHash(
-        await this.getAddress(),
-        {
-          to: value.to,
-          value: BigNumber.from(value.value).toString(),
-          data: value.data,
-          operation: BigNumber.from(value.operation).toString(),
-          safeTxGas: BigNumber.from(value.safeTxGas).toString(),
-          baseGas: BigNumber.from(value.baseGas).toString(),
-          gasPrice: BigNumber.from(value.gasPrice).toString(),
-          gasToken: ethers.constants.AddressZero,
-          refundReceiver: ethers.constants.AddressZero,
-          nonce: BigNumber.from(
-            value.nonce
-              ? value.nonce
-              : await safeService.getNonce(
-                  await this.getAddress(),
-                  await this.getProvider()
-                )
-          ).toString()
-        },
-        this.chainId
-      )
-    } else {
-      toSign = value.message
-    }
+    const data = ethers.utils._TypedDataEncoder.hash(domain, types, value)
 
     const encodedWebAuthnSignature = await webAuthnService.getWebAuthnSignature(
-      ethers.utils.keccak256(toSign),
+      ethers.utils.keccak256(value.message),
       currentWebAuthnOwner.publicKeyId
     )
 
@@ -99,11 +55,11 @@ export class WebAuthnSigner extends Signer {
   async signTransaction(
     safeTxDataTyped: SafeTransactionDataPartial
   ): Promise<string> {
-    throw new Error('changing providers is not supported')
+    throw new Error('sign Transaction not supported')
   }
 
   async signMessage(messageToSign: string | Bytes): Promise<string> {
-    throw new Error('changing providers is not supported')
+    throw new Error('sign Message not supported')
   }
 
   connect(provider: Provider): Signer {
