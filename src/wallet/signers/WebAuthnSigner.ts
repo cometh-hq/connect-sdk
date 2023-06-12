@@ -39,10 +39,13 @@ export class WebAuthnSigner extends Signer {
     const currentWebAuthnOwner = await this.getCurrentWebAuthnOwner()
     if (!currentWebAuthnOwner) throw new Error('No WebAuthn signer found')
 
-    const data = ethers.utils._TypedDataEncoder.hash(domain, types, value)
+    const data =
+      types == EIP712_SAFE_TX_TYPES
+        ? ethers.utils._TypedDataEncoder.hash(domain, types, value)
+        : ethers.utils.keccak256(value.message)
 
     const encodedWebAuthnSignature = await webAuthnService.getWebAuthnSignature(
-      ethers.utils.keccak256(value.message),
+      data,
       currentWebAuthnOwner.publicKeyId
     )
 
