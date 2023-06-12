@@ -6,6 +6,8 @@ import { SiweMessage } from 'siwe'
 import {
   DEFAULT_BASE_GAS,
   DEFAULT_REWARD_PERCENTILE,
+  EIP712_SAFE_MESSAGE_TYPE,
+  EIP712_SAFE_TX_TYPES,
   networks
 } from '../constants'
 import { API } from '../services'
@@ -14,7 +16,6 @@ import siweService from '../services/siweService'
 import webAuthnService from '../services/webAuthnService'
 import { GasModal } from '../ui'
 import { AUTHAdapter } from './adapters'
-import { AuthAdapterSigner } from './signers/AuthAdapterSigner'
 import { WebAuthnSigner } from './signers/WebAuthnSigner'
 import {
   MetaTransactionData,
@@ -46,7 +47,7 @@ export class AlembicWallet {
   private uiConfig = {
     displayValidationModal: true
   }
-  private signer: AuthAdapterSigner | WebAuthnSigner | undefined
+  private signer: any
 
   constructor({ authAdapter, apiKey, rpcUrl }: AlembicWalletConfig) {
     this.authAdapter = authAdapter
@@ -71,7 +72,9 @@ export class AlembicWallet {
 
       await this.authAdapter.connect()
 
-      const ownerAddress = await this.authAdapter.getSigner().getAddress()
+      this.signer = await this.authAdapter.getSigner()
+
+      const ownerAddress = await this.signer.getAddress()
       if (!ownerAddress) throw new Error('No ownerAddress found')
 
       const nonce = await this.API.getNonce(ownerAddress)
@@ -82,16 +85,13 @@ export class AlembicWallet {
         this.chainId
       )
       const messageToSign = message.prepareMessage()
-      const signature = await this.authAdapter
-        .getSigner()
-        .signMessage(messageToSign)
+      const signature = await this.signer.signMessage(messageToSign)
 
       this.walletAddress = await this.API?.connectToAlembicWallet({
         message,
         signature,
         ownerAddress
       })
-      this.signer = new AuthAdapterSigner(this)
     } else {
       const currentWebAuthnOwner = await this.getCurrentWebAuthnOwner()
       if (currentWebAuthnOwner) {
@@ -156,15 +156,47 @@ export class AlembicWallet {
 
     if (!this.signer) throw new Error('Sign message: missing signer')
 
-    return this.signer.signMessage(messageToSign)
+    return await this.signer._signTypedData(
+      {
+        chainId: this.chainId,
+        verifyingContract: await this.getAddress()
+      },
+      EIP712_SAFE_MESSAGE_TYPE,
+      { message: messageToSign }
+    )
   }
 
-  public async signTransaction(
+  async signTransaction(
     safeTxData: SafeTransactionDataPartial
   ): Promise<string> {
     if (!this.signer) throw new Error('Sign message: missing signer')
 
-    return this.signer.signTransaction(safeTxData)
+    return await this.signer._signTypedData(
+      {
+        chainId: this.chainId,
+        verifyingContract: await this.getAddress()
+      },
+      EIP712_SAFE_TX_TYPES,
+      {
+        to: safeTxData.to,
+        value: BigNumber.from(safeTxData.value).toString(),
+        data: safeTxData.data,
+        operation: safeTxData.operation,
+        safeTxGas: BigNumber.from(safeTxData.safeTxGas).toString(),
+        baseGas: BigNumber.from(safeTxData.baseGas).toString(),
+        gasPrice: BigNumber.from(safeTxData.gasPrice).toString(),
+        gasToken: ethers.constants.AddressZero,
+        refundReceiver: ethers.constants.AddressZero,
+        nonce: BigNumber.from(
+          safeTxData.nonce
+            ? safeTxData.nonce
+            : await safeService.getNonce(
+                await this.getAddress(),
+                await this.getProvider()
+              )
+        ).toString()
+      }
+    )
   }
 
   private async _isSponsoredTransaction(
