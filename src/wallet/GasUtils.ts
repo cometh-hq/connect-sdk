@@ -1,9 +1,9 @@
 import { StaticJsonRpcProvider } from '@ethersproject/providers'
 import { BigNumber, ethers } from 'ethers'
 
+import { GAS_GAP_TOLERANCE } from '../constants'
 import { Safe__factory } from '../contracts/types/factories'
 import { SafeInterface } from '../contracts/types/Safe'
-import { GasModal } from '../ui/GasModal'
 import BlockchainUtils from './BlockchainUtils'
 import GasModalUtils from './GasModalUtils'
 import {
@@ -29,7 +29,7 @@ const getGasPrice = async (
   ]
 
   const gasPrice = BigNumber.from(reward.add(BaseFee)).add(
-    BigNumber.from(reward.add(BaseFee)).div(10)
+    BigNumber.from(reward.add(BaseFee)).div(GAS_GAP_TOLERANCE)
   )
   return gasPrice
 }

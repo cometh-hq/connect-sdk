@@ -1,3 +1,8 @@
+const GAS_GAP_TOLERANCE = 20
+jest.doMock('../constants', () => ({
+  GAS_GAP_TOLERANCE
+}))
+
 import { BigNumber, ethers } from 'ethers'
 
 import { getProviderMockPack } from '../tests/unit/providerMock'
@@ -181,6 +186,69 @@ describe('GasUtils', () => {
       ).rejects.toThrow(
         new Error('Not enough balance to send this value and pay for gas')
       )
+    })
+  })
+  describe('getGasPrice', () => {
+    const rewardPercentile = 80
+    it('Given the correct parameters, when getting the gas price, then call eth_feeHistory with the correct parameters', async () => {
+      await GasUtils.getGasPrice(
+        BlockchainUtils.getProvider(CHAIN_ID, RPC_URL),
+        rewardPercentile
+      )
+      expectProviderFunctionToHaveBeenCalledWith('send', 'eth_feeHistory', [
+        1,
+        'latest',
+        [rewardPercentile]
+      ])
+    })
+    it('Given the correct parameters, when getting the gas price, then return the correct gas price', async () => {
+      const result = await GasUtils.getGasPrice(
+        BlockchainUtils.getProvider(CHAIN_ID, RPC_URL),
+        rewardPercentile
+      )
+      const expectedResult = BigNumber.from(reward.add(baseFeePerGas)).add(
+        BigNumber.from(reward.add(baseFeePerGas)).div(GAS_GAP_TOLERANCE)
+      )
+      expect(result).toEqual(expectedResult)
+    })
+  })
+  describe('setTransactionGas', () => {
+    it('Given a transactionData, when setting the transaction gas, then return the transactionData with the correct gas information', async () => {
+      const transactionData = {
+        to: EOA_ADDRESS,
+        value: '1',
+        data: '0x',
+        operation: '0',
+        safeTxGas: '0',
+        baseGas: '0',
+        gasPrice: '0',
+        gasToken: ethers.constants.AddressZero,
+        refundReceiver: ethers.constants.AddressZero,
+        nonce: '0x_nonce',
+        signatures: '0x_signature'
+      }
+      const provider = BlockchainUtils.getProvider(CHAIN_ID, RPC_URL)
+      const safeTxGas = 10
+      const rewardPercentile = 10
+      const baseGas = 80000
+
+      const result = await GasUtils.setTransactionGas(
+        transactionData,
+        BigNumber.from(safeTxGas),
+        provider,
+        rewardPercentile,
+        baseGas,
+        WALLET_ADDRESS,
+        { displayValidationModal: true }
+      )
+      expect(result).toEqual({
+        ...transactionData,
+        safeTxGas: +safeTxGas,
+        baseGas,
+        gasPrice: +reward
+          .add(baseFeePerGas)
+          .add(BigNumber.from(reward.add(baseFeePerGas)).div(GAS_GAP_TOLERANCE))
+      })
     })
   })
 })
