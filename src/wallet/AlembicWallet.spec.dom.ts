@@ -2,33 +2,29 @@
 import { ethers } from 'ethers'
 import { SiweMessage } from 'siwe'
 
+import gasService from '../services/gasService'
 import { getApiMockPack } from '../tests/unit/apiMock'
 import { getFunctionMock } from '../tests/unit/testUtils'
 import { BurnerWalletAdaptor } from './adapters'
 import { AlembicWallet } from './AlembicWallet'
-import GasUtils from './GasUtils'
 
 const EOA_ADDRESS = '0x4B758d3Af4c8B2662bC485420077413DDdd62E33'
 const WALLET_ADDRESS = '0xecf9D83633dC1DE88400945c0f97B76153a386ec'
 
-jest.mock('@/ui/GasModal', () => ({
-  initModal: jest.fn(() => ({}))
-}))
-
-jest.mock('./BlockchainUtils', () => ({
+jest.mock('../services/blockchainService', () => ({
   getProvider: jest.fn()
 }))
 
-jest.mock('./GasUtils', () => ({
+jest.mock('../services/gasService', () => ({
   estimateSafeTxGas: jest.fn(),
   setTransactionGas: jest.fn()
 }))
 
-jest.mock('./WebAuthnUtils', () => ({
+jest.mock('../services/webAuthnService', () => ({
   getCurrentPublicKeyId: jest.fn(() => null)
 }))
 
-jest.mock('./ApiUtils', () => ({
+jest.mock('../services/apiService', () => ({
   getApi: jest.fn()
 }))
 
@@ -45,8 +41,8 @@ describe('AlembicWallet', () => {
     getApiMockPack()
   beforeEach(() => {
     setupApiMocks()
-    getFunctionMock(GasUtils.estimateSafeTxGas).mockResolvedValue(123)
-    getFunctionMock(GasUtils.setTransactionGas).mockResolvedValue({})
+    getFunctionMock(gasService.estimateSafeTxGas).mockResolvedValue(123)
+    getFunctionMock(gasService.setTransactionGas).mockResolvedValue({})
     apiMocks.getSponsoredAddresses.mockReturnValue([])
     apiMocks.getNonce.mockReturnValue(30)
     apiMocks.connectToAlembicWallet.mockReturnValue(WALLET_ADDRESS)
@@ -100,7 +96,7 @@ describe('AlembicWallet', () => {
       nonce: '0'
     }
     beforeEach(() => {
-      getFunctionMock(GasUtils.setTransactionGas).mockResolvedValue(
+      getFunctionMock(gasService.setTransactionGas).mockResolvedValue(
         mockedSafeTxDataTyped
       )
     })

@@ -1,9 +1,5 @@
 {
   "roots": ["<rootDir>/"],
-  "testMatch": ["**/?(*.)+(spec|test).+(ts|tsx|js)"],
-  "transform": {
-    "\\.(ts)$": "ts-jest"
-  },
   "globals": {
     "ts-jest": {
       "isolatedModules": true
@@ -12,5 +8,25 @@
   "modulePathIgnorePatterns": ["<rootDir>/build"],
   "moduleNameMapper": {
     "@/(.*)": "<rootDir>/src/$1"
-  }
+  },
+  "projects": [
+    {
+      "displayName": "dom",
+      "testEnvironment": "jsdom",
+      "transform": {
+        "\\.(ts)$": "ts-jest"
+      },
+      "testMatch": ["**/?(*.)+(spec|test).dom.+(ts|tsx|js)"]
+    },
+    {
+      "displayName": "node",
+      "testEnvironment": "node",
+      "transform": {
+        "\\.(ts)$": "ts-jest"
+      },
+      "testMatch": [
+        "**/?(*.)+(spec|test).+(ts|tsx|js)"
+      ]
+    }
+  ]
 }

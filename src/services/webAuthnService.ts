@@ -7,7 +7,7 @@ import { ethers } from 'ethers'
 import { BLOCK_EVENT_GAP, networks, P256SignerCreationCode } from '../constants'
 import { P256SignerFactory__factory } from '../contracts/types/factories'
 import { derToRS, findSequence, hexArrayStr, parseHex } from '../utils/utils'
-import { AlembicProvider } from './AlembicProvider'
+import { AlembicProvider } from '../wallet/AlembicProvider'
 
 const curve = new EC('p256')
 const PUBLIC_KEY_X = 'public-key-x'

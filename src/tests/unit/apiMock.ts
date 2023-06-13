@@ -1,4 +1,4 @@
-import ApiUtils from '../../wallet/ApiUtils'
+import apiService from '../../services/apiService'
 import { getFunctionMock } from './testUtils'
 
 type ApiMockPack = {
@@ -27,7 +27,7 @@ export const getApiMockPack = (): ApiMockPack => {
   }
 
   const setupApiMocks = (): void => {
-    getFunctionMock(ApiUtils.getApi).mockImplementation(() => {
+    getFunctionMock(apiService.getApi).mockImplementation(() => {
       return apiMocks
     })
   }

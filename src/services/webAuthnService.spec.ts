@@ -1,4 +1,4 @@
-import WebAuthnUtils from './WebAuthnUtils'
+import webAuthnService from './webAuthnService'
 
 const DEPLOYED_WEBAUTHN_SIGNER_ADDRESS =
   '0xc4c07CAD43fF6249c20129A2928D50D23A75fb09'
@@ -11,7 +11,7 @@ const publicKeyY =
 describe('WebAuthnService', () => {
   describe('predictSafeAddress', () => {
     it('Given an x and y, when predicting a deployed signer address, then return the correct address', async () => {
-      const predictedAddress = await WebAuthnUtils.predictSignerAddress(
+      const predictedAddress = await webAuthnService.predictSignerAddress(
         publicKeyX,
         publicKeyY,
         CHAIN_ID

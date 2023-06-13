@@ -4,13 +4,13 @@ import { BigNumber, ethers } from 'ethers'
 import { GAS_GAP_TOLERANCE } from '../constants'
 import { Safe__factory } from '../contracts/types/factories'
 import { SafeInterface } from '../contracts/types/Safe'
-import BlockchainUtils from './BlockchainUtils'
-import GasModalUtils from './GasModalUtils'
 import {
   MetaTransactionData,
   SafeTransactionDataPartial,
   UIConfig
-} from './types'
+} from '../wallet/types'
+import blockchainService from './blockchainService'
+import gasModalService from './gasModalService'
 
 const SafeInterface: SafeInterface = Safe__factory.createInterface()
 
@@ -88,7 +88,7 @@ const calculateAndShowMaxFee = async (
   provider: StaticJsonRpcProvider,
   uiConfig: UIConfig
 ): Promise<void> => {
-  const walletBalance = await BlockchainUtils.getBalance(
+  const walletBalance = await blockchainService.getBalance(
     walletAddress,
     provider
   )
@@ -110,13 +110,13 @@ const calculateAndShowMaxFee = async (
     const balance = ethers.utils.formatEther(
       ethers.utils.parseUnits(
         BigNumber.from(
-          await BlockchainUtils.getBalance(walletAddress, provider)
+          await blockchainService.getBalance(walletAddress, provider)
         ).toString(),
         'wei'
       )
     )
 
-    if (!GasModalUtils.showGasModal(balance, totalFees)) {
+    if (!gasModalService.showGasModal(balance, totalFees)) {
       throw new Error('Transaction denied')
     }
   }

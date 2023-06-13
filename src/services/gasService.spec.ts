@@ -7,25 +7,25 @@ import { BigNumber, ethers } from 'ethers'
 
 import { getProviderMockPack } from '../tests/unit/providerMock'
 import { getFunctionMock } from '../tests/unit/testUtils'
-import BlockchainUtils from './BlockchainUtils'
-import GasModalUtils from './GasModalUtils'
-import GasUtils from './GasUtils'
+import blockchainService from './blockchainService'
+import gasModalService from './gasModalService'
+import gasService from './gasService'
 
 const EOA_ADDRESS = '0x4B758d3Af4c8B2662bC485420077413DDdd62E33'
 const WALLET_ADDRESS = '0xecf9D83633dC1DE88400945c0f97B76153a386ec'
 const CHAIN_ID = 137
 const RPC_URL = 'https://polygon-rpc.com'
 
-jest.mock('./BlockchainUtils', () => ({
+jest.mock('./blockchainService', () => ({
   getProvider: jest.fn(),
   getBalance: jest.fn()
 }))
 
-jest.mock('./GasModalUtils', () => ({
+jest.mock('./gasModalService', () => ({
   showGasModal: jest.fn()
 }))
 
-describe('GasUtils', () => {
+describe('gasService', () => {
   const reward = BigNumber.from(10)
   const baseFeePerGas = BigNumber.from(100)
   const mockedEstimateGas = BigNumber.from(123)
@@ -44,8 +44,10 @@ describe('GasUtils', () => {
       reward: [[reward]],
       baseFeePerGas: [baseFeePerGas]
     })
-    getFunctionMock(BlockchainUtils.getBalance).mockResolvedValue(mockedBalance)
-    getFunctionMock(GasModalUtils.showGasModal).mockResolvedValue(true)
+    getFunctionMock(blockchainService.getBalance).mockResolvedValue(
+      mockedBalance
+    )
+    getFunctionMock(gasModalService.showGasModal).mockResolvedValue(true)
   })
   describe('estimateSafeTxGas', () => {
     const walletAddress = WALLET_ADDRESS
@@ -64,10 +66,10 @@ describe('GasUtils', () => {
     }
 
     it('Given a single call transaction, when predicting the safeTxGas, then call estimateGas with the correct parameters', async () => {
-      await GasUtils.estimateSafeTxGas(
+      await gasService.estimateSafeTxGas(
         walletAddress,
         [transactionData],
-        BlockchainUtils.getProvider(CHAIN_ID, RPC_URL)
+        blockchainService.getProvider(CHAIN_ID, RPC_URL)
       )
 
       expectProviderFunctionToHaveBeenCalledWith('estimateGas', {
@@ -87,10 +89,10 @@ describe('GasUtils', () => {
     })
 
     it('Given a single call transaction, when predicting the safeTxGas, then return the correct value', async () => {
-      const safeTxGas = await GasUtils.estimateSafeTxGas(
+      const safeTxGas = await gasService.estimateSafeTxGas(
         walletAddress,
         [transactionData],
-        BlockchainUtils.getProvider(CHAIN_ID, RPC_URL)
+        blockchainService.getProvider(CHAIN_ID, RPC_URL)
       )
 
       expect(safeTxGas).toEqual(mockedEstimateGas)
@@ -106,10 +108,10 @@ describe('GasUtils', () => {
         { to, value, data },
         { to, value, data }
       ]
-      const safeTxGas = await GasUtils.estimateSafeTxGas(
+      const safeTxGas = await gasService.estimateSafeTxGas(
         walletAddress,
         transactionDataMultisend,
-        BlockchainUtils.getProvider(CHAIN_ID, RPC_URL)
+        blockchainService.getProvider(CHAIN_ID, RPC_URL)
       )
 
       expect(safeTxGas).toEqual(mockedEstimateGas.mul(3))
@@ -117,16 +119,16 @@ describe('GasUtils', () => {
   })
   describe('calculateAndShowMaxFee', () => {
     it('Given the correct parameters, when calculating and showing the max fees, then call getBalance with the right parameters', async () => {
-      await GasUtils.calculateAndShowMaxFee(
+      await gasService.calculateAndShowMaxFee(
         '1',
         BigNumber.from(0),
         0,
         BigNumber.from(0),
         WALLET_ADDRESS,
-        BlockchainUtils.getProvider(CHAIN_ID, RPC_URL),
+        blockchainService.getProvider(CHAIN_ID, RPC_URL),
         { displayValidationModal: true }
       )
-      expect(BlockchainUtils.getBalance).toHaveBeenCalledWith(
+      expect(blockchainService.getBalance).toHaveBeenCalledWith(
         WALLET_ADDRESS,
         providerMocks
       )
@@ -135,16 +137,16 @@ describe('GasUtils', () => {
       const safeTxGas = 20000
       const baseGas = 80000
       const gasPrice = 140
-      await GasUtils.calculateAndShowMaxFee(
+      await gasService.calculateAndShowMaxFee(
         '1',
         BigNumber.from(safeTxGas),
         baseGas,
         BigNumber.from(gasPrice),
         WALLET_ADDRESS,
-        BlockchainUtils.getProvider(CHAIN_ID, RPC_URL),
+        blockchainService.getProvider(CHAIN_ID, RPC_URL),
         { displayValidationModal: true }
       )
-      expect(GasModalUtils.showGasModal).toHaveBeenCalledWith(
+      expect(gasModalService.showGasModal).toHaveBeenCalledWith(
         mockedBalanceString,
         ethers.utils.formatEther(
           BigNumber.from((safeTxGas + baseGas) * gasPrice)
@@ -156,13 +158,13 @@ describe('GasUtils', () => {
       const baseGas = 8000000
       const gasPrice = 14000000000
       await expect(
-        GasUtils.calculateAndShowMaxFee(
+        gasService.calculateAndShowMaxFee(
           '1',
           BigNumber.from(safeTxGas),
           baseGas,
           BigNumber.from(gasPrice),
           WALLET_ADDRESS,
-          BlockchainUtils.getProvider(CHAIN_ID, RPC_URL),
+          blockchainService.getProvider(CHAIN_ID, RPC_URL),
           { displayValidationModal: true }
         )
       ).rejects.toThrow(
@@ -174,13 +176,13 @@ describe('GasUtils', () => {
       const baseGas = 80000
       const gasPrice = 140
       await expect(
-        GasUtils.calculateAndShowMaxFee(
+        gasService.calculateAndShowMaxFee(
           ethers.utils.parseUnits(mockedBalanceString, 'ether').toString(),
           BigNumber.from(safeTxGas),
           baseGas,
           BigNumber.from(gasPrice),
           WALLET_ADDRESS,
-          BlockchainUtils.getProvider(CHAIN_ID, RPC_URL),
+          blockchainService.getProvider(CHAIN_ID, RPC_URL),
           { displayValidationModal: true }
         )
       ).rejects.toThrow(
@@ -191,8 +193,8 @@ describe('GasUtils', () => {
   describe('getGasPrice', () => {
     const rewardPercentile = 80
     it('Given the correct parameters, when getting the gas price, then call eth_feeHistory with the correct parameters', async () => {
-      await GasUtils.getGasPrice(
-        BlockchainUtils.getProvider(CHAIN_ID, RPC_URL),
+      await gasService.getGasPrice(
+        blockchainService.getProvider(CHAIN_ID, RPC_URL),
         rewardPercentile
       )
       expectProviderFunctionToHaveBeenCalledWith('send', 'eth_feeHistory', [
@@ -202,8 +204,8 @@ describe('GasUtils', () => {
       ])
     })
     it('Given the correct parameters, when getting the gas price, then return the correct gas price', async () => {
-      const result = await GasUtils.getGasPrice(
-        BlockchainUtils.getProvider(CHAIN_ID, RPC_URL),
+      const result = await gasService.getGasPrice(
+        blockchainService.getProvider(CHAIN_ID, RPC_URL),
         rewardPercentile
       )
       const expectedResult = BigNumber.from(reward.add(baseFeePerGas)).add(
@@ -227,12 +229,12 @@ describe('GasUtils', () => {
         nonce: '0x_nonce',
         signatures: '0x_signature'
       }
-      const provider = BlockchainUtils.getProvider(CHAIN_ID, RPC_URL)
+      const provider = blockchainService.getProvider(CHAIN_ID, RPC_URL)
       const safeTxGas = 10
       const rewardPercentile = 10
       const baseGas = 80000
 
-      const result = await GasUtils.setTransactionGas(
+      const result = await gasService.setTransactionGas(
         transactionData,
         BigNumber.from(safeTxGas),
         provider,

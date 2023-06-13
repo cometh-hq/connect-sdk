@@ -1,4 +1,4 @@
-import GasModalUtils from '../../wallet/GasModalUtils'
+import gasModalService from '../../services/gasModalService'
 import { getFunctionMock } from './testUtils'
 
 type GasModalMockPack = {
@@ -21,7 +21,7 @@ export const getGasModalMockPack = (): GasModalMockPack => {
   }
 
   const setupGasModalMocks = (): void => {
-    getFunctionMock(GasModalUtils.showGasModal).mockImplementation(() => {
+    getFunctionMock(gasModalService.showGasModal).mockImplementation(() => {
       return gasModalMocks
     })
   }

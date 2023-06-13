@@ -2,11 +2,11 @@ import { StaticJsonRpcProvider } from '@ethersproject/providers'
 import { BigNumber } from 'ethers'
 
 import { getProviderMockPack } from '../tests/unit/providerMock'
-import BlockchainUtils from './BlockchainUtils'
+import blockchainService from './blockchainService'
 
 const EOA_ADDRESS = '0x4B758d3Af4c8B2662bC485420077413DDdd62E33'
 
-describe('BlockchainUtils', () => {
+describe('blockchainService', () => {
   const mockedBalance = BigNumber.from(111)
   const { providerMocks, expectProviderFunctionToHaveBeenCalledWith } =
     getProviderMockPack()
@@ -15,7 +15,7 @@ describe('BlockchainUtils', () => {
   })
   describe('getBalance', () => {
     it('Given an address, when getting the balance, then call getBalance with the right parameters', async () => {
-      await BlockchainUtils.getBalance(
+      await blockchainService.getBalance(
         EOA_ADDRESS,
         providerMocks as unknown as StaticJsonRpcProvider
       )
@@ -23,7 +23,7 @@ describe('BlockchainUtils', () => {
       expectProviderFunctionToHaveBeenCalledWith('getBalance', EOA_ADDRESS)
     })
     it('Given an address, when getting the balance, then return the correct value', async () => {
-      const balance = await BlockchainUtils.getBalance(
+      const balance = await blockchainService.getBalance(
         EOA_ADDRESS,
         providerMocks as unknown as StaticJsonRpcProvider
       )

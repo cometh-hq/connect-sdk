@@ -1,4 +1,4 @@
-import BlockchainUtils from '../../wallet/BlockchainUtils'
+import blockchainService from '../../services/blockchainService'
 import { getFunctionMock } from './testUtils'
 
 type ProviderMockPack = {
@@ -27,7 +27,7 @@ export const getProviderMockPack = (): ProviderMockPack => {
   }
 
   const setupProviderMocks = (): void => {
-    getFunctionMock(BlockchainUtils.getProvider).mockImplementation(() => {
+    getFunctionMock(blockchainService.getProvider).mockImplementation(() => {
       return providerMocks
     })
   }
