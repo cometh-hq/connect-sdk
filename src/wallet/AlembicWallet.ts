@@ -44,10 +44,11 @@ export class AlembicWallet {
   private provider: StaticJsonRpcProvider
   private sponsoredAddresses?: SponsoredTransaction[]
   private walletAddress?: string
+  private signer?: JsonRpcSigner | Wallet | WebAuthnSigner
+  private webAuthnOwner?: WebAuthnOwner
   private uiConfig = {
     displayValidationModal: true
   }
-  private signer: JsonRpcSigner | Wallet | WebAuthnSigner | null
 
   constructor({ authAdapter, apiKey, rpcUrl }: AlembicWalletConfig) {
     this.authAdapter = authAdapter
@@ -58,7 +59,6 @@ export class AlembicWallet {
     )
     this.BASE_GAS = DEFAULT_BASE_GAS
     this.REWARD_PERCENTILE = DEFAULT_REWARD_PERCENTILE
-    this.signer = null
   }
 
   /**
@@ -66,19 +66,19 @@ export class AlembicWallet {
    */
 
   public async connect(): Promise<void> {
-    if (await this._verifyWebAuthnOwner()) {
-      const currentWebAuthnOwner = await this.getCurrentWebAuthnOwner()
-      if (!currentWebAuthnOwner) throw new Error('No WebAuthn Signer found')
+    if (!networks[this.chainId])
+      throw new Error('This network is not supported')
 
-      this.walletAddress = currentWebAuthnOwner.walletAddress
+    if (await this._verifyWebAuthnOwner()) {
+      if (!this.webAuthnOwner) throw new Error('No WebAuthn Signer found')
+
+      this.walletAddress = this.webAuthnOwner.walletAddress
       this.signer = new WebAuthnSigner(
-        currentWebAuthnOwner.signerAddress,
-        currentWebAuthnOwner.publicKeyId
+        this.webAuthnOwner.signerAddress,
+        this.webAuthnOwner.publicKeyId
       )
     } else {
       if (!this.authAdapter) throw new Error('No EOA adapter found')
-      if (!networks[this.chainId])
-        throw new Error('This network is not supported')
 
       await this.authAdapter.connect()
       const ownerAddress = await this.authAdapter.getSigner().getAddress()
@@ -86,8 +86,8 @@ export class AlembicWallet {
       this.walletAddress = await this.API.getWalletAddress(ownerAddress)
       this.signer = await this.authAdapter.getSigner()
     }
-    if (!this.signer) throw new Error('No signer found')
 
+    if (!this.signer) throw new Error('No signer found')
     if (!this.walletAddress) throw new Error('No walletAddress found')
 
     const nonce = await this.API.getNonce(this.walletAddress)
@@ -96,8 +96,7 @@ export class AlembicWallet {
       nonce,
       this.chainId
     )
-    const messageToSign = message.prepareMessage()
-    const signature = await this.signMessage(messageToSign)
+    const signature = await this.signMessage(message.prepareMessage())
 
     await this.API.connectToAlembicWallet({
       message,
@@ -490,6 +489,8 @@ export class AlembicWallet {
     const currentWebAuthnOwner = await this.getCurrentWebAuthnOwner()
 
     if (!currentWebAuthnOwner) return false
+
+    this.webAuthnOwner = currentWebAuthnOwner
 
     const isSafeOwner = await safeService.isSafeOwner(
       currentWebAuthnOwner.walletAddress,
