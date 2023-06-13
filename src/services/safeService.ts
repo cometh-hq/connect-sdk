@@ -4,8 +4,11 @@ import { ethers } from 'ethers'
 import { BLOCK_EVENT_GAP, EIP712_SAFE_TX_TYPES } from '../constants'
 import { Safe__factory } from '../contracts/types/factories'
 import { SafeInterface } from '../contracts/types/Safe'
-import { AlembicProvider } from './AlembicProvider'
-import { SafeTransactionDataPartial } from './types'
+import { AlembicProvider } from '../wallet/AlembicProvider'
+import {
+  MetaTransactionData,
+  SafeTransactionDataPartial
+} from '../wallet/types'
 
 const SafeInterface: SafeInterface = Safe__factory.createInterface()
 
@@ -66,6 +69,36 @@ const getFailedExecTransactionEvent = async (
   return filteredTransactionEvent[0]
 }
 
+const isSafeOwner = async (
+  walletAddress: string,
+  signerAddress: string,
+  provider: StaticJsonRpcProvider
+): Promise<boolean> => {
+  const safeInstance = await Safe__factory.connect(walletAddress, provider)
+  return await safeInstance.isOwner(signerAddress)
+}
+
+const prepareAddOwnerTx = async (
+  walletAddress: string,
+  newOwner: string
+): Promise<MetaTransactionData> => {
+  const tx = {
+    to: walletAddress,
+    value: '0x0',
+    data: SafeInterface.encodeFunctionData('addOwnerWithThreshold', [
+      newOwner,
+      1
+    ]),
+    operation: 0,
+    safeTxGas: 0,
+    baseGas: 0,
+    gasPrice: 0,
+    gasToken: ethers.constants.AddressZero,
+    refundReceiver: ethers.constants.AddressZero
+  }
+  return tx
+}
+
 const formatWebAuthnSignatureForSafe = (
   signerAddress: string,
   signature: string
@@ -101,6 +134,8 @@ export default {
   getNonce,
   getSuccessExecTransactionEvent,
   getFailedExecTransactionEvent,
+  isSafeOwner,
+  prepareAddOwnerTx,
   formatWebAuthnSignatureForSafe,
   getSafeTransactionHash
 }
