@@ -1,8 +1,8 @@
 {
   "extends": "@tsconfig/recommended/tsconfig.json",
   "compilerOptions": {
-    "target": "ES2015",
-    "lib": ["es2020", "dom"],
+    "target": "es6",
+    "lib": ["es6", "dom"],
     "noImplicitAny": false,
     "downlevelIteration": true,
     "skipLibCheck": true,
@@ -13,13 +13,11 @@
     "declaration": true,
     "useUnknownInCatchVariables": false,
     "outDir": "dist",
-    "baseUrl": ".",
     "allowSyntheticDefaultImports": true,
-    "paths": {
-      "@Adapters": ["src/adapters"],
-      "@Services": ["src/services"]
-    }
+    "jsx": "react",
+    "esModuleInterop": true
   },
-  "include": ["src/**/*.ts", "src/**/*.d.ts"],
+ "include": ["src"],
   "exclude": ["node_modules"]
 }
+
