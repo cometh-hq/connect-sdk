@@ -44,10 +44,11 @@ export class AlembicWallet {
   private provider: StaticJsonRpcProvider
   private sponsoredAddresses?: SponsoredTransaction[]
   private walletAddress?: string
+  private signer?: JsonRpcSigner | Wallet | WebAuthnSigner
+  private webAuthnOwner?: WebAuthnOwner
   private uiConfig = {
     displayValidationModal: true
   }
-  private signer: JsonRpcSigner | Wallet | WebAuthnSigner | null
 
   constructor({ authAdapter, apiKey, rpcUrl }: AlembicWalletConfig) {
     this.authAdapter = authAdapter
@@ -58,7 +59,6 @@ export class AlembicWallet {
     )
     this.BASE_GAS = DEFAULT_BASE_GAS
     this.REWARD_PERCENTILE = DEFAULT_REWARD_PERCENTILE
-    this.signer = null
   }
 
   /**
@@ -66,45 +66,43 @@ export class AlembicWallet {
    */
 
   public async connect(): Promise<void> {
-    if (!(await this._verifyWebAuthnOwner())) {
+    if (!networks[this.chainId])
+      throw new Error('This network is not supported')
+
+    if (await this._verifyWebAuthnOwner()) {
+      if (!this.webAuthnOwner) throw new Error('No WebAuthn Signer found')
+
+      this.walletAddress = this.webAuthnOwner.walletAddress
+      this.signer = new WebAuthnSigner(
+        this.webAuthnOwner.signerAddress,
+        this.webAuthnOwner.publicKeyId
+      )
+    } else {
       if (!this.authAdapter) throw new Error('No EOA adapter found')
-      if (!networks[this.chainId])
-        throw new Error('This network is not supported')
 
       await this.authAdapter.connect()
+      const ownerAddress = await this.authAdapter.getSigner().getAddress()
 
+      this.walletAddress = await this.API.getWalletAddress(ownerAddress)
       this.signer = await this.authAdapter.getSigner()
-
-      if (!this.signer) throw new Error('No signer found')
-
-      const ownerAddress = await this.signer.getAddress()
-      if (!ownerAddress) throw new Error('No ownerAddress found')
-
-      const nonce = await this.API.getNonce(ownerAddress)
-
-      const message: SiweMessage = siweService.createMessage(
-        ownerAddress,
-        nonce,
-        this.chainId
-      )
-      const messageToSign = message.prepareMessage()
-      const signature = await this.signer.signMessage(messageToSign)
-
-      this.walletAddress = await this.API?.connectToAlembicWallet({
-        message,
-        signature,
-        ownerAddress
-      })
-    } else {
-      const currentWebAuthnOwner = await this.getCurrentWebAuthnOwner()
-      if (currentWebAuthnOwner) {
-        this.walletAddress = currentWebAuthnOwner.walletAddress
-        this.signer = new WebAuthnSigner(
-          currentWebAuthnOwner.signerAddress,
-          currentWebAuthnOwner.publicKeyId
-        )
-      }
     }
+
+    if (!this.signer) throw new Error('No signer found')
+    if (!this.walletAddress) throw new Error('No walletAddress found')
+
+    const nonce = await this.API.getNonce(this.walletAddress)
+    const message: SiweMessage = siweService.createMessage(
+      this.walletAddress,
+      nonce,
+      this.chainId
+    )
+    const signature = await this.signMessage(message.prepareMessage())
+
+    await this.API.connectToAlembicWallet({
+      message,
+      signature,
+      walletAddress: this.walletAddress
+    })
 
     this.sponsoredAddresses = await this.API.getSponsoredAddresses()
     this.connected = true
@@ -491,6 +489,8 @@ export class AlembicWallet {
     const currentWebAuthnOwner = await this.getCurrentWebAuthnOwner()
 
     if (!currentWebAuthnOwner) return false
+
+    this.webAuthnOwner = currentWebAuthnOwner
 
     const isSafeOwner = await safeService.isSafeOwner(
       currentWebAuthnOwner.walletAddress,
