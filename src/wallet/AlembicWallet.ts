@@ -134,27 +134,6 @@ export class AlembicWallet {
     return this.walletAddress ?? ''
   }
 
-  private _createMessage(address, nonce): SiweMessage {
-    const domain = window.location.host
-    const origin = window.location.origin
-    const statement = `Sign in with Ethereum to Alembic`
-    const message = new SiweMessage({
-      domain,
-      address,
-      statement,
-      uri: origin,
-      version: '1',
-      chainId: this.chainId,
-      nonce: nonce?.connectionNonce
-    })
-
-    return message
-  }
-
-  private _getBalance = async (address: string): Promise<BigNumber> => {
-    return this.getProvider().getBalance(address)
-  }
-
   public async logout(): Promise<void> {
     if (this.authAdapter) await this.authAdapter.logout()
 
