@@ -1,11 +1,13 @@
-import { StaticJsonRpcProvider } from '@ethersproject/providers'
-import { BigNumber, Bytes, ethers } from 'ethers'
+import { JsonRpcSigner, StaticJsonRpcProvider } from '@ethersproject/providers'
+import { BigNumber, Bytes, ethers, Wallet } from 'ethers'
 import { encodeMulti } from 'ethers-multisend'
 import { SiweMessage } from 'siwe'
 
 import {
   DEFAULT_BASE_GAS,
   DEFAULT_REWARD_PERCENTILE,
+  EIP712_SAFE_MESSAGE_TYPE,
+  EIP712_SAFE_TX_TYPES,
   networks
 } from '../constants'
 import { API } from '../services'
@@ -14,7 +16,6 @@ import siweService from '../services/siweService'
 import webAuthnService from '../services/webAuthnService'
 import { GasModal } from '../ui'
 import { AUTHAdapter } from './adapters'
-import { AuthAdapterSigner } from './signers/AuthAdapterSigner'
 import { WebAuthnSigner } from './signers/WebAuthnSigner'
 import {
   MetaTransactionData,
@@ -46,7 +47,7 @@ export class AlembicWallet {
   private uiConfig = {
     displayValidationModal: true
   }
-  private signer: AuthAdapterSigner | WebAuthnSigner | undefined
+  private signer: JsonRpcSigner | Wallet | WebAuthnSigner | null
 
   constructor({ authAdapter, apiKey, rpcUrl }: AlembicWalletConfig) {
     this.authAdapter = authAdapter
@@ -57,6 +58,7 @@ export class AlembicWallet {
     )
     this.BASE_GAS = DEFAULT_BASE_GAS
     this.REWARD_PERCENTILE = DEFAULT_REWARD_PERCENTILE
+    this.signer = null
   }
 
   /**
@@ -69,7 +71,10 @@ export class AlembicWallet {
       if (!currentWebAuthnOwner) throw new Error('No WebAuthn Signer found')
 
       this.walletAddress = currentWebAuthnOwner.walletAddress
-      this.signer = new WebAuthnSigner(this)
+      this.signer = new WebAuthnSigner(
+        currentWebAuthnOwner.signerAddress,
+        currentWebAuthnOwner.publicKeyId
+      )
     } else {
       if (!this.authAdapter) throw new Error('No EOA adapter found')
       if (!networks[this.chainId])
@@ -79,8 +84,9 @@ export class AlembicWallet {
       const ownerAddress = await this.authAdapter.getSigner().getAddress()
 
       this.walletAddress = await this.API.getWalletAddress(ownerAddress)
-      this.signer = new AuthAdapterSigner(this)
+      this.signer = await this.authAdapter.getSigner()
     }
+    if (!this.signer) throw new Error('No signer found')
 
     if (!this.walletAddress) throw new Error('No walletAddress found')
 
@@ -155,15 +161,47 @@ export class AlembicWallet {
 
     if (!this.signer) throw new Error('Sign message: missing signer')
 
-    return this.signer.signMessage(messageToSign)
+    return await this.signer._signTypedData(
+      {
+        chainId: this.chainId,
+        verifyingContract: await this.getAddress()
+      },
+      EIP712_SAFE_MESSAGE_TYPE,
+      { message: messageToSign }
+    )
   }
 
-  public async signTransaction(
+  async signTransaction(
     safeTxData: SafeTransactionDataPartial
   ): Promise<string> {
     if (!this.signer) throw new Error('Sign message: missing signer')
 
-    return this.signer.signTransaction(safeTxData)
+    return await this.signer._signTypedData(
+      {
+        chainId: this.chainId,
+        verifyingContract: await this.getAddress()
+      },
+      EIP712_SAFE_TX_TYPES,
+      {
+        to: safeTxData.to,
+        value: BigNumber.from(safeTxData.value).toString(),
+        data: safeTxData.data,
+        operation: safeTxData.operation,
+        safeTxGas: BigNumber.from(safeTxData.safeTxGas).toString(),
+        baseGas: BigNumber.from(safeTxData.baseGas).toString(),
+        gasPrice: BigNumber.from(safeTxData.gasPrice).toString(),
+        gasToken: ethers.constants.AddressZero,
+        refundReceiver: ethers.constants.AddressZero,
+        nonce: BigNumber.from(
+          safeTxData.nonce
+            ? safeTxData.nonce
+            : await safeService.getNonce(
+                await this.getAddress(),
+                await this.getProvider()
+              )
+        ).toString()
+      }
+    )
   }
 
   private async _isSponsoredTransaction(
@@ -443,7 +481,7 @@ export class AlembicWallet {
       publicKeyY
     )
 
-    this.signer = new WebAuthnSigner(this)
+    this.signer = new WebAuthnSigner(predictedSignerAddress, publicKeyId)
 
     return predictedSignerAddress
   }

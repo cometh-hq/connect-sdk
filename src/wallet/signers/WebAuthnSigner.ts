@@ -1,86 +1,61 @@
 import { Provider } from '@ethersproject/abstract-provider'
-import { Signer } from '@ethersproject/abstract-signer'
-import { BigNumber, Bytes, ethers } from 'ethers'
+import {
+  Signer,
+  TypedDataDomain,
+  TypedDataField
+} from '@ethersproject/abstract-signer'
+import { Bytes, ethers } from 'ethers'
 
+import { EIP712_SAFE_MESSAGE_TYPE, EIP712_SAFE_TX_TYPES } from '../../constants'
 import safeService from '../../services/safeService'
 import webAuthnService from '../../services/webAuthnService'
-import { AlembicWallet } from '../AlembicWallet'
-import { SafeTransactionDataPartial, WebAuthnOwner } from '../types'
+import { SafeTransactionDataPartial } from '../types'
 
 export class WebAuthnSigner extends Signer {
-  private chainId: number
-  constructor(private smartWallet: AlembicWallet) {
+  private signerAddress: string
+  private publicKeyId: string
+  constructor(signerAddress: string, publicKeyId: string) {
     super()
-    this.chainId = this.smartWallet.chainId
+    this.signerAddress = signerAddress
+    this.publicKeyId = publicKeyId
   }
 
-  getAddress(): Promise<string> {
-    return Promise.resolve(this.smartWallet.getAddress())
+  async getAddress(): Promise<string> {
+    return this.signerAddress
   }
 
-  getProvider(): Promise<ethers.providers.StaticJsonRpcProvider> {
-    return Promise.resolve(this.smartWallet.getProvider())
-  }
+  async _signTypedData(
+    domain: TypedDataDomain,
+    types: Record<string, Array<TypedDataField>>,
+    value: Record<string, any>
+  ): Promise<string> {
+    if (types !== EIP712_SAFE_TX_TYPES && types !== EIP712_SAFE_MESSAGE_TYPE)
+      throw new Error('types data not supported')
 
-  async getCurrentWebAuthnOwner(): Promise<WebAuthnOwner | undefined> {
-    return this.smartWallet.getCurrentWebAuthnOwner()
+    const data =
+      types === EIP712_SAFE_TX_TYPES
+        ? ethers.utils._TypedDataEncoder.hash(domain, types, value)
+        : ethers.utils.keccak256(value.message)
+
+    const encodedWebAuthnSignature = await webAuthnService.getWebAuthnSignature(
+      data,
+      this.publicKeyId
+    )
+
+    return safeService.formatWebAuthnSignatureForSafe(
+      this.signerAddress,
+      encodedWebAuthnSignature
+    )
   }
 
   async signTransaction(
     safeTxDataTyped: SafeTransactionDataPartial
   ): Promise<string> {
-    const currentWebAuthnOwner = await this.getCurrentWebAuthnOwner()
-    if (!currentWebAuthnOwner) throw new Error('No WebAuthn signer found')
-
-    const safeTxHash = safeService.getSafeTransactionHash(
-      await this.getAddress(),
-      {
-        to: safeTxDataTyped.to,
-        value: BigNumber.from(safeTxDataTyped.value).toString(),
-        data: safeTxDataTyped.data,
-        operation: BigNumber.from(safeTxDataTyped.operation).toString(),
-        safeTxGas: BigNumber.from(safeTxDataTyped.safeTxGas).toString(),
-        baseGas: BigNumber.from(safeTxDataTyped.baseGas).toString(),
-        gasPrice: BigNumber.from(safeTxDataTyped.gasPrice).toString(),
-        gasToken: ethers.constants.AddressZero,
-        refundReceiver: ethers.constants.AddressZero,
-        nonce: BigNumber.from(
-          safeTxDataTyped.nonce
-            ? safeTxDataTyped.nonce
-            : await safeService.getNonce(
-                await this.getAddress(),
-                await this.getProvider()
-              )
-        ).toString()
-      },
-      this.chainId
-    )
-
-    const encodedWebAuthnSignature = await webAuthnService.getWebAuthnSignature(
-      safeTxHash,
-      currentWebAuthnOwner.publicKeyId
-    )
-
-    return safeService.formatWebAuthnSignatureForSafe(
-      currentWebAuthnOwner.signerAddress,
-      encodedWebAuthnSignature
-    )
+    throw new Error('sign Transaction not supported')
   }
 
   async signMessage(messageToSign: string | Bytes): Promise<string> {
-    const currentWebAuthnOwner = await this.getCurrentWebAuthnOwner()
-
-    if (!currentWebAuthnOwner) throw new Error('No WebAuthn signer found')
-
-    const encodedWebAuthnSignature = await webAuthnService.getWebAuthnSignature(
-      ethers.utils.keccak256(messageToSign),
-      currentWebAuthnOwner.publicKeyId
-    )
-
-    return safeService.formatWebAuthnSignatureForSafe(
-      currentWebAuthnOwner.signerAddress,
-      encodedWebAuthnSignature
-    )
+    throw new Error('sign Message not supported')
   }
 
   connect(provider: Provider): Signer {
