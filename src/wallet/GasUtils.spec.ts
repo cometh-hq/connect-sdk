@@ -14,7 +14,7 @@ import GasUtils from './GasUtils'
 const EOA_ADDRESS = '0x4B758d3Af4c8B2662bC485420077413DDdd62E33'
 const WALLET_ADDRESS = '0xecf9D83633dC1DE88400945c0f97B76153a386ec'
 const CHAIN_ID = 137
-const RPC_URL = ''
+const RPC_URL = 'https://polygon-rpc.com'
 
 jest.mock('./BlockchainUtils', () => ({
   getProvider: jest.fn(),

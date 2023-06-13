@@ -15,13 +15,15 @@ type ProviderMock = {
   estimateGas: jest.Mock
   send: jest.Mock
   getBalance: jest.Mock
+  signMessage: jest.Mock
 }
 
 export const getProviderMockPack = (): ProviderMockPack => {
   const providerMocks = {
     estimateGas: jest.fn(),
     send: jest.fn(),
-    getBalance: jest.fn()
+    getBalance: jest.fn(),
+    signMessage: jest.fn()
   }
 
   const setupProviderMocks = (): void => {

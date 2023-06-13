@@ -18,6 +18,7 @@ import { P256SignerFactoryInterface } from '../contracts/types/P256SignerFactory
 import { SafeInterface } from '../contracts/types/Safe'
 import { API } from '../services'
 import { AUTHAdapter } from './adapters'
+import ApiUtils from './ApiUtils'
 import BlockchainUtils from './BlockchainUtils'
 import GasUtils from './GasUtils'
 import SafeUtils from './SafeUtils'
@@ -60,7 +61,7 @@ export class AlembicWallet {
   constructor({ authAdapter, apiKey, rpcUrl }: AlembicWalletConfig) {
     this.authAdapter = authAdapter
     this.chainId = +authAdapter.chainId
-    this.API = new API(apiKey, this.chainId)
+    this.API = ApiUtils.getApi(apiKey, this.chainId)
     this.provider = BlockchainUtils.getProvider(this.chainId, rpcUrl)
     this.BASE_GAS = DEFAULT_BASE_GAS
     this.REWARD_PERCENTILE = DEFAULT_REWARD_PERCENTILE
