@@ -11,12 +11,11 @@ import {
   networks
 } from '../constants'
 import { API } from '../services'
-import apiService from '../services/apiService'
-import blockchainService from '../services/blockchainService'
 import gasService from '../services/gasService'
 import safeService from '../services/safeService'
 import siweService from '../services/siweService'
 import webAuthnService from '../services/webAuthnService'
+import { GasModal } from '../ui'
 import { AUTHAdapter } from './adapters'
 import { WebAuthnSigner } from './signers/WebAuthnSigner'
 import {
@@ -53,8 +52,10 @@ export class AlembicWallet {
   constructor({ authAdapter, apiKey, rpcUrl }: AlembicWalletConfig) {
     this.authAdapter = authAdapter
     this.chainId = +authAdapter.chainId
-    this.API = apiService.getApi(apiKey, this.chainId)
-    this.provider = blockchainService.getProvider(this.chainId, rpcUrl)
+    this.API = new API(apiKey, this.chainId)
+    this.provider = new StaticJsonRpcProvider(
+      rpcUrl ? rpcUrl : networks[this.chainId].RPCUrl
+    )
     this.BASE_GAS = DEFAULT_BASE_GAS
     this.REWARD_PERCENTILE = DEFAULT_REWARD_PERCENTILE
     this.signer = null
@@ -250,6 +251,7 @@ export class AlembicWallet {
         this.REWARD_PERCENTILE,
         this.BASE_GAS,
         this.getAddress(),
+        new GasModal(),
         this.uiConfig
       )
     }
@@ -289,6 +291,7 @@ export class AlembicWallet {
         this.REWARD_PERCENTILE,
         this.BASE_GAS,
         this.getAddress(),
+        new GasModal(),
         this.uiConfig
       )
     }

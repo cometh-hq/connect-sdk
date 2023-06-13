@@ -4,13 +4,12 @@ import { BigNumber, ethers } from 'ethers'
 import { GAS_GAP_TOLERANCE } from '../constants'
 import { Safe__factory } from '../contracts/types/factories'
 import { SafeInterface } from '../contracts/types/Safe'
+import { GasModal } from '../ui'
 import {
   MetaTransactionData,
   SafeTransactionDataPartial,
   UIConfig
 } from '../wallet/types'
-import blockchainService from './blockchainService'
-import gasModalService from './gasModalService'
 
 const SafeInterface: SafeInterface = Safe__factory.createInterface()
 
@@ -41,6 +40,7 @@ const setTransactionGas = async (
   rewardPercentile: number,
   baseGas: number,
   walletAddress: string,
+  gasModal: GasModal,
   uiConfig: UIConfig
 ): Promise<SafeTransactionDataPartial> => {
   const gasPrice = await getGasPrice(provider, rewardPercentile)
@@ -52,6 +52,7 @@ const setTransactionGas = async (
     gasPrice,
     walletAddress,
     provider,
+    gasModal,
     uiConfig
   )
   return {
@@ -86,12 +87,10 @@ const calculateAndShowMaxFee = async (
   gasPrice: BigNumber,
   walletAddress: string,
   provider: StaticJsonRpcProvider,
+  gasModal: GasModal,
   uiConfig: UIConfig
 ): Promise<void> => {
-  const walletBalance = await blockchainService.getBalance(
-    walletAddress,
-    provider
-  )
+  const walletBalance = await provider.getBalance(walletAddress)
   const totalGasCost = BigNumber.from(safeTxGas)
     .add(BigNumber.from(baseGas))
     .mul(BigNumber.from(gasPrice))
@@ -109,14 +108,17 @@ const calculateAndShowMaxFee = async (
 
     const balance = ethers.utils.formatEther(
       ethers.utils.parseUnits(
-        BigNumber.from(
-          await blockchainService.getBalance(walletAddress, provider)
-        ).toString(),
+        BigNumber.from(await provider.getBalance(walletAddress)).toString(),
         'wei'
       )
     )
 
-    if (!gasModalService.showGasModal(balance, totalFees)) {
+    if (
+      !(await gasModal.initModal(
+        (+balance).toFixed(3),
+        (+totalFees).toFixed(3)
+      ))
+    ) {
       throw new Error('Transaction denied')
     }
   }

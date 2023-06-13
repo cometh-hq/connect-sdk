@@ -5,54 +5,24 @@ jest.doMock('../constants', () => ({
 
 import { BigNumber, ethers } from 'ethers'
 
-import { getProviderMockPack } from '../tests/unit/providerMock'
-import { getFunctionMock } from '../tests/unit/testUtils'
-import blockchainService from './blockchainService'
-import gasModalService from './gasModalService'
+import stubGasModal from '../tests/unit/stubGasModal'
+import stubProvider from '../tests/unit/stubProvider'
+import testUtils from '../tests/unit/testUtils'
 import gasService from './gasService'
 
-const EOA_ADDRESS = '0x4B758d3Af4c8B2662bC485420077413DDdd62E33'
-const WALLET_ADDRESS = '0xecf9D83633dC1DE88400945c0f97B76153a386ec'
-const CHAIN_ID = 137
-const RPC_URL = 'https://polygon-rpc.com'
+jest.mock('@ethersproject/providers')
 
-jest.mock('./blockchainService', () => ({
-  getProvider: jest.fn(),
-  getBalance: jest.fn()
-}))
-
-jest.mock('./gasModalService', () => ({
-  showGasModal: jest.fn()
-}))
+jest.mock('../ui/GasModal')
 
 describe('gasService', () => {
   const reward = BigNumber.from(10)
   const baseFeePerGas = BigNumber.from(100)
   const mockedEstimateGas = BigNumber.from(123)
   const mockedBalanceString = '0.12345'
-  const mockedBalance = ethers.utils.parseUnits(mockedBalanceString, 'ether')
 
-  const {
-    providerMocks,
-    setupProviderMocks,
-    expectProviderFunctionToHaveBeenCalledWith
-  } = getProviderMockPack()
-  beforeEach(() => {
-    setupProviderMocks()
-    providerMocks.estimateGas.mockReturnValue(mockedEstimateGas)
-    providerMocks.send.mockReturnValue({
-      reward: [[reward]],
-      baseFeePerGas: [baseFeePerGas]
-    })
-    getFunctionMock(blockchainService.getBalance).mockResolvedValue(
-      mockedBalance
-    )
-    getFunctionMock(gasModalService.showGasModal).mockResolvedValue(true)
-  })
   describe('estimateSafeTxGas', () => {
-    const walletAddress = WALLET_ADDRESS
     const transactionData = {
-      to: EOA_ADDRESS,
+      to: testUtils.EOA_ADDRESS,
       value: '1',
       data: '0x',
       operation: '0',
@@ -66,16 +36,18 @@ describe('gasService', () => {
     }
 
     it('Given a single call transaction, when predicting the safeTxGas, then call estimateGas with the correct parameters', async () => {
+      const provider = new stubProvider()
+      const estimateGas = jest.spyOn(provider, 'estimateGas')
       await gasService.estimateSafeTxGas(
-        walletAddress,
+        testUtils.WALLET_ADDRESS,
         [transactionData],
-        blockchainService.getProvider(CHAIN_ID, RPC_URL)
+        provider
       )
 
-      expectProviderFunctionToHaveBeenCalledWith('estimateGas', {
+      expect(estimateGas).toHaveBeenCalledWith({
         baseGas: '0',
         data: '0x',
-        from: WALLET_ADDRESS,
+        from: testUtils.WALLET_ADDRESS,
         gasPrice: '0',
         gasToken: '0x0000000000000000000000000000000000000000',
         nonce: '0x_nonce',
@@ -83,23 +55,23 @@ describe('gasService', () => {
         refundReceiver: '0x0000000000000000000000000000000000000000',
         safeTxGas: '0',
         signatures: '0x_signature',
-        to: EOA_ADDRESS,
+        to: testUtils.EOA_ADDRESS,
         value: '1'
       })
     })
 
     it('Given a single call transaction, when predicting the safeTxGas, then return the correct value', async () => {
       const safeTxGas = await gasService.estimateSafeTxGas(
-        walletAddress,
+        testUtils.WALLET_ADDRESS,
         [transactionData],
-        blockchainService.getProvider(CHAIN_ID, RPC_URL)
+        new stubProvider()
       )
 
       expect(safeTxGas).toEqual(mockedEstimateGas)
     })
 
     it('Given a multisend transaction, when predicting the safeTxGas, then return the correct value', async () => {
-      const to = EOA_ADDRESS
+      const to = testUtils.EOA_ADDRESS
       const value = '0'
       const data = '0x'
 
@@ -109,31 +81,18 @@ describe('gasService', () => {
         { to, value, data }
       ]
       const safeTxGas = await gasService.estimateSafeTxGas(
-        walletAddress,
+        testUtils.WALLET_ADDRESS,
         transactionDataMultisend,
-        blockchainService.getProvider(CHAIN_ID, RPC_URL)
+        new stubProvider()
       )
 
       expect(safeTxGas).toEqual(mockedEstimateGas.mul(3))
     })
   })
   describe('calculateAndShowMaxFee', () => {
-    it('Given the correct parameters, when calculating and showing the max fees, then call getBalance with the right parameters', async () => {
-      await gasService.calculateAndShowMaxFee(
-        '1',
-        BigNumber.from(0),
-        0,
-        BigNumber.from(0),
-        WALLET_ADDRESS,
-        blockchainService.getProvider(CHAIN_ID, RPC_URL),
-        { displayValidationModal: true }
-      )
-      expect(blockchainService.getBalance).toHaveBeenCalledWith(
-        WALLET_ADDRESS,
-        providerMocks
-      )
-    })
     it('Given the correct parameters, when calculating and showing the max fees, then call the gas modal with the right parameters', async () => {
+      const gasModal = new stubGasModal()
+      const initModal = jest.spyOn(gasModal, 'initModal')
       const safeTxGas = 20000
       const baseGas = 80000
       const gasPrice = 140
@@ -142,15 +101,16 @@ describe('gasService', () => {
         BigNumber.from(safeTxGas),
         baseGas,
         BigNumber.from(gasPrice),
-        WALLET_ADDRESS,
-        blockchainService.getProvider(CHAIN_ID, RPC_URL),
+        testUtils.WALLET_ADDRESS,
+        new stubProvider(),
+        gasModal,
         { displayValidationModal: true }
       )
-      expect(gasModalService.showGasModal).toHaveBeenCalledWith(
-        mockedBalanceString,
-        ethers.utils.formatEther(
+      expect(initModal).toHaveBeenCalledWith(
+        (+mockedBalanceString).toFixed(3),
+        (+ethers.utils.formatEther(
           BigNumber.from((safeTxGas + baseGas) * gasPrice)
-        )
+        )).toFixed(3)
       )
     })
     it('Given a very high gas price and low balance, when calculating and showing the max fees, then throw an error', async () => {
@@ -163,8 +123,9 @@ describe('gasService', () => {
           BigNumber.from(safeTxGas),
           baseGas,
           BigNumber.from(gasPrice),
-          WALLET_ADDRESS,
-          blockchainService.getProvider(CHAIN_ID, RPC_URL),
+          testUtils.WALLET_ADDRESS,
+          new stubProvider(),
+          new stubGasModal(),
           { displayValidationModal: true }
         )
       ).rejects.toThrow(
@@ -181,8 +142,9 @@ describe('gasService', () => {
           BigNumber.from(safeTxGas),
           baseGas,
           BigNumber.from(gasPrice),
-          WALLET_ADDRESS,
-          blockchainService.getProvider(CHAIN_ID, RPC_URL),
+          testUtils.WALLET_ADDRESS,
+          new stubProvider(),
+          new stubGasModal(),
           { displayValidationModal: true }
         )
       ).rejects.toThrow(
@@ -193,11 +155,10 @@ describe('gasService', () => {
   describe('getGasPrice', () => {
     const rewardPercentile = 80
     it('Given the correct parameters, when getting the gas price, then call eth_feeHistory with the correct parameters', async () => {
-      await gasService.getGasPrice(
-        blockchainService.getProvider(CHAIN_ID, RPC_URL),
-        rewardPercentile
-      )
-      expectProviderFunctionToHaveBeenCalledWith('send', 'eth_feeHistory', [
+      const provider = new stubProvider()
+      const send = jest.spyOn(provider, 'send')
+      await gasService.getGasPrice(provider, rewardPercentile)
+      expect(send).toHaveBeenCalledWith('eth_feeHistory', [
         1,
         'latest',
         [rewardPercentile]
@@ -205,7 +166,7 @@ describe('gasService', () => {
     })
     it('Given the correct parameters, when getting the gas price, then return the correct gas price', async () => {
       const result = await gasService.getGasPrice(
-        blockchainService.getProvider(CHAIN_ID, RPC_URL),
+        new stubProvider(),
         rewardPercentile
       )
       const expectedResult = BigNumber.from(reward.add(baseFeePerGas)).add(
@@ -217,7 +178,7 @@ describe('gasService', () => {
   describe('setTransactionGas', () => {
     it('Given a transactionData, when setting the transaction gas, then return the transactionData with the correct gas information', async () => {
       const transactionData = {
-        to: EOA_ADDRESS,
+        to: testUtils.EOA_ADDRESS,
         value: '1',
         data: '0x',
         operation: '0',
@@ -229,7 +190,6 @@ describe('gasService', () => {
         nonce: '0x_nonce',
         signatures: '0x_signature'
       }
-      const provider = blockchainService.getProvider(CHAIN_ID, RPC_URL)
       const safeTxGas = 10
       const rewardPercentile = 10
       const baseGas = 80000
@@ -237,10 +197,11 @@ describe('gasService', () => {
       const result = await gasService.setTransactionGas(
         transactionData,
         BigNumber.from(safeTxGas),
-        provider,
+        new stubProvider(),
         rewardPercentile,
         baseGas,
-        WALLET_ADDRESS,
+        testUtils.WALLET_ADDRESS,
+        new stubGasModal(),
         { displayValidationModal: true }
       )
       expect(result).toEqual({
