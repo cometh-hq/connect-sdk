@@ -235,7 +235,7 @@ export class AlembicWallet {
       this.provider
     )
 
-    let safeTxDataTyped = {
+    const safeTxDataTyped = {
       ...(await this._prepareTransaction(
         safeTxData.to,
         safeTxData.value,
@@ -244,16 +244,26 @@ export class AlembicWallet {
     }
 
     if (!(await this._isSponsoredTransaction([safeTxDataTyped]))) {
-      safeTxDataTyped = await gasService.setTransactionGas(
-        safeTxDataTyped,
-        safeTxGas,
+      await gasService.verifyHasEnoughBalance(
         this.provider,
         this.REWARD_PERCENTILE,
-        this.BASE_GAS,
         this.getAddress(),
-        new GasModal(),
-        this.uiConfig
+        safeTxGas,
+        this.BASE_GAS,
+        safeTxData.value
       )
+      if (this.uiConfig.displayValidationModal) {
+        this.displayModal(safeTxGas, safeTxData.value)
+      }
+
+      const gasPrice = await gasService.getGasPrice(
+        this.provider,
+        this.REWARD_PERCENTILE
+      )
+
+      safeTxDataTyped.safeTxGas = +safeTxGas
+      safeTxDataTyped.baseGas = this.BASE_GAS
+      safeTxDataTyped.gasPrice = +gasPrice
     }
 
     const safeTxHash = await this._signAndSendTransaction(safeTxDataTyped)
@@ -274,7 +284,7 @@ export class AlembicWallet {
       this.provider
     )
 
-    let safeTxDataTyped = {
+    const safeTxDataTyped = {
       ...(await this._prepareTransaction(
         networks[this.chainId].multisendContractAddress,
         '0',
@@ -284,21 +294,68 @@ export class AlembicWallet {
     }
 
     if (!(await this._isSponsoredTransaction(safeTxData))) {
-      safeTxDataTyped = await gasService.setTransactionGas(
-        safeTxDataTyped,
-        safeTxGas,
-        this.getProvider(),
+      const txValue = await this.getTransactionsTotalValue(safeTxData)
+      await gasService.verifyHasEnoughBalance(
+        this.provider,
         this.REWARD_PERCENTILE,
-        this.BASE_GAS,
         this.getAddress(),
-        new GasModal(),
-        this.uiConfig
+        safeTxGas,
+        this.BASE_GAS,
+        txValue
       )
+      if (this.uiConfig.displayValidationModal) {
+        this.displayModal(safeTxGas, txValue)
+      }
+
+      const gasPrice = await gasService.getGasPrice(
+        this.provider,
+        this.REWARD_PERCENTILE
+      )
+      safeTxDataTyped.safeTxGas = +safeTxGas
+      safeTxDataTyped.baseGas = this.BASE_GAS
+      safeTxDataTyped.gasPrice = +gasPrice
     }
 
     const safeTxHash = await this._signAndSendTransaction(safeTxDataTyped)
 
     return { safeTxHash }
+  }
+
+  public async getTransactionsTotalValue(
+    safeTxData: MetaTransactionData[]
+  ): Promise<string> {
+    let txValue = 0
+    for (let i = 0; i < safeTxData.length; i++) {
+      txValue += parseInt(safeTxData[i].value)
+    }
+    return txValue.toString()
+  }
+
+  public async displayModal(
+    safeTxGas: BigNumber,
+    txValue: string
+  ): Promise<void> {
+    const walletBalance = await this.provider.getBalance(this.getAddress())
+    const gasPrice = await gasService.getGasPrice(
+      this.provider,
+      this.REWARD_PERCENTILE
+    )
+    const totalGasCost = await gasService.getTotalCost(
+      safeTxGas,
+      this.BASE_GAS,
+      gasPrice
+    )
+    if (walletBalance.lt(totalGasCost.add(BigNumber.from(txValue))))
+      throw new Error('Not enough balance to send this value and pay for gas')
+
+    if (
+      !(await new GasModal().initModal(
+        (+walletBalance).toFixed(3),
+        (+totalGasCost).toFixed(3)
+      ))
+    ) {
+      throw new Error('Transaction denied')
+    }
   }
 
   public async _prepareTransaction(
