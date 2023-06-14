@@ -289,7 +289,7 @@ export class AlembicWallet {
     }
 
     if (!(await this._isSponsoredTransaction(safeTxData))) {
-      const txValue = await this.getTransactionsTotalValue(safeTxData)
+      const txValue = await safeService.getTransactionsTotalValue(safeTxData)
       await gasService.verifyHasEnoughBalance(
         this.provider,
         this.REWARD_PERCENTILE,
@@ -314,16 +314,6 @@ export class AlembicWallet {
     const safeTxHash = await this._signAndSendTransaction(safeTxDataTyped)
 
     return { safeTxHash }
-  }
-
-  public async getTransactionsTotalValue(
-    safeTxData: MetaTransactionData[]
-  ): Promise<string> {
-    let txValue = 0
-    for (let i = 0; i < safeTxData.length; i++) {
-      txValue += parseInt(safeTxData[i].value)
-    }
-    return txValue.toString()
   }
 
   public async displayModal(safeTxGas: BigNumber): Promise<void> {

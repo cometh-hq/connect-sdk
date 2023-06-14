@@ -129,6 +129,16 @@ const getSafeTransactionHash = (
   )
 }
 
+const getTransactionsTotalValue = async (
+  safeTxData: MetaTransactionData[]
+): Promise<string> => {
+  let txValue = 0
+  for (let i = 0; i < safeTxData.length; i++) {
+    txValue += parseInt(safeTxData[i].value)
+  }
+  return txValue.toString()
+}
+
 export default {
   isDeployed,
   getNonce,
@@ -137,5 +147,6 @@ export default {
   isSafeOwner,
   prepareAddOwnerTx,
   formatWebAuthnSignatureForSafe,
-  getSafeTransactionHash
+  getSafeTransactionHash,
+  getTransactionsTotalValue
 }
