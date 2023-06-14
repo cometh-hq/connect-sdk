@@ -17,9 +17,6 @@ class StubProvider extends JsonRpcProvider {
   async getBalance(): Promise<BigNumber> {
     return ethers.utils.parseUnits('0.12345', 'ether')
   }
-  async signMessage(): Promise<string> {
-    return '0x_signature'
-  }
 }
 
 export default StubProvider

@@ -62,7 +62,7 @@ describe('safeService', () => {
       { to, value, data }
     ]
 
-    it('Given a signerAddress and a webAuthn signature, when formatting the signature to the safe standard, then return the formatted signature', async () => {
+    it('Given a multisend array, when getting the total value of the transaction, then return the sum of the transactions value', async () => {
       const totalValue = await safeService.getTransactionsTotalValue(
         transactionDataMultisend
       )
