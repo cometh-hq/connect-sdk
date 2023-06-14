@@ -84,7 +84,7 @@ export class AlembicWallet {
       const ownerAddress = await this.authAdapter.getSigner().getAddress()
 
       this.walletAddress = await this.API.getWalletAddress(ownerAddress)
-      this.signer = await this.authAdapter.getSigner()
+      this.signer = this.authAdapter.getSigner()
     }
 
     if (!this.signer) throw new Error('No signer found')
@@ -159,7 +159,7 @@ export class AlembicWallet {
     return await this.signer._signTypedData(
       {
         chainId: this.chainId,
-        verifyingContract: await this.getAddress()
+        verifyingContract: this.getAddress()
       },
       EIP712_SAFE_MESSAGE_TYPE,
       { message: messageToSign }
@@ -174,7 +174,7 @@ export class AlembicWallet {
     return await this.signer._signTypedData(
       {
         chainId: this.chainId,
-        verifyingContract: await this.getAddress()
+        verifyingContract: this.getAddress()
       },
       EIP712_SAFE_TX_TYPES,
       {
@@ -190,10 +190,7 @@ export class AlembicWallet {
         nonce: BigNumber.from(
           safeTxData.nonce
             ? safeTxData.nonce
-            : await safeService.getNonce(
-                await this.getAddress(),
-                await this.getProvider()
-              )
+            : await safeService.getNonce(this.getAddress(), this.getProvider())
         ).toString()
       }
     )
@@ -251,7 +248,7 @@ export class AlembicWallet {
         safeTxData.value
       )
       if (this.uiConfig.displayValidationModal) {
-        this.displayModal(safeTxGas, safeTxData.value)
+        this.displayModal(safeTxGas)
       }
 
       const gasPrice = await gasService.getGasPrice(
@@ -302,7 +299,7 @@ export class AlembicWallet {
         txValue
       )
       if (this.uiConfig.displayValidationModal) {
-        this.displayModal(safeTxGas, txValue)
+        this.displayModal(safeTxGas)
       }
 
       const gasPrice = await gasService.getGasPrice(
@@ -329,10 +326,7 @@ export class AlembicWallet {
     return txValue.toString()
   }
 
-  public async displayModal(
-    safeTxGas: BigNumber,
-    txValue: string
-  ): Promise<void> {
+  public async displayModal(safeTxGas: BigNumber): Promise<void> {
     const walletBalance = await this.provider.getBalance(this.getAddress())
     const gasPrice = await gasService.getGasPrice(
       this.provider,
@@ -343,13 +337,19 @@ export class AlembicWallet {
       this.BASE_GAS,
       gasPrice
     )
-    if (walletBalance.lt(totalGasCost.add(BigNumber.from(txValue))))
-      throw new Error('Not enough balance to send this value and pay for gas')
+
+    const displayedTotalBalance = (+ethers.utils.formatEther(
+      ethers.utils.parseUnits(walletBalance.toString(), 'wei')
+    )).toFixed(3)
+
+    const displayedTotalGasCost = (+ethers.utils.formatEther(
+      ethers.utils.parseUnits(totalGasCost.toString(), 'wei')
+    )).toFixed(3)
 
     if (
       !(await new GasModal().initModal(
-        (+walletBalance).toFixed(3),
-        (+totalGasCost).toFixed(3)
+        displayedTotalBalance,
+        displayedTotalGasCost
       ))
     ) {
       throw new Error('Transaction denied')

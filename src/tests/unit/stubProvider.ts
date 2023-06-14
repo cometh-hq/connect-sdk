@@ -5,6 +5,7 @@ class StubProvider extends JsonRpcProvider {
   async estimateGas(): Promise<BigNumber> {
     return BigNumber.from(123)
   }
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   async send(): Promise<any> {
     const reward = BigNumber.from(10)
     const baseFeePerGas = BigNumber.from(100)

@@ -6,8 +6,10 @@ jest.doMock('../constants', () => ({
 import { BigNumber, ethers } from 'ethers'
 
 import stubProvider from '../tests/unit/stubProvider'
-import testUtils from '../tests/unit/testUtils'
 import gasService from './gasService'
+
+const WALLET_ADDRESS = '0xecf9D83633dC1DE88400945c0f97B76153a386ec'
+const EOA_ADDRESS = '0x4B758d3Af4c8B2662bC485420077413DDdd62E33'
 
 jest.mock('@ethersproject/providers')
 
@@ -20,7 +22,7 @@ describe('gasService', () => {
 
   describe('estimateSafeTxGas', () => {
     const transactionData = {
-      to: testUtils.EOA_ADDRESS,
+      to: EOA_ADDRESS,
       value: '1',
       data: '0x',
       operation: '0',
@@ -37,7 +39,7 @@ describe('gasService', () => {
       const provider = new stubProvider()
       const estimateGas = jest.spyOn(provider, 'estimateGas')
       await gasService.estimateSafeTxGas(
-        testUtils.WALLET_ADDRESS,
+        WALLET_ADDRESS,
         [transactionData],
         provider
       )
@@ -45,7 +47,7 @@ describe('gasService', () => {
       expect(estimateGas).toHaveBeenCalledWith({
         baseGas: '0',
         data: '0x',
-        from: testUtils.WALLET_ADDRESS,
+        from: WALLET_ADDRESS,
         gasPrice: '0',
         gasToken: '0x0000000000000000000000000000000000000000',
         nonce: '0x_nonce',
@@ -53,14 +55,14 @@ describe('gasService', () => {
         refundReceiver: '0x0000000000000000000000000000000000000000',
         safeTxGas: '0',
         signatures: '0x_signature',
-        to: testUtils.EOA_ADDRESS,
+        to: EOA_ADDRESS,
         value: '1'
       })
     })
 
     it('Given a single call transaction, when predicting the safeTxGas, then return the correct value', async () => {
       const safeTxGas = await gasService.estimateSafeTxGas(
-        testUtils.WALLET_ADDRESS,
+        WALLET_ADDRESS,
         [transactionData],
         new stubProvider()
       )
@@ -69,7 +71,7 @@ describe('gasService', () => {
     })
 
     it('Given a multisend transaction, when predicting the safeTxGas, then return the correct value', async () => {
-      const to = testUtils.EOA_ADDRESS
+      const to = EOA_ADDRESS
       const value = '0'
       const data = '0x'
 
@@ -79,7 +81,7 @@ describe('gasService', () => {
         { to, value, data }
       ]
       const safeTxGas = await gasService.estimateSafeTxGas(
-        testUtils.WALLET_ADDRESS,
+        WALLET_ADDRESS,
         transactionDataMultisend,
         new stubProvider()
       )
@@ -121,7 +123,7 @@ describe('gasService', () => {
         gasService.verifyHasEnoughBalance(
           new stubProvider(),
           rewardPercentile,
-          testUtils.WALLET_ADDRESS,
+          WALLET_ADDRESS,
           BigNumber.from(safeTxGas),
           baseGas,
           txValue
@@ -138,7 +140,7 @@ describe('gasService', () => {
         gasService.verifyHasEnoughBalance(
           new stubProvider(),
           rewardPercentile,
-          testUtils.WALLET_ADDRESS,
+          WALLET_ADDRESS,
           BigNumber.from(safeTxGas),
           baseGas,
           txValue
@@ -157,7 +159,7 @@ describe('gasService', () => {
         gasService.verifyHasEnoughBalance(
           new stubProvider(),
           rewardPercentile,
-          testUtils.WALLET_ADDRESS,
+          WALLET_ADDRESS,
           BigNumber.from(safeTxGas),
           baseGas,
           txValue
