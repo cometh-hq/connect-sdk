@@ -1,6 +1,6 @@
+import { GasModal as GasModalComponent } from '@alembic/ui'
 import React from 'react'
 import { createRoot } from 'react-dom/client'
-import { GasModal as GasModalComponent } from '@alembic/ui'
 
 interface GasModalConfig {
   zIndex?: string

@@ -16,6 +16,7 @@ export const networks = {
     multisendContractAddress: '0xA238CBeb142c10Ef7Ad8442C6D1f9E89e07e7761'
   }
 }
+export const GAS_GAP_TOLERANCE = 10
 export const DEFAULT_BASE_GAS = 80000
 export const DEFAULT_REWARD_PERCENTILE = 80
 export const BLOCK_EVENT_GAP = -500
