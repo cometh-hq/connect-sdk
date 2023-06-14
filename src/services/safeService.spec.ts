@@ -24,7 +24,7 @@ describe('safeService', () => {
       nonce: BigNumber.from(128).toString()
     }
     it('Given a walletAddress with transactionData, when predicting transaction Hash, then return the correct safe txHash', async () => {
-      const predictedSafeTxHash = await safeService.getSafeTransactionHash(
+      const predictedSafeTxHash = safeService.getSafeTransactionHash(
         WALLET_ADDRESS,
         transactionData,
         CHAIN_ID

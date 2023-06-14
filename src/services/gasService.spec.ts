@@ -5,7 +5,6 @@ jest.doMock('../constants', () => ({
 
 import { BigNumber, ethers } from 'ethers'
 
-import stubGasModal from '../tests/unit/stubGasModal'
 import stubProvider from '../tests/unit/stubProvider'
 import testUtils from '../tests/unit/testUtils'
 import gasService from './gasService'
@@ -18,7 +17,6 @@ describe('gasService', () => {
   const reward = BigNumber.from(10)
   const baseFeePerGas = BigNumber.from(100)
   const mockedEstimateGas = BigNumber.from(123)
-  const mockedBalanceString = '0.12345'
 
   describe('estimateSafeTxGas', () => {
     const transactionData = {
@@ -110,6 +108,63 @@ describe('gasService', () => {
         BigNumber.from(reward.add(baseFeePerGas)).div(GAS_GAP_TOLERANCE)
       )
       expect(result).toEqual(expectedResult)
+    })
+  })
+  describe('verifyHasEnoughBalance', () => {
+    it('Given a low gas cost and txValue, when the wallet balance has enough to pay for gas and txValue, then resolve without throwing an error', async () => {
+      const safeTxGas = 10
+      const rewardPercentile = 10
+      const baseGas = 80000
+      const txValue = '12345'
+
+      await expect(
+        gasService.verifyHasEnoughBalance(
+          new stubProvider(),
+          rewardPercentile,
+          testUtils.WALLET_ADDRESS,
+          BigNumber.from(safeTxGas),
+          baseGas,
+          txValue
+        )
+      ).resolves.not.toThrow()
+    })
+    it('Given a low gas cost but high txValue, when the wallet balance does not have enough to pay for txValue, then throw an error', async () => {
+      const safeTxGas = 10
+      const rewardPercentile = 10
+      const baseGas = 80000
+      const txValue = ethers.utils.parseUnits('0.12345', 'ether').toString()
+
+      await expect(
+        gasService.verifyHasEnoughBalance(
+          new stubProvider(),
+          rewardPercentile,
+          testUtils.WALLET_ADDRESS,
+          BigNumber.from(safeTxGas),
+          baseGas,
+          txValue
+        )
+      ).rejects.toThrow(
+        new Error('Not enough balance to send this value and pay for gas')
+      )
+    })
+    it('Given a high gas cost but low txValue, when the wallet balance does not have enough to pay for gas, then throw an error', async () => {
+      const safeTxGas = 10000000000
+      const rewardPercentile = 10
+      const baseGas = 8000000000000000
+      const txValue = '12345'
+
+      await expect(
+        gasService.verifyHasEnoughBalance(
+          new stubProvider(),
+          rewardPercentile,
+          testUtils.WALLET_ADDRESS,
+          BigNumber.from(safeTxGas),
+          baseGas,
+          txValue
+        )
+      ).rejects.toThrow(
+        new Error('Not enough balance to send this value and pay for gas')
+      )
     })
   })
 })
