@@ -248,7 +248,7 @@ export class AlembicWallet {
         safeTxData.value
       )
       if (this.uiConfig.displayValidationModal) {
-        this.displayModal(safeTxGas)
+        await this.displayModal(safeTxGas)
       }
 
       const gasPrice = await gasService.getGasPrice(
