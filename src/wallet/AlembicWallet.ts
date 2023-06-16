@@ -17,6 +17,7 @@ import siweService from '../services/siweService'
 import webAuthnService from '../services/webAuthnService'
 import { GasModal } from '../ui'
 import { AUTHAdapter } from './adapters'
+import { AlembicAuthSigner } from './signers/AlembicAuthSigner'
 import { WebAuthnSigner } from './signers/WebAuthnSigner'
 import {
   MetaTransactionData,
@@ -44,9 +45,9 @@ export class AlembicWallet {
   private provider: StaticJsonRpcProvider
   private sponsoredAddresses?: SponsoredTransaction[]
   private walletAddress?: string
-  private signer?: JsonRpcSigner | Wallet | WebAuthnSigner
+  private signer?: JsonRpcSigner | Wallet | WebAuthnSigner | AlembicAuthSigner
   private webAuthnOwner?: WebAuthnOwner
-  private uiConfig = {
+  private uiConfig: UIConfig = {
     displayValidationModal: true
   }
 
@@ -69,7 +70,16 @@ export class AlembicWallet {
     if (!networks[this.chainId])
       throw new Error('This network is not supported')
 
-    if (await this._verifyWebAuthnOwner()) {
+    const forceAlembicAuthAdaptor = true
+
+    if (forceAlembicAuthAdaptor) {
+      if (!this.authAdapter) throw new Error('No Alembic Auth adapter found')
+      await this.authAdapter.connect()
+
+      this.signer = this.authAdapter.getSigner()
+      const ownerAddress = await this.signer.getAddress()
+      this.walletAddress = await this.API.getWalletAddress(ownerAddress)
+    } else if (await this._verifyWebAuthnOwner()) {
       if (!this.webAuthnOwner) throw new Error('No WebAuthn Signer found')
 
       this.walletAddress = this.webAuthnOwner.walletAddress
@@ -98,11 +108,13 @@ export class AlembicWallet {
     )
     const signature = await this.signMessage(message.prepareMessage())
 
-    await this.API.connectToAlembicWallet({
-      message,
-      signature,
-      walletAddress: this.walletAddress
-    })
+    if (!forceAlembicAuthAdaptor) {
+      await this.API.connectToAlembicWallet({
+        message,
+        signature,
+        walletAddress: this.walletAddress
+      })
+    }
 
     this.sponsoredAddresses = await this.API.getSponsoredAddresses()
     this.connected = true
