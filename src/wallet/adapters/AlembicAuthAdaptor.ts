@@ -26,8 +26,8 @@ export class AlembicAuthAdaptor implements AUTHAdapter {
   }
 
   async logout(): Promise<void> {
-    //if (!this.wallet) throw new Error('No Wallet instance found')
-    //this.wallet = undefined
+    if (!this.signer) throw new Error('No signer instance found')
+    this.signer = undefined
   }
 
   async getAccount(): Promise<string> {
@@ -36,7 +36,7 @@ export class AlembicAuthAdaptor implements AUTHAdapter {
   }
 
   getSigner(): AlembicAuthSigner {
-    if (!this.signer) throw new Error('No signer found ??')
+    if (!this.signer) throw new Error('No signer found')
     return this.signer
   }
 
