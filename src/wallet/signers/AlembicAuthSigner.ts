@@ -11,13 +11,11 @@ import { SafeTransactionDataPartial } from '../types'
 
 export class AlembicAuthSigner extends Signer {
   readonly owner: string
-  readonly chainId: string
   private jwtToken: string
   private api: API
-  constructor(owner: string, chainId: string, jwtToken: string, api: API) {
+  constructor(owner: string, jwtToken: string, api: API) {
     super()
     this.owner = owner
-    this.chainId = chainId
     this.jwtToken = jwtToken
     this.api = api
   }

@@ -19,7 +19,6 @@ export class AlembicAuthAdaptor implements AUTHAdapter {
     this.address = await this.api.connectToAlembicWebAuth(this.jwtToken)
     this.signer = new AlembicAuthSigner(
       await this.getAccount(),
-      this.chainId,
       this.jwtToken,
       this.api
     )
