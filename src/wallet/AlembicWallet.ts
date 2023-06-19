@@ -90,12 +90,12 @@ export class AlembicWallet {
         throw new Error('No webAuthnOwners in database')
 
       if (!(await webAuthnService.platformAuthenticatorIsAvailable()))
-        throw new Error('webAuthn not compatible with device')
+        throw new Error('WebAuthn platform not compatible with device')
 
       this.signer = new WebAuthnSigner(this.webAuthnOwners)
       signature = await this.signMessage(message.prepareMessage())
     } catch (error) {
-      console.log(error)
+      console.error('WebAuthn login error:', error)
       this.signer = await this.authAdapter.getSigner()
       signature = await this.signMessage(message.prepareMessage())
     }
