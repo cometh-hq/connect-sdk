@@ -57,13 +57,12 @@ const getTotalCost = async (
 
 const verifyHasEnoughBalance = async (
   provider: StaticJsonRpcProvider,
-  rewardPercentile: number,
   walletAddress: string,
   safeTxGas: BigNumber,
+  gasPrice: BigNumber,
   baseGas: number,
   txValue: string
 ): Promise<void> => {
-  const gasPrice = await getGasPrice(provider, rewardPercentile)
   const walletBalance = await provider.getBalance(walletAddress)
   const totalGasCost = await getTotalCost(safeTxGas, baseGas, gasPrice)
   if (walletBalance.lt(totalGasCost.add(BigNumber.from(txValue))))
