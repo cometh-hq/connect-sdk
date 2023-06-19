@@ -3,10 +3,12 @@ import { parseAuthenticatorData } from '@simplewebauthn/server/helpers'
 import CBOR from 'cbor-js'
 import { ec as EC } from 'elliptic'
 import { ethers } from 'ethers'
+import { v4 } from 'uuid'
 
 import { BLOCK_EVENT_GAP, networks, P256SignerCreationCode } from '../constants'
 import { P256SignerFactory__factory } from '../contracts/types/factories'
 import { derToRS, findSequence, hexArrayStr, parseHex } from '../utils/utils'
+import { WebAuthnOwner } from '../wallet'
 import { AlembicProvider } from '../wallet/AlembicProvider'
 
 const curve = new EC('p256')
@@ -18,86 +20,85 @@ const getCurrentPublicKeyId = (): string | null => {
   return window.localStorage.getItem('public-key-id')
 }
 
-const createCredentials = async (signerName: string): Promise<any> => {
+const createCredentials = async (
+  signerName: string
+): Promise<{
+  point: any
+  id: string
+}> => {
   const challenge = new TextEncoder().encode('connection')
 
-  const webAuthnCredentials = await navigator.credentials
-    .create({
-      publicKey: {
-        rp: {
-          name: 'wallet'
-        },
-        user: {
-          id: new TextEncoder().encode(signerName),
-          name: signerName,
-          displayName: signerName
-        },
-        challenge,
-        pubKeyCredParams: [{ alg: -7, type: 'public-key' }]
-      }
-    })
-    .then((attestationPayload: any) => {
-      const attestation = CBOR.decode(
-        attestationPayload?.response?.attestationObject
-      )
-      const authData = parseAuthenticatorData(attestation.authData)
-      const publicKey = CBOR.decode(authData?.credentialPublicKey?.buffer)
-      const x = publicKey[-2]
-      const y = publicKey[-3]
-      const point = curve.curve.point(x, y)
-
-      return {
-        point,
-        id: hexArrayStr(attestationPayload.rawId)
-      }
-    })
-    .catch(console.error)
-
-  return webAuthnCredentials
-}
-
-const updateCurrentWebAuthnOwner = (
-  publicKeyId: string,
-  publicKeyX: string,
-  publicKeyY: string
-): void => {
-  window.localStorage.setItem(PUBLIC_KEY_ID_KEY, publicKeyId)
-  window.localStorage.setItem(PUBLIC_KEY_X, publicKeyX)
-  window.localStorage.setItem(PUBLIC_KEY_Y, publicKeyY)
-}
-
-const _sign = async (
-  challenge: BufferSource,
-  publicKey_Id: BufferSource
-): Promise<any> => {
-  const assertionPayload: any = await navigator.credentials.get({
+  const webAuthnCredentials: any = await navigator.credentials.create({
     publicKey: {
+      rp: {
+        name: 'wallet'
+      },
+      user: {
+        id: new TextEncoder().encode(v4()),
+        name: signerName,
+        displayName: signerName
+      },
       challenge,
-      allowCredentials: [
-        {
-          id: publicKey_Id,
-          type: 'public-key'
-        }
-      ]
+      pubKeyCredParams: [{ alg: -7, type: 'public-key' }]
     }
   })
-  return assertionPayload?.response
+
+  const attestation = CBOR.decode(
+    webAuthnCredentials?.response?.attestationObject
+  )
+  const authData = parseAuthenticatorData(attestation.authData)
+  const publicKey = CBOR.decode(authData?.credentialPublicKey?.buffer)
+  const x = publicKey[-2]
+  const y = publicKey[-3]
+  const point = curve.curve.point(x, y)
+
+  return {
+    point,
+    id: hexArrayStr(webAuthnCredentials.rawId)
+  }
+}
+
+const sign = async (
+  challenge: BufferSource,
+  allowCredentials: PublicKeyCredentialDescriptor[]
+): Promise<any> => {
+  const assertionPayload = await navigator.credentials.get({
+    publicKey: {
+      challenge,
+      allowCredentials
+    }
+  })
+
+  return assertionPayload
 }
 
 const getWebAuthnSignature = async (
   hash: string,
-  publicKey_Id: string
-): Promise<string> => {
-  const formattedPublicKeyId = parseHex(publicKey_Id)
+  webAuthnOwners: WebAuthnOwner[]
+): Promise<{
+  encodedSignature: string
+  signerAddress: string
+}> => {
   const challenge = parseHex(hash.slice(2))
+
+  const { rawId: usedKeyId, response: credentialResponse } = await sign(
+    challenge,
+    webAuthnOwners.map((webAuthnOwner) => {
+      return {
+        id: parseHex(webAuthnOwner.publicKeyId),
+        type: 'public-key'
+      }
+    })
+  )
 
   const {
     signature,
     authenticatorData,
     clientDataJSON: clientData
-  } = await _sign(challenge, formattedPublicKeyId)
+  } = credentialResponse
 
   const rs = derToRS(new Uint8Array(signature))
+
   const challengeOffset =
     findSequence(
       new Uint8Array(clientData),
@@ -116,7 +117,13 @@ const getWebAuthnSignature = async (
     ]
   )
 
-  return encodedSignature
+  const webAuthnCredential = webAuthnOwners.find(
+    (webAuthnOwner) => webAuthnOwner.publicKeyId === hexArrayStr(usedKeyId)
+  )
+
+  if (!webAuthnCredential) throw new Error(`No Web Authn Signer found`)
+
+  return { encodedSignature, signerAddress: webAuthnCredential.signerAddress }
 }
 
 const predictSignerAddress = async (
@@ -143,6 +150,16 @@ const predictSignerAddress = async (
     salt,
     deploymentCode
   )
+}
+
+const updateCurrentWebAuthnOwner = (
+  publicKeyId: string,
+  publicKeyX: string,
+  publicKeyY: string
+): void => {
+  window.localStorage.setItem(PUBLIC_KEY_ID_KEY, publicKeyId)
+  window.localStorage.setItem(PUBLIC_KEY_X, publicKeyX)
+  window.localStorage.setItem(PUBLIC_KEY_Y, publicKeyY)
 }
 
 const waitWebAuthnSignerDeployment = async (
