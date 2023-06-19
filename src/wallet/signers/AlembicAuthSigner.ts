@@ -10,18 +10,22 @@ import { API } from '../../services/API'
 import { SafeTransactionDataPartial } from '../types'
 
 export class AlembicAuthSigner extends Signer {
-  readonly owner: string
+  private address?: string
   private jwtToken: string
-  private api: API
-  constructor(owner: string, jwtToken: string, api: API) {
+  private API: API
+  constructor(jwtToken: string, api: API) {
     super()
-    this.owner = owner
     this.jwtToken = jwtToken
-    this.api = api
+    this.API = api
   }
 
   async getAddress(): Promise<string> {
-    return this.owner
+    return this.address ?? ''
+  }
+
+  async connectSigner(): Promise<string> {
+    this.address = await this.API.connectToAlembicWebAuth(this.jwtToken)
+    return this.address
   }
 
   async _signTypedData(
@@ -29,7 +33,7 @@ export class AlembicAuthSigner extends Signer {
     types: Record<string, Array<TypedDataField>>,
     value: Record<string, any>
   ): Promise<string> {
-    return this.api.signTypedDataWithAlembicWebAuth(
+    return this.API.signTypedDataWithAlembicWebAuth(
       this.jwtToken,
       domain,
       types,

@@ -4,35 +4,29 @@ import { UserInfos } from '../types'
 import { AUTHAdapter } from './types'
 
 export class AlembicAuthAdaptor implements AUTHAdapter {
-  private signer: AlembicAuthSigner | undefined
-  private address: string | undefined
+  private signer?: AlembicAuthSigner
   readonly chainId: string
   private jwtToken: string
-  private api: API
+  private API: API
   constructor(chainId: string, jwtToken: string, apiKey: string) {
     this.chainId = chainId
     this.jwtToken = jwtToken
-    this.api = new API(apiKey, +chainId)
+    this.API = new API(apiKey, +chainId)
   }
 
   async connect(): Promise<void> {
-    this.address = await this.api.connectToAlembicWebAuth(this.jwtToken)
-    this.signer = new AlembicAuthSigner(
-      await this.getAccount(),
-      this.jwtToken,
-      this.api
-    )
+    this.signer = new AlembicAuthSigner(this.jwtToken, this.API)
+    await this.signer.connectSigner()
   }
 
   async logout(): Promise<void> {
     if (!this.signer) throw new Error('No signer instance found')
-    this.address = undefined
     this.signer = undefined
   }
 
   async getAccount(): Promise<string> {
-    if (!this.address) throw new Error('No address found')
-    return this.address
+    if (!this.signer) throw new Error('No signer found')
+    return this.signer.getAddress()
   }
 
   getSigner(): AlembicAuthSigner {
