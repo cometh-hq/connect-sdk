@@ -24,7 +24,7 @@ export class AlembicAuthSigner extends Signer {
   }
 
   async connectSigner(): Promise<string> {
-    this.address = await this.API.connectToAlembicWebAuth(this.jwtToken)
+    this.address = await this.API.connectToAlembicAuth(this.jwtToken)
     return this.address
   }
 
@@ -33,7 +33,7 @@ export class AlembicAuthSigner extends Signer {
     types: Record<string, Array<TypedDataField>>,
     value: Record<string, any>
   ): Promise<string> {
-    return this.API.signTypedDataWithAlembicWebAuth(
+    return this.API.signTypedDataWithAlembicAuth(
       this.jwtToken,
       domain,
       types,

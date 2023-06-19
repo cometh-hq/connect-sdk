@@ -114,27 +114,34 @@ export class API {
     return response?.data?.webAuthnOwners
   }
 
-  async connectToAlembicWebAuth(token: string): Promise<string> {
-    const body = {
-      token
+  async connectToAlembicAuth(token: string): Promise<string> {
+    const config = {
+      headers: {
+        token
+      }
     }
-    const response = await api.post(`/user/connect`, body)
+
+    const response = await api.post(`/user/connect`, {}, config)
     return response?.data?.address
   }
 
-  async signTypedDataWithAlembicWebAuth(
+  async signTypedDataWithAlembicAuth(
     token: string,
     domain: TypedDataDomain,
     types: Record<string, TypedDataField[]>,
     value: Record<string, any>
   ): Promise<string> {
+    const config = {
+      headers: {
+        token
+      }
+    }
     const body = {
-      token,
       domain,
       types,
       value
     }
-    const response = await api.post(`/user/signTypedData`, body)
+    const response = await api.post(`/user/signTypedData`, body, config)
     return response?.data?.signature
   }
 }
