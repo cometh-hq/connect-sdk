@@ -70,16 +70,7 @@ export class AlembicWallet {
     if (!networks[this.chainId])
       throw new Error('This network is not supported')
 
-    const forceAlembicAuthAdaptor = true
-
-    if (forceAlembicAuthAdaptor) {
-      if (!this.authAdapter) throw new Error('No Alembic Auth adapter found')
-      await this.authAdapter.connect()
-
-      this.signer = this.authAdapter.getSigner()
-      const ownerAddress = await this.signer.getAddress()
-      this.walletAddress = await this.API.getWalletAddress(ownerAddress)
-    } else if (await this._verifyWebAuthnOwner()) {
+    if (await this._verifyWebAuthnOwner()) {
       if (!this.webAuthnOwner) throw new Error('No WebAuthn Signer found')
 
       this.walletAddress = this.webAuthnOwner.walletAddress
@@ -91,10 +82,10 @@ export class AlembicWallet {
       if (!this.authAdapter) throw new Error('No EOA adapter found')
 
       await this.authAdapter.connect()
-      const ownerAddress = await this.authAdapter.getSigner().getAddress()
 
-      this.walletAddress = await this.API.getWalletAddress(ownerAddress)
       this.signer = this.authAdapter.getSigner()
+      const ownerAddress = await this.signer.getAddress()
+      this.walletAddress = await this.API.getWalletAddress(ownerAddress)
     }
 
     if (!this.signer) throw new Error('No signer found')
@@ -108,13 +99,11 @@ export class AlembicWallet {
     )
     const signature = await this.signMessage(message.prepareMessage())
 
-    if (!forceAlembicAuthAdaptor) {
-      await this.API.connectToAlembicWallet({
-        message,
-        signature,
-        walletAddress: this.walletAddress
-      })
-    }
+    await this.API.connectToAlembicWallet({
+      message,
+      signature,
+      walletAddress: this.walletAddress
+    })
 
     this.sponsoredAddresses = await this.API.getSponsoredAddresses()
     this.connected = true

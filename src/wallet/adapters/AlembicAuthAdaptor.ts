@@ -9,10 +9,10 @@ export class AlembicAuthAdaptor implements AUTHAdapter {
   readonly chainId: string
   private jwtToken: string
   private api: API
-  constructor(chainId: string, jwtToken: string) {
+  constructor(chainId: string, jwtToken: string, apiKey: string) {
     this.chainId = chainId
     this.jwtToken = jwtToken
-    this.api = new API('', +chainId)
+    this.api = new API(apiKey, +chainId)
   }
 
   async connect(): Promise<void> {
