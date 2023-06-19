@@ -86,13 +86,12 @@ export class AlembicWallet {
     let signature: string
 
     try {
-      if (this.webAuthnOwners.length === 0) {
-        throw new Error('no webAuthnOwners')
-      }
+      if (this.webAuthnOwners.length === 0)
+        throw new Error('No webAuthnOwners in database')
+
       this.signer = new WebAuthnSigner(this.webAuthnOwners)
       signature = await this.signMessage(message.prepareMessage())
     } catch (error) {
-      console.log('error', error)
       this.signer = await this.authAdapter.getSigner()
       signature = await this.signMessage(message.prepareMessage())
     }
