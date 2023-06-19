@@ -45,7 +45,7 @@ export class AlembicWallet {
   private sponsoredAddresses?: SponsoredTransaction[]
   private walletAddress?: string
   private signer?: JsonRpcSigner | Wallet | WebAuthnSigner
-  private webAuthnOwner?: WebAuthnOwner
+  private webAuthnOwners?: WebAuthnOwner[]
   private uiConfig = {
     displayValidationModal: true
   }
@@ -69,40 +69,41 @@ export class AlembicWallet {
     if (!networks[this.chainId])
       throw new Error('This network is not supported')
 
-    if (await this._verifyWebAuthnOwner()) {
-      if (!this.webAuthnOwner) throw new Error('No WebAuthn Signer found')
+    if (!this.authAdapter) throw new Error('No EOA adapter found')
 
-      this.walletAddress = this.webAuthnOwner.walletAddress
-      this.signer = new WebAuthnSigner(
-        this.webAuthnOwner.signerAddress,
-        this.webAuthnOwner.publicKeyId
-      )
-    } else {
-      if (!this.authAdapter) throw new Error('No EOA adapter found')
+    await this.authAdapter.connect()
+    const ownerAddress = await this.authAdapter.getSigner().getAddress()
 
-      await this.authAdapter.connect()
-      const ownerAddress = await this.authAdapter.getSigner().getAddress()
-
-      this.walletAddress = await this.API.getWalletAddress(ownerAddress)
-      this.signer = this.authAdapter.getSigner()
-    }
-
-    if (!this.signer) throw new Error('No signer found')
-    if (!this.walletAddress) throw new Error('No walletAddress found')
-
+    this.walletAddress = await this.API.getWalletAddress(ownerAddress)
+    this.webAuthnOwners = await this.API.getWebAuthnOwners(this.walletAddress)
     const nonce = await this.API.getNonce(this.walletAddress)
     const message: SiweMessage = siweService.createMessage(
       this.walletAddress,
       nonce,
       this.chainId
     )
-    const signature = await this.signMessage(message.prepareMessage())
+
+    let signature: string
+
+    try {
+      if (this.webAuthnOwners.length === 0)
+        throw new Error('No webAuthnOwners in database')
+
+      this.signer = new WebAuthnSigner(this.webAuthnOwners)
+      signature = await this.signMessage(message.prepareMessage())
+    } catch (error) {
+      this.signer = await this.authAdapter.getSigner()
+      signature = await this.signMessage(message.prepareMessage())
+    }
 
     await this.API.connectToAlembicWallet({
       message,
       signature,
       walletAddress: this.walletAddress
     })
+
+    if (!this.signer) throw new Error('No signer found')
+    if (!this.walletAddress) throw new Error('No walletAddress found')
 
     this.sponsoredAddresses = await this.API.getSponsoredAddresses()
     this.connected = true
@@ -239,22 +240,21 @@ export class AlembicWallet {
     }
 
     if (!(await this._isSponsoredTransaction([safeTxDataTyped]))) {
-      await gasService.verifyHasEnoughBalance(
-        this.provider,
-        this.REWARD_PERCENTILE,
-        this.getAddress(),
-        safeTxGas,
-        this.BASE_GAS,
-        safeTxData.value
-      )
-      if (this.uiConfig.displayValidationModal) {
-        await this.displayModal(safeTxGas)
-      }
-
       const gasPrice = await gasService.getGasPrice(
         this.provider,
         this.REWARD_PERCENTILE
       )
+      await gasService.verifyHasEnoughBalance(
+        this.provider,
+        this.getAddress(),
+        safeTxGas,
+        gasPrice,
+        this.BASE_GAS,
+        safeTxData.value
+      )
+      if (this.uiConfig.displayValidationModal) {
+        await this.displayModal(safeTxGas, gasPrice)
+      }
 
       safeTxDataTyped.safeTxGas = +safeTxGas
       safeTxDataTyped.baseGas = this.BASE_GAS
@@ -290,22 +290,22 @@ export class AlembicWallet {
 
     if (!(await this._isSponsoredTransaction(safeTxData))) {
       const txValue = await safeService.getTransactionsTotalValue(safeTxData)
-      await gasService.verifyHasEnoughBalance(
-        this.provider,
-        this.REWARD_PERCENTILE,
-        this.getAddress(),
-        safeTxGas,
-        this.BASE_GAS,
-        txValue
-      )
-      if (this.uiConfig.displayValidationModal) {
-        this.displayModal(safeTxGas)
-      }
-
       const gasPrice = await gasService.getGasPrice(
         this.provider,
         this.REWARD_PERCENTILE
       )
+      await gasService.verifyHasEnoughBalance(
+        this.provider,
+        this.getAddress(),
+        safeTxGas,
+        gasPrice,
+        this.BASE_GAS,
+        txValue
+      )
+      if (this.uiConfig.displayValidationModal) {
+        this.displayModal(safeTxGas, gasPrice)
+      }
+
       safeTxDataTyped.safeTxGas = +safeTxGas
       safeTxDataTyped.baseGas = this.BASE_GAS
       safeTxDataTyped.gasPrice = +gasPrice
@@ -316,12 +316,11 @@ export class AlembicWallet {
     return { safeTxHash }
   }
 
-  public async displayModal(safeTxGas: BigNumber): Promise<void> {
+  public async displayModal(
+    safeTxGas: BigNumber,
+    gasPrice: BigNumber
+  ): Promise<void> {
     const walletBalance = await this.provider.getBalance(this.getAddress())
-    const gasPrice = await gasService.getGasPrice(
-      this.provider,
-      this.REWARD_PERCENTILE
-    )
     const totalGasCost = await gasService.getTotalCost(
       safeTxGas,
       this.BASE_GAS,
@@ -364,24 +363,6 @@ export class AlembicWallet {
       refundReceiver: ethers.constants.AddressZero,
       nonce: await safeService.getNonce(this.getAddress(), this.getProvider())
     }
-  }
-
-  /**
-   * WebAuthn Section
-   */
-
-  public async getCurrentWebAuthnOwner(): Promise<WebAuthnOwner | undefined> {
-    const publicKeyId = webAuthnService.getCurrentPublicKeyId()
-
-    if (publicKeyId === null) return undefined
-
-    const currentWebAuthnOwner = await this.API.getWebAuthnOwnerByPublicKeyId(
-      <string>publicKeyId
-    )
-
-    if (currentWebAuthnOwner === null) return undefined
-
-    return currentWebAuthnOwner
   }
 
   public async addWebAuthnOwner(): Promise<string> {
@@ -445,32 +426,9 @@ export class AlembicWallet {
       this.getProvider()
     )
 
-    webAuthnService.updateCurrentWebAuthnOwner(
-      publicKeyId,
-      publicKeyX,
-      publicKeyY
-    )
-
-    this.signer = new WebAuthnSigner(predictedSignerAddress, publicKeyId)
+    const webAuthnOwners = await this.API.getWebAuthnOwners(this.getAddress())
+    this.signer = new WebAuthnSigner(webAuthnOwners)
 
     return predictedSignerAddress
-  }
-
-  private async _verifyWebAuthnOwner(): Promise<boolean> {
-    const currentWebAuthnOwner = await this.getCurrentWebAuthnOwner()
-
-    if (!currentWebAuthnOwner) return false
-
-    this.webAuthnOwner = currentWebAuthnOwner
-
-    const isSafeOwner = await safeService.isSafeOwner(
-      currentWebAuthnOwner.walletAddress,
-      currentWebAuthnOwner.signerAddress,
-      this.getProvider()
-    )
-
-    if (!isSafeOwner) return false
-
-    return true
   }
 }
