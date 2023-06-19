@@ -12,13 +12,6 @@ import { WebAuthnOwner } from '../wallet'
 import { AlembicProvider } from '../wallet/AlembicProvider'
 
 const curve = new EC('p256')
-const PUBLIC_KEY_X = 'public-key-x'
-const PUBLIC_KEY_Y = 'public-key-y'
-const PUBLIC_KEY_ID_KEY = 'public-key-id'
-
-const getCurrentPublicKeyId = (): string | null => {
-  return window.localStorage.getItem('public-key-id')
-}
 
 const createCredentials = async (
   signerName: string
@@ -176,10 +169,18 @@ const waitWebAuthnSignerDeployment = async (
   return signerDeploymentEvent[0].args.signer
 }
 
+export async function platformAuthenticatorIsAvailable(): Promise<boolean> {
+  if (!window.PublicKeyCredential) {
+    return false
+  }
+
+  return PublicKeyCredential.isUserVerifyingPlatformAuthenticatorAvailable()
+}
+
 export default {
-  getCurrentPublicKeyId,
   createCredentials,
   getWebAuthnSignature,
   predictSignerAddress,
-  waitWebAuthnSignerDeployment
+  waitWebAuthnSignerDeployment,
+  platformAuthenticatorIsAvailable
 }
