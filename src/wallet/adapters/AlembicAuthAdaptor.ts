@@ -26,6 +26,7 @@ export class AlembicAuthAdaptor implements AUTHAdapter {
 
   async logout(): Promise<void> {
     if (!this.signer) throw new Error('No signer instance found')
+    this.address = undefined
     this.signer = undefined
   }
 
