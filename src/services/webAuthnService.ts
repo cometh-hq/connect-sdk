@@ -152,16 +152,6 @@ const predictSignerAddress = async (
   )
 }
 
-const updateCurrentWebAuthnOwner = (
-  publicKeyId: string,
-  publicKeyX: string,
-  publicKeyY: string
-): void => {
-  window.localStorage.setItem(PUBLIC_KEY_ID_KEY, publicKeyId)
-  window.localStorage.setItem(PUBLIC_KEY_X, publicKeyX)
-  window.localStorage.setItem(PUBLIC_KEY_Y, publicKeyY)
-}
-
 const waitWebAuthnSignerDeployment = async (
   publicKey_X: string,
   publicKey_Y: string,
@@ -189,7 +179,6 @@ const waitWebAuthnSignerDeployment = async (
 export default {
   getCurrentPublicKeyId,
   createCredentials,
-  updateCurrentWebAuthnOwner,
   getWebAuthnSignature,
   predictSignerAddress,
   waitWebAuthnSignerDeployment
