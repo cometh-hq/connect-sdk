@@ -12,6 +12,11 @@ import { WebAuthnOwner } from '../wallet'
 import { AlembicProvider } from '../wallet/AlembicProvider'
 
 const curve = new EC('p256')
+const PUBLIC_KEY_ID_KEY = 'public-key-id'
+
+const getCurrentPublicKeyId = (): string | null => {
+  return window.localStorage.getItem('public-key-id')
+}
 
 const createCredentials = async (
   signerName: string
@@ -51,35 +56,40 @@ const createCredentials = async (
   }
 }
 
-const sign = async (challenge: BufferSource): Promise<any> => {
-  const assertionPayload = await navigator.credentials.get({
+const updateCurrentWebAuthnOwner = (publicKeyId: string): void => {
+  window.localStorage.setItem(PUBLIC_KEY_ID_KEY, publicKeyId)
+}
+
+const sign = async (
+  challenge: BufferSource,
+  publicKeyCredential: PublicKeyCredentialDescriptor[]
+): Promise<any> => {
+  const assertionPayload: any = await navigator.credentials.get({
     publicKey: {
       challenge,
-      allowCredentials: []
+      allowCredentials: publicKeyCredential
     }
   })
 
-  return assertionPayload
+  return assertionPayload?.response
 }
 
 const getWebAuthnSignature = async (
   hash: string,
-  webAuthnOwners: WebAuthnOwner[]
-): Promise<{
-  encodedSignature: string
-  signerAddress: string
-}> => {
+  publicKeyId: string
+): Promise<string> => {
   const challenge = parseHex(hash.slice(2))
-
-  const { rawId: usedKeyId, response: credentialResponse } = await sign(
-    challenge
-  )
 
   const {
     signature,
     authenticatorData,
     clientDataJSON: clientData
-  } = credentialResponse
+  } = await sign(challenge, [
+    {
+      id: parseHex(publicKeyId),
+      type: 'public-key'
+    }
+  ])
 
   const rs = derToRS(new Uint8Array(signature))
 
@@ -101,13 +111,7 @@ const getWebAuthnSignature = async (
     ]
   )
 
-  const webAuthnCredential = webAuthnOwners.find(
-    (webAuthnOwner) => webAuthnOwner.publicKeyId === hexArrayStr(usedKeyId)
-  )
-
-  if (!webAuthnCredential) throw new Error(`No Web Authn Signer found`)
-
-  return { encodedSignature, signerAddress: webAuthnCredential.signerAddress }
+  return encodedSignature
 }
 
 const predictSignerAddress = async (
@@ -162,14 +166,24 @@ const waitWebAuthnSignerDeployment = async (
 
 export async function platformAuthenticatorIsAvailable(): Promise<boolean> {
   if (!window.PublicKeyCredential) {
+    console.log('Error: Browser does not support webAuthn')
     return false
   }
 
-  return PublicKeyCredential.isUserVerifyingPlatformAuthenticatorAvailable()
+  const isUserVerifyingPlatformAuthenticatorAvailable =
+    PublicKeyCredential.isUserVerifyingPlatformAuthenticatorAvailable()
+
+  if (!isUserVerifyingPlatformAuthenticatorAvailable) {
+    console.log('Error: Platform not supported for WebAuthn')
+  }
+
+  return isUserVerifyingPlatformAuthenticatorAvailable
 }
 
 export default {
+  getCurrentPublicKeyId,
   createCredentials,
+  updateCurrentWebAuthnOwner,
   getWebAuthnSignature,
   predictSignerAddress,
   waitWebAuthnSignerDeployment,

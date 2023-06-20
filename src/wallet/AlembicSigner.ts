@@ -9,6 +9,7 @@ import { Deferrable, defineReadOnly, resolveProperties } from 'ethers/lib/utils'
 
 import { AlembicProvider } from './AlembicProvider'
 import { AlembicWallet } from './AlembicWallet'
+import { WebAuthnOwner } from './types'
 
 export class AlembicSigner extends Signer {
   constructor(
@@ -21,6 +22,10 @@ export class AlembicSigner extends Signer {
 
   getAddress(): Promise<string> {
     return Promise.resolve(this.smartWallet.getAddress())
+  }
+
+  async getCurrentWebAuthnOwner(): Promise<WebAuthnOwner | undefined> {
+    return this.smartWallet.getCurrentWebAuthnOwner()
   }
 
   signMessage(message: string | Bytes): Promise<string> {
