@@ -76,7 +76,7 @@ const sign = async (
 
 const getWebAuthnSignature = async (
   hash: string,
-  webAuthnOwner: WebAuthnOwner
+  publicKeyId: string
 ): Promise<string> => {
   const challenge = parseHex(hash.slice(2))
 
@@ -86,7 +86,7 @@ const getWebAuthnSignature = async (
     clientDataJSON: clientData
   } = await sign(challenge, [
     {
-      id: parseHex(webAuthnOwner.publicKeyId),
+      id: parseHex(publicKeyId),
       type: 'public-key'
     }
   ])

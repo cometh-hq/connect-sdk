@@ -75,7 +75,10 @@ export class AlembicWallet {
 
     if (!!isBrowserWebAuthnCompatible && !!webAuthnOwner) {
       this.walletAddress = webAuthnOwner.walletAddress
-      this.signer = new WebAuthnSigner(webAuthnOwner)
+      this.signer = new WebAuthnSigner(
+        webAuthnOwner.publicKeyId,
+        webAuthnOwner.signerAddress
+      )
     } else {
       if (!this.authAdapter) throw new Error('No EOA adapter found')
 
@@ -426,12 +429,10 @@ export class AlembicWallet {
 
     webAuthnService.updateCurrentWebAuthnOwner(publicKeyId)
 
-    const webAuthnOwner = await this.getCurrentWebAuthnOwner()
-    if (webAuthnOwner === undefined)
-      throw new Error(
-        'WebAuthn Signer has not been added as your current signer'
-      )
-    this.signer = new WebAuthnSigner(webAuthnOwner)
+    this.signer = this.signer = new WebAuthnSigner(
+      publicKeyId,
+      predictedSignerAddress
+    )
 
     return predictedSignerAddress
   }

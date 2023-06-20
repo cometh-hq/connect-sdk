@@ -9,13 +9,15 @@ import { Bytes, ethers } from 'ethers'
 import { EIP712_SAFE_MESSAGE_TYPE, EIP712_SAFE_TX_TYPES } from '../../constants'
 import safeService from '../../services/safeService'
 import webAuthnService from '../../services/webAuthnService'
-import { SafeTransactionDataPartial, WebAuthnOwner } from '../types'
+import { SafeTransactionDataPartial } from '../types'
 
 export class WebAuthnSigner extends Signer {
-  private webAuthnOwner: WebAuthnOwner
-  constructor(webAuthnOwner: WebAuthnOwner) {
+  private publicKeyId: string
+  private signerAddress: string
+  constructor(publicKeyId: string, signerAddress: string) {
     super()
-    this.webAuthnOwner = webAuthnOwner
+    this.publicKeyId = publicKeyId
+    this.signerAddress = signerAddress
   }
 
   async getAddress(): Promise<string> {
@@ -37,11 +39,11 @@ export class WebAuthnSigner extends Signer {
 
     const encodedSignature = await webAuthnService.getWebAuthnSignature(
       data,
-      this.webAuthnOwner
+      this.publicKeyId
     )
 
     return safeService.formatWebAuthnSignatureForSafe(
-      this.webAuthnOwner.signerAddress,
+      this.signerAddress,
       encodedSignature
     )
   }
