@@ -17,6 +17,7 @@ import siweService from '../services/siweService'
 import webAuthnService from '../services/webAuthnService'
 import { GasModal } from '../ui'
 import { AUTHAdapter } from './adapters'
+import { AlembicAuthSigner } from './signers/AlembicAuthSigner'
 import { WebAuthnSigner } from './signers/WebAuthnSigner'
 import {
   MetaTransactionData,
@@ -44,8 +45,8 @@ export class AlembicWallet {
   private provider: StaticJsonRpcProvider
   private sponsoredAddresses?: SponsoredTransaction[]
   private walletAddress?: string
-  private signer?: JsonRpcSigner | Wallet | WebAuthnSigner
-  private uiConfig = {
+  private signer?: JsonRpcSigner | Wallet | WebAuthnSigner | AlembicAuthSigner
+  private uiConfig: UIConfig = {
     displayValidationModal: true
   }
 
