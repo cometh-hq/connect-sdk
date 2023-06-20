@@ -461,8 +461,6 @@ export class AlembicWallet {
     const isBrowserCompatible =
       await webAuthnService.platformAuthenticatorIsAvailable()
 
-    console.log({ isBrowserCompatible })
-
     if (!isBrowserCompatible) return false
 
     return true
