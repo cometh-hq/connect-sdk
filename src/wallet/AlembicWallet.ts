@@ -46,7 +46,6 @@ export class AlembicWallet {
   private sponsoredAddresses?: SponsoredTransaction[]
   private walletAddress?: string
   private signer?: JsonRpcSigner | Wallet | WebAuthnSigner | AlembicAuthSigner
-  private webAuthnOwners?: WebAuthnOwner[]
   private uiConfig: UIConfig = {
     displayValidationModal: true
   }
