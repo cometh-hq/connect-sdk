@@ -51,14 +51,11 @@ const createCredentials = async (
   }
 }
 
-const sign = async (
-  challenge: BufferSource,
-  allowCredentials: PublicKeyCredentialDescriptor[]
-): Promise<any> => {
+const sign = async (challenge: BufferSource): Promise<any> => {
   const assertionPayload = await navigator.credentials.get({
     publicKey: {
       challenge,
-      allowCredentials
+      allowCredentials: []
     }
   })
 
@@ -75,13 +72,7 @@ const getWebAuthnSignature = async (
   const challenge = parseHex(hash.slice(2))
 
   const { rawId: usedKeyId, response: credentialResponse } = await sign(
-    challenge,
-    webAuthnOwners.map((webAuthnOwner) => {
-      return {
-        id: parseHex(webAuthnOwner.publicKeyId),
-        type: 'public-key'
-      }
-    })
+    challenge
   )
 
   const {
