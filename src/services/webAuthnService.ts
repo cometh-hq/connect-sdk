@@ -166,10 +166,18 @@ const waitWebAuthnSignerDeployment = async (
 
 export async function platformAuthenticatorIsAvailable(): Promise<boolean> {
   if (!window.PublicKeyCredential) {
+    console.log('Error: Browser does not support webAuthn')
     return false
   }
 
-  return PublicKeyCredential.isUserVerifyingPlatformAuthenticatorAvailable()
+  const isUserVerifyingPlatformAuthenticatorAvailable =
+    PublicKeyCredential.isUserVerifyingPlatformAuthenticatorAvailable()
+
+  if (!isUserVerifyingPlatformAuthenticatorAvailable) {
+    console.log('Error: Platform not supported for WebAuthn')
+  }
+
+  return isUserVerifyingPlatformAuthenticatorAvailable
 }
 
 export default {
