@@ -68,9 +68,12 @@ export class AlembicWallet {
     if (!networks[this.chainId])
       throw new Error('This network is not supported')
 
+    const isBrowserWebAuthnCompatible =
+      await webAuthnService.platformAuthenticatorIsAvailable()
+
     const webAuthnOwner = await this.getCurrentWebAuthnOwner()
 
-    if (!!webAuthnOwner && (await this._verifyWebAuthnOwner(webAuthnOwner))) {
+    if (!!isBrowserWebAuthnCompatible && !!webAuthnOwner) {
       this.walletAddress = webAuthnOwner.walletAddress
       this.signer = new WebAuthnSigner(webAuthnOwner)
     } else {
@@ -444,25 +447,14 @@ export class AlembicWallet {
 
     if (currentWebAuthnOwner === null) return undefined
 
-    return currentWebAuthnOwner
-  }
-
-  private async _verifyWebAuthnOwner(
-    webAuthnOwner: WebAuthnOwner
-  ): Promise<boolean> {
     const isSafeOwner = await safeService.isSafeOwner(
-      webAuthnOwner.walletAddress,
-      webAuthnOwner.signerAddress,
+      currentWebAuthnOwner.walletAddress,
+      currentWebAuthnOwner.signerAddress,
       this.getProvider()
     )
 
-    if (!isSafeOwner) return false
+    if (!isSafeOwner) return undefined
 
-    const isBrowserCompatible =
-      await webAuthnService.platformAuthenticatorIsAvailable()
-
-    if (!isBrowserCompatible) return false
-
-    return true
+    return currentWebAuthnOwner
   }
 }
