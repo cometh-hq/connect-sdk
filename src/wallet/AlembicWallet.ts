@@ -45,7 +45,6 @@ export class AlembicWallet {
   private sponsoredAddresses?: SponsoredTransaction[]
   private walletAddress?: string
   private signer?: JsonRpcSigner | Wallet | WebAuthnSigner
-  private webAuthnOwners?: WebAuthnOwner[]
   private uiConfig = {
     displayValidationModal: true
   }
@@ -69,36 +68,28 @@ export class AlembicWallet {
     if (!networks[this.chainId])
       throw new Error('This network is not supported')
 
-    if (!this.authAdapter) throw new Error('No EOA adapter found')
+    const webAuthnOwner = await this.getCurrentWebAuthnOwner()
 
-    await this.authAdapter.connect()
-    const ownerAddress = await this.authAdapter.getSigner().getAddress()
+    if (!!webAuthnOwner && (await this._verifyWebAuthnOwner(webAuthnOwner))) {
+      this.walletAddress = webAuthnOwner.walletAddress
+      this.signer = new WebAuthnSigner(webAuthnOwner)
+    } else {
+      if (!this.authAdapter) throw new Error('No EOA adapter found')
 
-    this.walletAddress = await this.API.getWalletAddress(ownerAddress)
-    this.webAuthnOwners = await this.API.getWebAuthnOwners(this.walletAddress)
+      await this.authAdapter.connect()
+      const ownerAddress = await this.authAdapter.getSigner().getAddress()
+
+      this.walletAddress = await this.API.getWalletAddress(ownerAddress)
+      this.signer = this.authAdapter.getSigner()
+    }
+
     const nonce = await this.API.getNonce(this.walletAddress)
     const message: SiweMessage = siweService.createMessage(
       this.walletAddress,
       nonce,
       this.chainId
     )
-
-    let signature: string
-
-    try {
-      if (this.webAuthnOwners.length === 0)
-        throw new Error('No webAuthnOwners in database')
-
-      if (!(await webAuthnService.platformAuthenticatorIsAvailable()))
-        throw new Error('WebAuthn platform not compatible with device')
-
-      this.signer = new WebAuthnSigner(this.webAuthnOwners)
-      signature = await this.signMessage(message.prepareMessage())
-    } catch (error) {
-      console.error('WebAuthn login error:', error)
-      this.signer = await this.authAdapter.getSigner()
-      signature = await this.signMessage(message.prepareMessage())
-    }
+    const signature = await this.signMessage(message.prepareMessage())
 
     await this.API.connectToAlembicWallet({
       message,
@@ -430,9 +421,54 @@ export class AlembicWallet {
       this.getProvider()
     )
 
-    const webAuthnOwners = await this.API.getWebAuthnOwners(this.getAddress())
-    this.signer = new WebAuthnSigner(webAuthnOwners)
+    webAuthnService.updateCurrentWebAuthnOwner(
+      publicKeyId,
+      publicKeyX,
+      publicKeyY
+    )
+
+    const webAuthnOwner = await this.getCurrentWebAuthnOwner()
+    if (webAuthnOwner === undefined)
+      throw new Error(
+        'WebAuthn Signer has not been added as your current signer'
+      )
+    this.signer = new WebAuthnSigner(webAuthnOwner)
 
     return predictedSignerAddress
+  }
+
+  public async getCurrentWebAuthnOwner(): Promise<WebAuthnOwner | undefined> {
+    const publicKeyId = webAuthnService.getCurrentPublicKeyId()
+
+    if (publicKeyId === null) return undefined
+
+    const currentWebAuthnOwner = await this.API.getWebAuthnOwnerByPublicKeyId(
+      <string>publicKeyId
+    )
+
+    if (currentWebAuthnOwner === null) return undefined
+
+    return currentWebAuthnOwner
+  }
+
+  private async _verifyWebAuthnOwner(
+    webAuthnOwner: WebAuthnOwner
+  ): Promise<boolean> {
+    const isSafeOwner = await safeService.isSafeOwner(
+      webAuthnOwner.walletAddress,
+      webAuthnOwner.signerAddress,
+      this.getProvider()
+    )
+
+    if (!isSafeOwner) return false
+
+    const isBrowserCompatible =
+      await webAuthnService.platformAuthenticatorIsAvailable()
+
+    console.log({ isBrowserCompatible })
+
+    if (!isBrowserCompatible) return false
+
+    return true
   }
 }
