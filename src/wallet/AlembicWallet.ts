@@ -421,11 +421,7 @@ export class AlembicWallet {
       this.getProvider()
     )
 
-    webAuthnService.updateCurrentWebAuthnOwner(
-      publicKeyId,
-      publicKeyX,
-      publicKeyY
-    )
+    webAuthnService.updateCurrentWebAuthnOwner(publicKeyId)
 
     const webAuthnOwner = await this.getCurrentWebAuthnOwner()
     if (webAuthnOwner === undefined)

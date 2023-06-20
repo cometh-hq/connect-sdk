@@ -12,8 +12,6 @@ import { WebAuthnOwner } from '../wallet'
 import { AlembicProvider } from '../wallet/AlembicProvider'
 
 const curve = new EC('p256')
-const PUBLIC_KEY_X = 'public-key-x'
-const PUBLIC_KEY_Y = 'public-key-y'
 const PUBLIC_KEY_ID_KEY = 'public-key-id'
 
 const getCurrentPublicKeyId = (): string | null => {
@@ -58,14 +56,8 @@ const createCredentials = async (
   }
 }
 
-const updateCurrentWebAuthnOwner = (
-  publicKeyId: string,
-  publicKeyX: string,
-  publicKeyY: string
-): void => {
+const updateCurrentWebAuthnOwner = (publicKeyId: string): void => {
   window.localStorage.setItem(PUBLIC_KEY_ID_KEY, publicKeyId)
-  window.localStorage.setItem(PUBLIC_KEY_X, publicKeyX)
-  window.localStorage.setItem(PUBLIC_KEY_Y, publicKeyY)
 }
 
 const sign = async (
