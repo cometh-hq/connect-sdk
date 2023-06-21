@@ -69,10 +69,17 @@ export class AlembicWallet {
     if (!networks[this.chainId])
       throw new Error('This network is not supported')
 
+    if (!this.authAdapter) throw new Error('No EOA adapter found')
+    await this.authAdapter.connect()
+
+    const ownerAddress = await this.authAdapter.getAccount()
+    if (!ownerAddress) throw new Error('No owner Address found')
+    this.walletAddress = await this.API.getWalletAddress(ownerAddress)
+
     const isBrowserWebAuthnCompatible =
       await webAuthnService.platformAuthenticatorIsAvailable()
 
-    const webAuthnOwner = await this.getCurrentWebAuthnOwner()
+    const webAuthnOwner = await this.getCurrentWebAuthnOwner(this.walletAddress)
 
     if (!!isBrowserWebAuthnCompatible && !!webAuthnOwner) {
       this.walletAddress = webAuthnOwner.walletAddress
@@ -81,12 +88,6 @@ export class AlembicWallet {
         webAuthnOwner.signerAddress
       )
     } else {
-      if (!this.authAdapter) throw new Error('No EOA adapter found')
-
-      await this.authAdapter.connect()
-      const ownerAddress = await this.authAdapter.getSigner().getAddress()
-
-      this.walletAddress = await this.API.getWalletAddress(ownerAddress)
       this.signer = this.authAdapter.getSigner()
     }
 
@@ -428,7 +429,7 @@ export class AlembicWallet {
       this.getProvider()
     )
 
-    webAuthnService.updateCurrentWebAuthnOwner(publicKeyId)
+    webAuthnService.updateCurrentWebAuthnOwner(publicKeyId, this.getAddress())
 
     this.signer = this.signer = new WebAuthnSigner(
       publicKeyId,
@@ -438,8 +439,10 @@ export class AlembicWallet {
     return predictedSignerAddress
   }
 
-  public async getCurrentWebAuthnOwner(): Promise<WebAuthnOwner | undefined> {
-    const publicKeyId = webAuthnService.getCurrentPublicKeyId()
+  public async getCurrentWebAuthnOwner(
+    walletAddress: string
+  ): Promise<WebAuthnOwner | undefined> {
+    const publicKeyId = webAuthnService.getCurrentPublicKeyId(walletAddress)
 
     if (publicKeyId === null) return undefined
 

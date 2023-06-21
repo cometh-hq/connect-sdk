@@ -8,14 +8,13 @@ import { v4 } from 'uuid'
 import { BLOCK_EVENT_GAP, networks, P256SignerCreationCode } from '../constants'
 import { P256SignerFactory__factory } from '../contracts/types/factories'
 import { derToRS, findSequence, hexArrayStr, parseHex } from '../utils/utils'
-import { WebAuthnOwner } from '../wallet'
 import { AlembicProvider } from '../wallet/AlembicProvider'
 
 const curve = new EC('p256')
-const PUBLIC_KEY_ID_KEY = 'public-key-id'
+const CREDENTIAL_ID = 'credentialId'
 
-const getCurrentPublicKeyId = (): string | null => {
-  return window.localStorage.getItem('public-key-id')
+const getCurrentPublicKeyId = (walletAddress: string): string | null => {
+  return window.localStorage.getItem(`${CREDENTIAL_ID}-${walletAddress}`)
 }
 
 const createCredentials = async (
@@ -56,8 +55,11 @@ const createCredentials = async (
   }
 }
 
-const updateCurrentWebAuthnOwner = (publicKeyId: string): void => {
-  window.localStorage.setItem(PUBLIC_KEY_ID_KEY, publicKeyId)
+const updateCurrentWebAuthnOwner = (
+  publicKeyId: string,
+  walletAddress: string
+): void => {
+  window.localStorage.setItem(`${CREDENTIAL_ID}-${walletAddress}`, publicKeyId)
 }
 
 const sign = async (
