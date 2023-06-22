@@ -121,7 +121,7 @@ export class API {
       }
     }
 
-    const response = await api.post(`/user/connect`, {}, config)
+    const response = await api.post(`/key-store/connect`, {}, config)
     return response?.data?.address
   }
 
@@ -141,7 +141,7 @@ export class API {
       types,
       value
     }
-    const response = await api.post(`/user/signTypedData`, body, config)
+    const response = await api.post(`/key-store/signTypedData`, body, config)
     return response?.data?.signature
   }
 }
