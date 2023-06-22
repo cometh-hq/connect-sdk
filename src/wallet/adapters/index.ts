@@ -1,3 +1,4 @@
+export * from './AlembicAuthAdaptor'
 export * from './BurnerWalletAdaptor'
 export * from './MagicLinkAdapter'
 export * from './types'

@@ -1,6 +1,6 @@
 {
   "name": "@alembic/account-abstraction-sdk",
-  "version": "0.1.15",
+  "version": "0.1.22",
   "main": "dist/index.js",
   "types": "dist/index.d.ts",
   "description": "SDK Alembic tech",
@@ -12,7 +12,7 @@
     "build": "rimraf dist && yarn build:ts",
     "prettier-format": "prettier --config .prettierrc 'src/**/*.ts' --write",
     "lint": "eslint . --ext .ts",
-    "test": " jest",
+    "test": "jest",
     "prepare": "husky install"
   },
   "repository": {
@@ -76,6 +76,7 @@
     "magic-sdk": "^17.1.3",
     "react": "^18.0.0",
     "react-dom": "^18.0.0",
-    "siwe": "^1.1.6"
+    "siwe": "^1.1.6",
+    "uuid": "^9.0.0"
   }
 }

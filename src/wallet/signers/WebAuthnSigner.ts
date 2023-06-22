@@ -12,16 +12,16 @@ import webAuthnService from '../../services/webAuthnService'
 import { SafeTransactionDataPartial } from '../types'
 
 export class WebAuthnSigner extends Signer {
-  private signerAddress: string
   private publicKeyId: string
-  constructor(signerAddress: string, publicKeyId: string) {
+  private signerAddress: string
+  constructor(publicKeyId: string, signerAddress: string) {
     super()
-    this.signerAddress = signerAddress
     this.publicKeyId = publicKeyId
+    this.signerAddress = signerAddress
   }
 
   async getAddress(): Promise<string> {
-    return this.signerAddress
+    throw new Error('get Address not supported')
   }
 
   async _signTypedData(
@@ -37,14 +37,14 @@ export class WebAuthnSigner extends Signer {
         ? ethers.utils._TypedDataEncoder.hash(domain, types, value)
         : ethers.utils.keccak256(value.message)
 
-    const encodedWebAuthnSignature = await webAuthnService.getWebAuthnSignature(
+    const encodedSignature = await webAuthnService.getWebAuthnSignature(
       data,
       this.publicKeyId
     )
 
     return safeService.formatWebAuthnSignatureForSafe(
       this.signerAddress,
-      encodedWebAuthnSignature
+      encodedSignature
     )
   }
 

@@ -44,6 +44,6 @@ export class BurnerWalletAdaptor implements AUTHAdapter {
 
   async getUserInfos(): Promise<Partial<UserInfos>> {
     if (!this.wallet) throw new Error('No Wallet instance found')
-    return { walletAddress: await this.wallet.address } ?? {}
+    return { walletAddress: this.wallet.address } ?? {}
   }
 }

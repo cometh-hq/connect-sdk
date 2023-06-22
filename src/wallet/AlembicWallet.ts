@@ -11,17 +11,20 @@ import {
   networks
 } from '../constants'
 import { API } from '../services'
+import gasService from '../services/gasService'
 import safeService from '../services/safeService'
 import siweService from '../services/siweService'
 import webAuthnService from '../services/webAuthnService'
 import { GasModal } from '../ui'
 import { AUTHAdapter } from './adapters'
+import { AlembicAuthSigner } from './signers/AlembicAuthSigner'
 import { WebAuthnSigner } from './signers/WebAuthnSigner'
 import {
   MetaTransactionData,
   SafeTransactionDataPartial,
   SendTransactionResponse,
   SponsoredTransaction,
+  UIConfig,
   UserInfos,
   WebAuthnOwner
 } from './types'
@@ -30,9 +33,7 @@ export interface AlembicWalletConfig {
   authAdapter: AUTHAdapter
   apiKey: string
   rpcUrl?: string
-  uiConfig?: {
-    displayValidationModal: boolean
-  }
+  uiConfig?: UIConfig
 }
 export class AlembicWallet {
   public authAdapter: AUTHAdapter
@@ -44,9 +45,8 @@ export class AlembicWallet {
   private provider: StaticJsonRpcProvider
   private sponsoredAddresses?: SponsoredTransaction[]
   private walletAddress?: string
-  private signer?: JsonRpcSigner | Wallet | WebAuthnSigner
-  private webAuthnOwner?: WebAuthnOwner
-  private uiConfig = {
+  private signer?: JsonRpcSigner | Wallet | WebAuthnSigner | AlembicAuthSigner
+  private uiConfig: UIConfig = {
     displayValidationModal: true
   }
 
@@ -54,7 +54,7 @@ export class AlembicWallet {
     this.authAdapter = authAdapter
     this.chainId = +authAdapter.chainId
     this.API = new API(apiKey, this.chainId)
-    this.provider = new ethers.providers.StaticJsonRpcProvider(
+    this.provider = new StaticJsonRpcProvider(
       rpcUrl ? rpcUrl : networks[this.chainId].RPCUrl
     )
     this.BASE_GAS = DEFAULT_BASE_GAS
@@ -69,26 +69,27 @@ export class AlembicWallet {
     if (!networks[this.chainId])
       throw new Error('This network is not supported')
 
-    if (await this._verifyWebAuthnOwner()) {
-      if (!this.webAuthnOwner) throw new Error('No WebAuthn Signer found')
+    if (!this.authAdapter) throw new Error('No EOA adapter found')
+    await this.authAdapter.connect()
 
-      this.walletAddress = this.webAuthnOwner.walletAddress
+    const ownerAddress = await this.authAdapter.getAccount()
+    if (!ownerAddress) throw new Error('No owner Address found')
+    this.walletAddress = await this.API.getWalletAddress(ownerAddress)
+
+    const isBrowserWebAuthnCompatible =
+      await webAuthnService.platformAuthenticatorIsAvailable()
+
+    const webAuthnOwner = await this.getCurrentWebAuthnOwner(this.walletAddress)
+
+    if (!!isBrowserWebAuthnCompatible && !!webAuthnOwner) {
+      this.walletAddress = webAuthnOwner.walletAddress
       this.signer = new WebAuthnSigner(
-        this.webAuthnOwner.signerAddress,
-        this.webAuthnOwner.publicKeyId
+        webAuthnOwner.publicKeyId,
+        webAuthnOwner.signerAddress
       )
     } else {
-      if (!this.authAdapter) throw new Error('No EOA adapter found')
-
-      await this.authAdapter.connect()
-      const ownerAddress = await this.authAdapter.getSigner().getAddress()
-
-      this.walletAddress = await this.API.getWalletAddress(ownerAddress)
-      this.signer = await this.authAdapter.getSigner()
+      this.signer = this.authAdapter.getSigner()
     }
-
-    if (!this.signer) throw new Error('No signer found')
-    if (!this.walletAddress) throw new Error('No walletAddress found')
 
     const nonce = await this.API.getNonce(this.walletAddress)
     const message: SiweMessage = siweService.createMessage(
@@ -103,6 +104,9 @@ export class AlembicWallet {
       signature,
       walletAddress: this.walletAddress
     })
+
+    if (!this.signer) throw new Error('No signer found')
+    if (!this.walletAddress) throw new Error('No walletAddress found')
 
     this.sponsoredAddresses = await this.API.getSponsoredAddresses()
     this.connected = true
@@ -133,10 +137,6 @@ export class AlembicWallet {
     return this.walletAddress ?? ''
   }
 
-  private _getBalance = async (address: string): Promise<BigNumber> => {
-    return this.getProvider().getBalance(address)
-  }
-
   public async logout(): Promise<void> {
     if (this.authAdapter) await this.authAdapter.logout()
 
@@ -163,7 +163,7 @@ export class AlembicWallet {
     return await this.signer._signTypedData(
       {
         chainId: this.chainId,
-        verifyingContract: await this.getAddress()
+        verifyingContract: this.getAddress()
       },
       EIP712_SAFE_MESSAGE_TYPE,
       { message: messageToSign }
@@ -178,7 +178,7 @@ export class AlembicWallet {
     return await this.signer._signTypedData(
       {
         chainId: this.chainId,
-        verifyingContract: await this.getAddress()
+        verifyingContract: this.getAddress()
       },
       EIP712_SAFE_TX_TYPES,
       {
@@ -194,10 +194,7 @@ export class AlembicWallet {
         nonce: BigNumber.from(
           safeTxData.nonce
             ? safeTxData.nonce
-            : await safeService.getNonce(
-                await this.getAddress(),
-                await this.getProvider()
-              )
+            : await safeService.getNonce(this.getAddress(), this.getProvider())
         ).toString()
       }
     )
@@ -216,98 +213,6 @@ export class AlembicWallet {
     return true
   }
 
-  public async _getGasPrice(): Promise<BigNumber> {
-    const ethFeeHistory = await this.getProvider().send('eth_feeHistory', [
-      1,
-      'latest',
-      [this.REWARD_PERCENTILE]
-    ])
-    const [reward, BaseFee] = [
-      BigNumber.from(ethFeeHistory.reward[0][0]),
-      BigNumber.from(ethFeeHistory.baseFeePerGas[0])
-    ]
-
-    const gasPrice = BigNumber.from(reward.add(BaseFee)).add(
-      BigNumber.from(reward.add(BaseFee)).div(10)
-    )
-    return gasPrice
-  }
-
-  public async _setTransactionGas(
-    safeTxDataTyped: SafeTransactionDataPartial,
-    safeTxGas: BigNumber
-  ): Promise<SafeTransactionDataPartial> {
-    const gasPrice = await this._getGasPrice()
-
-    await this._calculateAndShowMaxFee(
-      safeTxDataTyped.value,
-      safeTxGas,
-      this.BASE_GAS,
-      gasPrice
-    )
-    return {
-      ...safeTxDataTyped,
-      safeTxGas: +safeTxGas, // gwei
-      baseGas: this.BASE_GAS, // gwei
-      gasPrice: +gasPrice // wei
-    }
-  }
-
-  public async _estimateSafeTxGas(
-    safeTransactionData: MetaTransactionData[]
-  ): Promise<BigNumber> {
-    let safeTxGas = BigNumber.from(0)
-    for (let i = 0; i < safeTransactionData.length; i++) {
-      safeTxGas = safeTxGas.add(
-        await this.getProvider().estimateGas({
-          ...safeTransactionData[i],
-          from: this.getAddress()
-        })
-      )
-    }
-    return safeTxGas
-  }
-
-  private async _calculateAndShowMaxFee(
-    txValue: string,
-    safeTxGas: BigNumber,
-    baseGas: number,
-    gasPrice: BigNumber
-  ): Promise<void> {
-    const walletBalance = await this._getBalance(this.getAddress())
-    const totalGasCost = BigNumber.from(safeTxGas)
-      .add(BigNumber.from(baseGas))
-      .mul(BigNumber.from(gasPrice))
-
-    if (walletBalance.lt(totalGasCost.add(BigNumber.from(txValue))))
-      throw new Error('Not enough balance to send this value and pay for gas')
-
-    if (this.uiConfig.displayValidationModal) {
-      const totalFees = ethers.utils.formatEther(
-        ethers.utils.parseUnits(
-          BigNumber.from(safeTxGas).add(baseGas).mul(gasPrice).toString(),
-          'wei'
-        )
-      )
-
-      const balance = ethers.utils.formatEther(
-        ethers.utils.parseUnits(
-          BigNumber.from(await this._getBalance(this.getAddress())).toString(),
-          'wei'
-        )
-      )
-
-      if (
-        !(await new GasModal().initModal(
-          (+balance).toFixed(3),
-          (+totalFees).toFixed(3)
-        ))
-      ) {
-        throw new Error('Transaction denied')
-      }
-    }
-  }
-
   public async _signAndSendTransaction(
     safeTxDataTyped: SafeTransactionDataPartial
   ): Promise<string> {
@@ -323,9 +228,13 @@ export class AlembicWallet {
   public async sendTransaction(
     safeTxData: MetaTransactionData
   ): Promise<SendTransactionResponse> {
-    const safeTxGas = await this._estimateSafeTxGas([safeTxData])
+    const safeTxGas = await gasService.estimateSafeTxGas(
+      this.getAddress(),
+      [safeTxData],
+      this.provider
+    )
 
-    let safeTxDataTyped = {
+    const safeTxDataTyped = {
       ...(await this._prepareTransaction(
         safeTxData.to,
         safeTxData.value,
@@ -334,10 +243,25 @@ export class AlembicWallet {
     }
 
     if (!(await this._isSponsoredTransaction([safeTxDataTyped]))) {
-      safeTxDataTyped = await this._setTransactionGas(
-        safeTxDataTyped,
-        safeTxGas
+      const gasPrice = await gasService.getGasPrice(
+        this.provider,
+        this.REWARD_PERCENTILE
       )
+      await gasService.verifyHasEnoughBalance(
+        this.provider,
+        this.getAddress(),
+        safeTxGas,
+        gasPrice,
+        this.BASE_GAS,
+        safeTxData.value
+      )
+      if (this.uiConfig.displayValidationModal) {
+        await this.displayModal(safeTxGas, gasPrice)
+      }
+
+      safeTxDataTyped.safeTxGas = +safeTxGas
+      safeTxDataTyped.baseGas = this.BASE_GAS
+      safeTxDataTyped.gasPrice = +gasPrice
     }
 
     const safeTxHash = await this._signAndSendTransaction(safeTxDataTyped)
@@ -352,9 +276,13 @@ export class AlembicWallet {
       throw new Error('Empty array provided, no transaction to send')
     }
 
-    const safeTxGas = await this._estimateSafeTxGas(safeTxData)
+    const safeTxGas = await gasService.estimateSafeTxGas(
+      this.getAddress(),
+      safeTxData,
+      this.provider
+    )
 
-    let safeTxDataTyped = {
+    const safeTxDataTyped = {
       ...(await this._prepareTransaction(
         networks[this.chainId].multisendContractAddress,
         '0',
@@ -364,15 +292,60 @@ export class AlembicWallet {
     }
 
     if (!(await this._isSponsoredTransaction(safeTxData))) {
-      safeTxDataTyped = await this._setTransactionGas(
-        safeTxDataTyped,
-        safeTxGas
+      const txValue = await safeService.getTransactionsTotalValue(safeTxData)
+      const gasPrice = await gasService.getGasPrice(
+        this.provider,
+        this.REWARD_PERCENTILE
       )
+      await gasService.verifyHasEnoughBalance(
+        this.provider,
+        this.getAddress(),
+        safeTxGas,
+        gasPrice,
+        this.BASE_GAS,
+        txValue
+      )
+      if (this.uiConfig.displayValidationModal) {
+        this.displayModal(safeTxGas, gasPrice)
+      }
+
+      safeTxDataTyped.safeTxGas = +safeTxGas
+      safeTxDataTyped.baseGas = this.BASE_GAS
+      safeTxDataTyped.gasPrice = +gasPrice
     }
 
     const safeTxHash = await this._signAndSendTransaction(safeTxDataTyped)
 
     return { safeTxHash }
+  }
+
+  public async displayModal(
+    safeTxGas: BigNumber,
+    gasPrice: BigNumber
+  ): Promise<void> {
+    const walletBalance = await this.provider.getBalance(this.getAddress())
+    const totalGasCost = await gasService.getTotalCost(
+      safeTxGas,
+      this.BASE_GAS,
+      gasPrice
+    )
+
+    const displayedTotalBalance = (+ethers.utils.formatEther(
+      ethers.utils.parseUnits(walletBalance.toString(), 'wei')
+    )).toFixed(3)
+
+    const displayedTotalGasCost = (+ethers.utils.formatEther(
+      ethers.utils.parseUnits(totalGasCost.toString(), 'wei')
+    )).toFixed(3)
+
+    if (
+      !(await new GasModal().initModal(
+        displayedTotalBalance,
+        displayedTotalGasCost
+      ))
+    ) {
+      throw new Error('Transaction denied')
+    }
   }
 
   public async _prepareTransaction(
@@ -393,24 +366,6 @@ export class AlembicWallet {
       refundReceiver: ethers.constants.AddressZero,
       nonce: await safeService.getNonce(this.getAddress(), this.getProvider())
     }
-  }
-
-  /**
-   * WebAuthn Section
-   */
-
-  public async getCurrentWebAuthnOwner(): Promise<WebAuthnOwner | undefined> {
-    const publicKeyId = webAuthnService.getCurrentPublicKeyId()
-
-    if (publicKeyId === null) return undefined
-
-    const currentWebAuthnOwner = await this.API.getWebAuthnOwnerByPublicKeyId(
-      <string>publicKeyId
-    )
-
-    if (currentWebAuthnOwner === null) return undefined
-
-    return currentWebAuthnOwner
   }
 
   public async addWebAuthnOwner(): Promise<string> {
@@ -474,23 +429,28 @@ export class AlembicWallet {
       this.getProvider()
     )
 
-    webAuthnService.updateCurrentWebAuthnOwner(
-      publicKeyId,
-      publicKeyX,
-      publicKeyY
-    )
+    webAuthnService.updateCurrentWebAuthnOwner(publicKeyId, this.getAddress())
 
-    this.signer = new WebAuthnSigner(predictedSignerAddress, publicKeyId)
+    this.signer = this.signer = new WebAuthnSigner(
+      publicKeyId,
+      predictedSignerAddress
+    )
 
     return predictedSignerAddress
   }
 
-  private async _verifyWebAuthnOwner(): Promise<boolean> {
-    const currentWebAuthnOwner = await this.getCurrentWebAuthnOwner()
+  public async getCurrentWebAuthnOwner(
+    walletAddress: string
+  ): Promise<WebAuthnOwner | undefined> {
+    const publicKeyId = webAuthnService.getCurrentPublicKeyId(walletAddress)
 
-    if (!currentWebAuthnOwner) return false
+    if (publicKeyId === null) return undefined
 
-    this.webAuthnOwner = currentWebAuthnOwner
+    const currentWebAuthnOwner = await this.API.getWebAuthnOwnerByPublicKeyId(
+      <string>publicKeyId
+    )
+
+    if (currentWebAuthnOwner === null) return undefined
 
     const isSafeOwner = await safeService.isSafeOwner(
       currentWebAuthnOwner.walletAddress,
@@ -498,8 +458,8 @@ export class AlembicWallet {
       this.getProvider()
     )
 
-    if (!isSafeOwner) return false
+    if (!isSafeOwner) return undefined
 
-    return true
+    return currentWebAuthnOwner
   }
 }

@@ -1,4 +1,5 @@
 import axios from 'axios'
+import { TypedDataDomain, TypedDataField } from 'ethers'
 import { SiweMessage } from 'siwe'
 
 import { API_URL } from '../constants'
@@ -111,5 +112,36 @@ export class API {
   async getWebAuthnOwners(walletAddress: string): Promise<WebAuthnOwner[]> {
     const response = await api.get(`/webAuthnOwners/${walletAddress}/all`)
     return response?.data?.webAuthnOwners
+  }
+
+  async connectToAlembicAuth(token: string): Promise<string> {
+    const config = {
+      headers: {
+        token
+      }
+    }
+
+    const response = await api.post(`/key-store/connect`, {}, config)
+    return response?.data?.address
+  }
+
+  async signTypedDataWithAlembicAuth(
+    token: string,
+    domain: TypedDataDomain,
+    types: Record<string, TypedDataField[]>,
+    value: Record<string, any>
+  ): Promise<string> {
+    const config = {
+      headers: {
+        token
+      }
+    }
+    const body = {
+      domain,
+      types,
+      value
+    }
+    const response = await api.post(`/key-store/signTypedData`, body, config)
+    return response?.data?.signature
   }
 }

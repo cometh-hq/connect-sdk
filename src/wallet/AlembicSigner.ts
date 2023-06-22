@@ -25,8 +25,9 @@ export class AlembicSigner extends Signer {
   }
 
   async getCurrentWebAuthnOwner(): Promise<WebAuthnOwner | undefined> {
-    return this.smartWallet.getCurrentWebAuthnOwner()
+    return this.smartWallet.getCurrentWebAuthnOwner(await this.getAddress())
   }
+
   signMessage(message: string | Bytes): Promise<string> {
     return this.smartWallet.signMessage(message)
   }
