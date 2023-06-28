@@ -84,11 +84,29 @@ const prepareAddOwnerTx = async (
 ): Promise<MetaTransactionData> => {
   const tx = {
     to: walletAddress,
-    value: '0x0',
+    value: '0x00',
     data: SafeInterface.encodeFunctionData('addOwnerWithThreshold', [
       newOwner,
       1
     ]),
+    operation: 0,
+    safeTxGas: 0,
+    baseGas: 0,
+    gasPrice: 0,
+    gasToken: ethers.constants.AddressZero,
+    refundReceiver: ethers.constants.AddressZero
+  }
+  return tx
+}
+
+const prepareEnableModuleTx = async (
+  walletAddress: string,
+  moduleAddress: string
+): Promise<MetaTransactionData> => {
+  const tx = {
+    to: walletAddress,
+    value: '0x00',
+    data: SafeInterface.encodeFunctionData('enableModule', [moduleAddress]),
     operation: 0,
     safeTxGas: 0,
     baseGas: 0,
@@ -146,6 +164,7 @@ export default {
   getFailedExecTransactionEvent,
   isSafeOwner,
   prepareAddOwnerTx,
+  prepareEnableModuleTx,
   formatWebAuthnSignatureForSafe,
   getSafeTransactionHash,
   getTransactionsTotalValue
