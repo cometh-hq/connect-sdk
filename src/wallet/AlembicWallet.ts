@@ -5,8 +5,8 @@ import { SiweMessage } from 'siwe'
 
 import {
   DEFAULT_BASE_GAS,
+  DEFAULT_GUARDIAN,
   DEFAULT_REWARD_PERCENTILE,
-  defaultGuardian,
   EIP712_SAFE_MESSAGE_TYPE,
   EIP712_SAFE_TX_TYPES,
   networks
@@ -235,7 +235,7 @@ export class AlembicWallet {
       this.getProvider()
     )
 
-    if (!isDeployed && defaultGuardian) {
+    if (!isDeployed && DEFAULT_GUARDIAN) {
       return this.sendBatchTransactions([safeTxData])
     }
 
@@ -298,7 +298,7 @@ export class AlembicWallet {
       this.getProvider()
     )
 
-    if (!isDeployed && defaultGuardian) {
+    if (!isDeployed && DEFAULT_GUARDIAN) {
       const enableSocialRecovery = await safeService.prepareEnableModuleTx(
         this.walletAddress as string,
         networks[this.chainId].socialRecoveryModuleAddress
@@ -307,7 +307,7 @@ export class AlembicWallet {
         await socialRecoveryService.prepareAddGuardianTx(
           networks[this.chainId].socialRecoveryModuleAddress,
           this.walletAddress as string,
-          defaultGuardian,
+          DEFAULT_GUARDIAN,
           1
         )
       safeTxData.unshift(enableSocialRecovery, addDefaultGuardian)
