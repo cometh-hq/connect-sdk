@@ -38,16 +38,19 @@ export class API {
   async connectToAlembicWallet({
     message,
     signature,
-    walletAddress
+    walletAddress,
+    walletId
   }: {
     message: SiweMessage
     signature: string
     walletAddress: string
+    walletId: string
   }): Promise<string> {
     const body = {
       message,
       signature,
-      walletAddress
+      walletAddress,
+      walletId
     }
 
     const response = await api.post(`/wallets/connect`, body)
@@ -71,6 +74,27 @@ export class API {
     }
     const response = await api.post(`/wallets/${walletAddress}/relay`, body)
     return response.data?.safeTxHash
+  }
+
+  async createFirstWebAuthnOwner(
+    walletAddress,
+    signerName,
+    publicKeyId,
+    publicKeyX,
+    publicKeyY
+  ): Promise<WebAuthnOwner> {
+    const body = {
+      signerName,
+      publicKeyId,
+      publicKeyX,
+      publicKeyY
+    }
+
+    const response = await api.post(
+      `/wallets/${walletAddress}/firstWebAuthnOwner`,
+      body
+    )
+    return response.data?.webAuthnOwner
   }
 
   async addWebAuthnOwner(
@@ -111,6 +135,13 @@ export class API {
 
   async getWebAuthnOwners(walletAddress: string): Promise<WebAuthnOwner[]> {
     const response = await api.get(`/webAuthnOwners/${walletAddress}/all`)
+    return response?.data?.webAuthnOwners
+  }
+
+  async getWebAuthnOwnersByWalletId(
+    walletId: string
+  ): Promise<WebAuthnOwner[]> {
+    const response = await api.get(`/webAuthnOwners/${walletId}/all`)
     return response?.data?.webAuthnOwners
   }
 

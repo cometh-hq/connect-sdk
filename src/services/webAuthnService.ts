@@ -23,7 +23,7 @@ const createCredentials = async (
   point: any
   id: string
 }> => {
-  const challenge = new TextEncoder().encode('connection')
+  const challenge = new TextEncoder().encode('credentialCreation')
 
   const webAuthnCredentials: any = await navigator.credentials.create({
     publicKey: {
@@ -36,7 +36,10 @@ const createCredentials = async (
         displayName: signerName
       },
       challenge,
-      pubKeyCredParams: [{ alg: -7, type: 'public-key' }]
+      pubKeyCredParams: [{ alg: -7, type: 'public-key' }],
+      authenticatorSelection: {
+        authenticatorAttachment: 'platform'
+      }
     }
   })
 
@@ -60,6 +63,19 @@ const updateCurrentWebAuthnOwner = (
   walletAddress: string
 ): void => {
   window.localStorage.setItem(`${CREDENTIAL_ID}-${walletAddress}`, publicKeyId)
+}
+
+const connectCredential = async (): Promise<any> => {
+  const challenge = new TextEncoder().encode('connection')
+
+  const assertionPayload: any = await navigator.credentials.get({
+    publicKey: {
+      challenge,
+      allowCredentials: []
+    }
+  })
+
+  return assertionPayload
 }
 
 const sign = async (
@@ -167,17 +183,14 @@ const waitWebAuthnSignerDeployment = async (
 }
 
 export async function platformAuthenticatorIsAvailable(): Promise<boolean> {
-  if (!window.PublicKeyCredential) {
-    console.log('Error: Browser does not support webAuthn')
-    return false
-  }
+  if (!window.PublicKeyCredential)
+    throw new Error('Error: Browser does not support webAuthn')
 
   const isUserVerifyingPlatformAuthenticatorAvailable =
     PublicKeyCredential.isUserVerifyingPlatformAuthenticatorAvailable()
 
-  if (!isUserVerifyingPlatformAuthenticatorAvailable) {
-    console.log('Error: Platform not supported for WebAuthn')
-  }
+  if (!isUserVerifyingPlatformAuthenticatorAvailable)
+    throw new Error('Error: Platform not supported for WebAuthn')
 
   return isUserVerifyingPlatformAuthenticatorAvailable
 }
@@ -185,6 +198,7 @@ export async function platformAuthenticatorIsAvailable(): Promise<boolean> {
 export default {
   getCurrentPublicKeyId,
   createCredentials,
+  connectCredential,
   updateCurrentWebAuthnOwner,
   getWebAuthnSignature,
   predictSignerAddress,
