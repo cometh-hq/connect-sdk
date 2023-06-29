@@ -73,6 +73,28 @@ export class API {
     return response.data?.safeTxHash
   }
 
+  async connectWithWebAuthn(
+    walletAddress,
+    signerName,
+    publicKeyId,
+    publicKeyX,
+    publicKeyY,
+    userId
+  ): Promise<WebAuthnOwner> {
+    const body = {
+      walletAddress,
+      signerName,
+      publicKeyId,
+      publicKeyX,
+      publicKeyY,
+      userId
+    }
+
+    const response = await api.post(`/wallets/connectWithWebAuthn`, body)
+    const data = response?.data
+    return data.walletAddress
+  }
+
   async addWebAuthnOwner(
     walletAddress,
     signerName,
@@ -111,6 +133,11 @@ export class API {
 
   async getWebAuthnOwners(walletAddress: string): Promise<WebAuthnOwner[]> {
     const response = await api.get(`/webAuthnOwners/${walletAddress}/all`)
+    return response?.data?.webAuthnOwners
+  }
+
+  async getWebAuthnOwnersByUserId(userId: string): Promise<WebAuthnOwner[]> {
+    const response = await api.get(`/webAuthnOwners/${userId}/all`)
     return response?.data?.webAuthnOwners
   }
 
