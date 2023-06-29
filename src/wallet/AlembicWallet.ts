@@ -472,7 +472,7 @@ export class AlembicWallet {
       this.walletAddress
     )
 
-    const signerName = `${this.walletAddress} - ${
+    const signerName = `Alembic Connect - ${
       getWebAuthnOwners ? getWebAuthnOwners.length + 1 : 1
     }`
 
