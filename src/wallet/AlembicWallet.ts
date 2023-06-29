@@ -124,13 +124,9 @@ export class AlembicWallet {
       userId
     )
 
-    console.log({ currentWebAuthnOwners })
-
     if (currentWebAuthnOwners.length !== 0) {
       const signingWebAuthnOwner = await this.selectWebAuthnCredential()
       this.walletAddress = signingWebAuthnOwner.walletAddress
-
-      console.log({ signingWebAuthnOwner })
 
       this.signer = new WebAuthnSigner(
         signingWebAuthnOwner.publicKeyId,
@@ -141,8 +137,6 @@ export class AlembicWallet {
       const webAuthnCredentials = await webAuthnService.createCredentials(
         signerName
       )
-
-      console.log({ webAuthnCredentials })
 
       const publicKeyX = `0x${webAuthnCredentials.point.getX().toString(16)}`
       const publicKeyY = `0x${webAuthnCredentials.point.getY().toString(16)}`
