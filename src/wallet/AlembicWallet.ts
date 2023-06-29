@@ -124,7 +124,9 @@ export class AlembicWallet {
       userId
     )
 
-    if (currentWebAuthnOwners.length !== 0) {
+    console.log({ currentWebAuthnOwners })
+
+    if (currentWebAuthnOwners && currentWebAuthnOwners.length !== 0) {
       const signingWebAuthnOwner = await this.selectWebAuthnCredential()
       this.walletAddress = signingWebAuthnOwner.walletAddress
 

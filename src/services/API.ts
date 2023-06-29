@@ -137,7 +137,7 @@ export class API {
   }
 
   async getWebAuthnOwnersByUserId(userId: string): Promise<WebAuthnOwner[]> {
-    const response = await api.get(`/webAuthnOwners/${userId}/all`)
+    const response = await api.get(`/webAuthnOwners/${userId}/byUser`)
     return response?.data?.webAuthnOwners
   }
 
