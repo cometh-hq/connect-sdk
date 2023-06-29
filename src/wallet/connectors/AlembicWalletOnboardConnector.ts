@@ -20,7 +20,6 @@ export function AlembicWalletOnboardConnector({
   uiConfig?: WalletUiConfig
 }): WalletInit {
   return (): WalletModule => {
-    console.log('connector', userId)
     return {
       label: 'Alembic Connect',
       getIcon: async () =>

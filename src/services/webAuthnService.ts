@@ -65,13 +65,15 @@ const updateCurrentWebAuthnOwner = (
   window.localStorage.setItem(`${CREDENTIAL_ID}-${walletAddress}`, publicKeyId)
 }
 
-const selectCredential = async (): Promise<any> => {
+const validateCredentials = async (
+  publicKeyCredentials: PublicKeyCredentialDescriptor[]
+): Promise<any> => {
   const challenge = new TextEncoder().encode('connection')
 
   const assertionPayload: any = await navigator.credentials.get({
     publicKey: {
       challenge,
-      allowCredentials: []
+      allowCredentials: publicKeyCredentials
     }
   })
 
@@ -200,7 +202,7 @@ export async function platformAuthenticatorIsAvailable(): Promise<boolean> {
 export default {
   getCurrentPublicKeyId,
   createCredentials,
-  selectCredential,
+  validateCredentials,
   updateCurrentWebAuthnOwner,
   getWebAuthnSignature,
   predictSignerAddress,

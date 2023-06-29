@@ -16,7 +16,7 @@ import safeService from '../services/safeService'
 import siweService from '../services/siweService'
 import webAuthnService from '../services/webAuthnService'
 import { GasModal } from '../ui'
-import { hexArrayStr } from '../utils/utils'
+import { hexArrayStr, parseHex } from '../utils/utils'
 import { AUTHAdapter } from './adapters'
 import { AlembicAuthSigner } from './signers/AlembicAuthSigner'
 import { WebAuthnSigner } from './signers/WebAuthnSigner'
@@ -124,10 +124,15 @@ export class AlembicWallet {
       userId
     )
 
-    console.log({ currentWebAuthnOwners })
-
-    if (currentWebAuthnOwners && currentWebAuthnOwners.length !== 0) {
-      const signingWebAuthnOwner = await this.selectWebAuthnCredential()
+    if (currentWebAuthnOwners.length !== 0) {
+      const signingWebAuthnOwner = await this.validateWebAuthnCredential(
+        currentWebAuthnOwners.map((webAuthnOwner) => {
+          return {
+            id: parseHex(webAuthnOwner.publicKeyId),
+            type: 'public-key'
+          }
+        })
+      )
       this.walletAddress = signingWebAuthnOwner.walletAddress
 
       this.signer = new WebAuthnSigner(
@@ -440,8 +445,12 @@ export class AlembicWallet {
    * WebAuthn Section
    */
 
-  private async selectWebAuthnCredential(): Promise<WebAuthnOwner> {
-    const response = await webAuthnService.selectCredential()
+  private async validateWebAuthnCredential(
+    publicKeyCredentials: PublicKeyCredentialDescriptor[]
+  ): Promise<WebAuthnOwner> {
+    const response = await webAuthnService.validateCredentials(
+      publicKeyCredentials
+    )
 
     const webAuthnOwner = await this.getCurrentWebAuthnOwner(
       hexArrayStr(response.rawId)
