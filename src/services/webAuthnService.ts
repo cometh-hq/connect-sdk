@@ -11,11 +11,11 @@ import { derToRS, findSequence, hexArrayStr, parseHex } from '../utils/utils'
 import { AlembicProvider } from '../wallet/AlembicProvider'
 
 const curve = new EC('p256')
-/* const CREDENTIAL_ID = 'credentialId'
+const CREDENTIAL_ID = 'credentialId'
 
 const getCurrentPublicKeyId = (walletAddress: string): string | null => {
   return window.localStorage.getItem(`${CREDENTIAL_ID}-${walletAddress}`)
-} */
+}
 
 const createCredentials = async (
   signerName: string
@@ -58,12 +58,12 @@ const createCredentials = async (
   }
 }
 
-/* const updateCurrentWebAuthnOwner = (
+const updateCurrentWebAuthnOwner = (
   publicKeyId: string,
   walletAddress: string
 ): void => {
   window.localStorage.setItem(`${CREDENTIAL_ID}-${walletAddress}`, publicKeyId)
-} */
+}
 
 const selectCredential = async (): Promise<any> => {
   const challenge = new TextEncoder().encode('connection')
@@ -198,10 +198,10 @@ export async function platformAuthenticatorIsAvailable(): Promise<boolean> {
 }
 
 export default {
-  /*   getCurrentPublicKeyId, */
+  getCurrentPublicKeyId,
   createCredentials,
   selectCredential,
-  /*   updateCurrentWebAuthnOwner, */
+  updateCurrentWebAuthnOwner,
   getWebAuthnSignature,
   predictSignerAddress,
   waitWebAuthnSignerDeployment,

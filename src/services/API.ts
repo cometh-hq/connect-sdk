@@ -38,19 +38,16 @@ export class API {
   async connectToAlembicWallet({
     message,
     signature,
-    walletAddress,
-    userId
+    walletAddress
   }: {
     message: SiweMessage
     signature: string
     walletAddress: string
-    userId: string
   }): Promise<string> {
     const body = {
       message,
       signature,
-      walletAddress,
-      userId
+      walletAddress
     }
 
     const response = await api.post(`/wallets/connect`, body)
