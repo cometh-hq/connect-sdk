@@ -84,7 +84,7 @@ const prepareAddOwnerTx = async (
 ): Promise<MetaTransactionData> => {
   const tx = {
     to: walletAddress,
-    value: '0x00',
+    value: '0x0',
     data: SafeInterface.encodeFunctionData('addOwnerWithThreshold', [
       newOwner,
       1
@@ -105,7 +105,7 @@ const prepareEnableModuleTx = async (
 ): Promise<MetaTransactionData> => {
   const tx = {
     to: walletAddress,
-    value: '0x00',
+    value: '0x0',
     data: SafeInterface.encodeFunctionData('enableModule', [moduleAddress]),
     operation: 0,
     safeTxGas: 0,

@@ -13,7 +13,7 @@ const prepareAddGuardianTx = async (
 ): Promise<MetaTransactionData> => {
   const tx = {
     to: socialRecoveryModuleAddress,
-    value: '0x00',
+    value: '0x0',
     data: SocialRecoveryInterface.encodeFunctionData(
       'addGuardianWithThreshold',
       [walletAddress, newGuardian, newGuardianThreshold]
