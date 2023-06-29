@@ -11,11 +11,11 @@ import { derToRS, findSequence, hexArrayStr, parseHex } from '../utils/utils'
 import { AlembicProvider } from '../wallet/AlembicProvider'
 
 const curve = new EC('p256')
-const CREDENTIAL_ID = 'credentialId'
+/* const CREDENTIAL_ID = 'credentialId'
 
 const getCurrentPublicKeyId = (walletAddress: string): string | null => {
   return window.localStorage.getItem(`${CREDENTIAL_ID}-${walletAddress}`)
-}
+} */
 
 const createCredentials = async (
   signerName: string
@@ -58,14 +58,14 @@ const createCredentials = async (
   }
 }
 
-const updateCurrentWebAuthnOwner = (
+/* const updateCurrentWebAuthnOwner = (
   publicKeyId: string,
   walletAddress: string
 ): void => {
   window.localStorage.setItem(`${CREDENTIAL_ID}-${walletAddress}`, publicKeyId)
-}
+} */
 
-const connectCredential = async (): Promise<any> => {
+const selectCredential = async (): Promise<any> => {
   const challenge = new TextEncoder().encode('connection')
 
   const assertionPayload: any = await navigator.credentials.get({
@@ -184,22 +184,24 @@ const waitWebAuthnSignerDeployment = async (
 
 export async function platformAuthenticatorIsAvailable(): Promise<boolean> {
   if (!window.PublicKeyCredential)
-    throw new Error('Error: Browser does not support webAuthn')
+    throw new Error('Error: Device does not support WebAuthn Authentification')
 
   const isUserVerifyingPlatformAuthenticatorAvailable =
     PublicKeyCredential.isUserVerifyingPlatformAuthenticatorAvailable()
 
   if (!isUserVerifyingPlatformAuthenticatorAvailable)
-    throw new Error('Error: Platform not supported for WebAuthn')
+    throw new Error(
+      'Error: Device does not support WebAuthn Platform Authentification'
+    )
 
   return isUserVerifyingPlatformAuthenticatorAvailable
 }
 
 export default {
-  getCurrentPublicKeyId,
+  /*   getCurrentPublicKeyId, */
   createCredentials,
-  connectCredential,
-  updateCurrentWebAuthnOwner,
+  selectCredential,
+  /*   updateCurrentWebAuthnOwner, */
   getWebAuthnSignature,
   predictSignerAddress,
   waitWebAuthnSignerDeployment,

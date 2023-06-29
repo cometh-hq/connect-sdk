@@ -39,18 +39,18 @@ export class API {
     message,
     signature,
     walletAddress,
-    walletId
+    userId
   }: {
     message: SiweMessage
     signature: string
     walletAddress: string
-    walletId: string
+    userId: string
   }): Promise<string> {
     const body = {
       message,
       signature,
       walletAddress,
-      walletId
+      userId
     }
 
     const response = await api.post(`/wallets/connect`, body)
@@ -76,25 +76,26 @@ export class API {
     return response.data?.safeTxHash
   }
 
-  async createFirstWebAuthnOwner(
+  async connectWithWebAuthn(
     walletAddress,
     signerName,
     publicKeyId,
     publicKeyX,
-    publicKeyY
+    publicKeyY,
+    userId
   ): Promise<WebAuthnOwner> {
     const body = {
+      walletAddress,
       signerName,
       publicKeyId,
       publicKeyX,
-      publicKeyY
+      publicKeyY,
+      userId
     }
 
-    const response = await api.post(
-      `/wallets/${walletAddress}/firstWebAuthnOwner`,
-      body
-    )
-    return response.data?.webAuthnOwner
+    const response = await api.post(`/wallets/connectWithWebAuthn`, body)
+    const data = response?.data
+    return data.walletAddress
   }
 
   async addWebAuthnOwner(
@@ -138,10 +139,8 @@ export class API {
     return response?.data?.webAuthnOwners
   }
 
-  async getWebAuthnOwnersByWalletId(
-    walletId: string
-  ): Promise<WebAuthnOwner[]> {
-    const response = await api.get(`/webAuthnOwners/${walletId}/all`)
+  async getWebAuthnOwnersByUserId(userId: string): Promise<WebAuthnOwner[]> {
+    const response = await api.get(`/webAuthnOwners/${userId}/all`)
     return response?.data?.webAuthnOwners
   }
 
