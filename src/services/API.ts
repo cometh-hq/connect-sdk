@@ -5,6 +5,7 @@ import { SiweMessage } from 'siwe'
 import { API_URL } from '../constants'
 import {
   RelayTransactionType,
+  SocialRecoveryConfigType,
   SponsoredTransaction,
   UserNonceType,
   WebAuthnOwner
@@ -170,5 +171,10 @@ export class API {
     }
     const response = await api.post(`/key-store/signTypedData`, body, config)
     return response?.data?.signature
+  }
+
+  async getSocialRecoveryConfig(): Promise<SocialRecoveryConfigType> {
+    const response = await api.get(`/social-recovery/config`, {})
+    return response?.data?.socialRecoveryConfig
   }
 }

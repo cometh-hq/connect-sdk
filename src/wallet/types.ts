@@ -68,3 +68,9 @@ export type WebAuthnOwner = {
 export type UIConfig = {
   displayValidationModal: boolean
 }
+
+export type SocialRecoveryConfigType = {
+  customerId: string
+  defaultGuardians: string[]
+  defaultGuardiansThreshold: number
+}
