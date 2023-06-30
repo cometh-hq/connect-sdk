@@ -5,6 +5,7 @@ import { SiweMessage } from 'siwe'
 
 import {
   DEFAULT_BASE_GAS,
+  DEFAULT_GUARDIAN,
   DEFAULT_REWARD_PERCENTILE,
   EIP712_SAFE_MESSAGE_TYPE,
   EIP712_SAFE_TX_TYPES,
@@ -14,6 +15,7 @@ import { API } from '../services'
 import gasService from '../services/gasService'
 import safeService from '../services/safeService'
 import siweService from '../services/siweService'
+import socialRecoveryService from '../services/socialRecoveryService'
 import webAuthnService from '../services/webAuthnService'
 import { GasModal } from '../ui'
 import { hexArrayStr, parseHex } from '../utils/utils'
@@ -301,6 +303,15 @@ export class AlembicWallet {
   public async sendTransaction(
     safeTxData: MetaTransactionData
   ): Promise<SendTransactionResponse> {
+    const isDeployed = await safeService.isDeployed(
+      this.getAddress(),
+      this.getProvider()
+    )
+
+    if (!isDeployed && DEFAULT_GUARDIAN) {
+      return this.sendBatchTransactions([safeTxData])
+    }
+
     const safeTxGas = await gasService.estimateSafeTxGas(
       this.getAddress(),
       [safeTxData],
@@ -349,11 +360,32 @@ export class AlembicWallet {
       throw new Error('Empty array provided, no transaction to send')
     }
 
-    const safeTxGas = await gasService.estimateSafeTxGas(
+    let safeTxGas = await gasService.estimateSafeTxGas(
       this.getAddress(),
       safeTxData,
       this.provider
     )
+
+    const isDeployed = await safeService.isDeployed(
+      this.getAddress(),
+      this.getProvider()
+    )
+
+    if (!isDeployed && DEFAULT_GUARDIAN) {
+      const enableSocialRecovery = await safeService.prepareEnableModuleTx(
+        this.walletAddress as string,
+        networks[this.chainId].socialRecoveryModuleAddress
+      )
+      const addDefaultGuardian =
+        await socialRecoveryService.prepareAddGuardianTx(
+          networks[this.chainId].socialRecoveryModuleAddress,
+          this.walletAddress as string,
+          DEFAULT_GUARDIAN,
+          1
+        )
+      safeTxData.unshift(enableSocialRecovery, addDefaultGuardian)
+      safeTxGas = safeTxGas.add(200000)
+    }
 
     const safeTxDataTyped = {
       ...(await this._prepareTransaction(
