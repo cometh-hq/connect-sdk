@@ -110,7 +110,6 @@ export class AlembicWallet {
     if (!this.walletAddress) throw new Error('No walletAddress found')
 
     this.sponsoredAddresses = await this.API.getSponsoredAddresses()
-
     this.connected = true
   }
 
@@ -158,14 +157,14 @@ export class AlembicWallet {
         predictedSignerAddress
       )
 
-      await this.API.connectWithWebAuthn(
-        this.walletAddress,
+      await this.API.connectWithWebAuthn({
+        walletAddress: this.walletAddress,
         signerName,
         publicKeyId,
         publicKeyX,
         publicKeyY,
         userId
-      )
+      })
 
       await webAuthnService.waitWebAuthnSignerDeployment(
         publicKeyX,
@@ -473,13 +472,25 @@ export class AlembicWallet {
 
     if (!this.walletAddress) throw new Error('no wallet Address')
 
-    const getWebAuthnOwners = await this.API.getWebAuthnOwners(
-      this.walletAddress
-    )
+    let signerName
 
-    const signerName = `Alembic Connect - ${
-      getWebAuthnOwners ? getWebAuthnOwners.length + 1 : 1
-    }`
+    if (this.userId) {
+      const getWebAuthnOwners = await this.API.getWebAuthnOwnersByUserId(
+        this.userId
+      )
+
+      signerName = `${this.userId} - ${
+        getWebAuthnOwners ? getWebAuthnOwners.length + 1 : 1
+      }`
+    } else {
+      const getWebAuthnOwners = await this.API.getWebAuthnOwners(
+        this.walletAddress
+      )
+
+      signerName = `Alembic Connect - ${
+        getWebAuthnOwners ? getWebAuthnOwners.length + 1 : 1
+      }`
+    }
 
     const webAuthnCredentials = await webAuthnService.createCredentials(
       signerName
@@ -502,20 +513,16 @@ export class AlembicWallet {
 
     const addOwnerTxSignature = await this.signTransaction(addOwnerTxData)
 
-    const message = `${publicKeyX},${publicKeyY},${publicKeyId}`
-    const signature = await this.signMessage(message)
-
-    await this.API.addWebAuthnOwner(
-      this.getAddress(),
+    await this.API.addWebAuthnOwner({
+      walletAddress: this.getAddress(),
       signerName,
       publicKeyId,
       publicKeyX,
       publicKeyY,
-      signature,
-      message,
-      JSON.stringify(addOwnerTxData),
-      addOwnerTxSignature
-    )
+      addOwnerTxData: JSON.stringify(addOwnerTxData),
+      addOwnerTxSignature,
+      userId: this.userId
+    })
 
     await webAuthnService.waitWebAuthnSignerDeployment(
       publicKeyX,
