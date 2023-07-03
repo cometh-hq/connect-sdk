@@ -38,16 +38,19 @@ export class API {
   async connectToAlembicWallet({
     message,
     signature,
-    walletAddress
+    walletAddress,
+    userId
   }: {
     message: SiweMessage
     signature: string
     walletAddress: string
+    userId?: string
   }): Promise<string> {
     const body = {
       message,
       signature,
-      walletAddress
+      walletAddress,
+      userId
     }
 
     const response = await api.post(`/wallets/connect`, body)
@@ -73,14 +76,21 @@ export class API {
     return response.data?.safeTxHash
   }
 
-  async connectWithWebAuthn(
+  async createWalletWithWebAuthn({
     walletAddress,
     signerName,
     publicKeyId,
     publicKeyX,
     publicKeyY,
     userId
-  ): Promise<WebAuthnOwner> {
+  }: {
+    walletAddress: string
+    signerName: string
+    publicKeyId: string
+    publicKeyX: string
+    publicKeyY: string
+    userId: string
+  }): Promise<WebAuthnOwner> {
     const body = {
       walletAddress,
       signerName,
@@ -90,31 +100,38 @@ export class API {
       userId
     }
 
-    const response = await api.post(`/wallets/connectWithWebAuthn`, body)
+    const response = await api.post(`/wallets/createWalletWithWebAuthn`, body)
     const data = response?.data
     return data.walletAddress
   }
 
-  async addWebAuthnOwner(
+  async addWebAuthnOwner({
     walletAddress,
     signerName,
     publicKeyId,
     publicKeyX,
     publicKeyY,
-    signature,
-    message,
     addOwnerTxData,
-    addOwnerTxSignature
-  ): Promise<WebAuthnOwner> {
+    addOwnerTxSignature,
+    userId
+  }: {
+    walletAddress: string
+    signerName: string
+    publicKeyId: string
+    publicKeyX: string
+    publicKeyY: string
+    addOwnerTxData: any
+    addOwnerTxSignature: string
+    userId?: string
+  }): Promise<WebAuthnOwner> {
     const body = {
       signerName,
       publicKeyId,
       publicKeyX,
       publicKeyY,
-      signature,
-      message,
       addOwnerTxData,
-      addOwnerTxSignature
+      addOwnerTxSignature,
+      userId
     }
 
     const response = await api.post(

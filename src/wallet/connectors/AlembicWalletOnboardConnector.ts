@@ -34,9 +34,7 @@ export function AlembicWalletOnboardConnector({
           ...(uiConfig ?? { uiConfig })
         })
         const instanceProvider = new AlembicProvider(instance)
-        !userId
-          ? await instance.connect()
-          : await instance.connectWebAuthn(userId)
+        await instance.connect(userId)
 
         const provider = createEIP1193Provider(instanceProvider, {
           eth_requestAccounts: async () => {

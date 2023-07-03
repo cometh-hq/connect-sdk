@@ -63,6 +63,7 @@ export type WebAuthnOwner = {
   publicKeyY: string
   signature: string
   signerAddress: string
+  userId?: string
 }
 
 export type UIConfig = {

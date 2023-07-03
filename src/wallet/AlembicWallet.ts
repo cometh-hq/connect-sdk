@@ -18,7 +18,6 @@ import siweService from '../services/siweService'
 import socialRecoveryService from '../services/socialRecoveryService'
 import webAuthnService from '../services/webAuthnService'
 import { GasModal } from '../ui'
-import { hexArrayStr, parseHex } from '../utils/utils'
 import { AUTHAdapter } from './adapters'
 import { AlembicAuthSigner } from './signers/AlembicAuthSigner'
 import { WebAuthnSigner } from './signers/WebAuthnSigner'
@@ -28,8 +27,7 @@ import {
   SendTransactionResponse,
   SponsoredTransaction,
   UIConfig,
-  UserInfos,
-  WebAuthnOwner
+  UserInfos
 } from './types'
 
 export interface AlembicWalletConfig {
@@ -69,121 +67,39 @@ export class AlembicWallet {
    * Connection Section
    */
 
-  public async connect(): Promise<void> {
+  public async connect(userId?: string): Promise<void> {
     if (!networks[this.chainId])
       throw new Error('This network is not supported')
 
     if (!this.authAdapter) throw new Error('No EOA adapter found')
-    await this.authAdapter.connect()
+    await this.authAdapter.connect(userId)
 
     const ownerAddress = await this.authAdapter.getAccount()
     if (!ownerAddress) throw new Error('No owner Address found')
     this.walletAddress = await this.API.getWalletAddress(ownerAddress)
 
-    const isBrowserWebAuthnCompatible =
-      await webAuthnService.platformAuthenticatorIsAvailable()
-
-    const webAuthnOwner = await this.getCurrentWebAuthnOwner(this.walletAddress)
-
-    if (!!isBrowserWebAuthnCompatible && !!webAuthnOwner) {
-      this.walletAddress = webAuthnOwner.walletAddress
-      this.signer = new WebAuthnSigner(
-        webAuthnOwner.publicKeyId,
-        webAuthnOwner.signerAddress
-      )
-    } else {
-      this.signer = this.authAdapter.getSigner()
-    }
-    const nonce = await this.API.getNonce(this.walletAddress)
-    const message: SiweMessage = siweService.createMessage(
-      this.walletAddress,
-      nonce,
-      this.chainId
-    )
-    const signature = await this.signMessage(message.prepareMessage())
-
-    await this.API.connectToAlembicWallet({
-      message,
-      signature,
-      walletAddress: this.walletAddress
-    })
-
-    if (!this.signer) throw new Error('No signer found')
-    if (!this.walletAddress) throw new Error('No walletAddress found')
-
-    this.sponsoredAddresses = await this.API.getSponsoredAddresses()
-
-    this.connected = true
-  }
-
-  public async connectWebAuthn(userId: string): Promise<void> {
-    if (!networks[this.chainId])
-      throw new Error('This network is not supported')
-
-    await webAuthnService.platformAuthenticatorIsAvailable()
-
-    const currentWebAuthnOwners = await this.API.getWebAuthnOwnersByUserId(
-      userId
-    )
-
-    if (currentWebAuthnOwners.length !== 0) {
-      const signingWebAuthnOwner = await this.validateWebAuthnCredential(
-        currentWebAuthnOwners.map((webAuthnOwner) => {
-          return {
-            id: parseHex(webAuthnOwner.publicKeyId),
-            type: 'public-key'
-          }
-        })
-      )
-      this.walletAddress = signingWebAuthnOwner.walletAddress
-
-      this.signer = new WebAuthnSigner(
-        signingWebAuthnOwner.publicKeyId,
-        signingWebAuthnOwner.signerAddress
-      )
-    } else {
-      const signerName = `${userId} - 1`
-      const webAuthnCredentials = await webAuthnService.createCredentials(
-        signerName
-      )
-
-      const publicKeyX = `0x${webAuthnCredentials.point.getX().toString(16)}`
-      const publicKeyY = `0x${webAuthnCredentials.point.getY().toString(16)}`
-      const publicKeyId = webAuthnCredentials.id
-
-      const predictedSignerAddress = await webAuthnService.predictSignerAddress(
-        publicKeyX,
-        publicKeyY,
+    this.signer = this.authAdapter.getSigner()
+    if (!(this.signer instanceof WebAuthnSigner)) {
+      const nonce = await this.API.getNonce(this.walletAddress)
+      const message: SiweMessage = siweService.createMessage(
+        this.walletAddress,
+        nonce,
         this.chainId
       )
-      this.walletAddress = await this.API.getWalletAddress(
-        predictedSignerAddress
-      )
+      const signature = await this.signMessage(message.prepareMessage())
 
-      await this.API.connectWithWebAuthn(
-        this.walletAddress,
-        signerName,
-        publicKeyId,
-        publicKeyX,
-        publicKeyY,
+      await this.API.connectToAlembicWallet({
+        message,
+        signature,
+        walletAddress: this.walletAddress,
         userId
-      )
-
-      await webAuthnService.waitWebAuthnSignerDeployment(
-        publicKeyX,
-        publicKeyY,
-        this.chainId,
-        this.getProvider()
-      )
-
-      this.signer = new WebAuthnSigner(publicKeyId, predictedSignerAddress)
+      })
     }
 
     if (!this.signer) throw new Error('No signer found')
     if (!this.walletAddress) throw new Error('No walletAddress found')
 
     this.sponsoredAddresses = await this.API.getSponsoredAddresses()
-    this.userId = userId
     this.connected = true
   }
 
@@ -477,22 +393,6 @@ export class AlembicWallet {
    * WebAuthn Section
    */
 
-  private async validateWebAuthnCredential(
-    publicKeyCredentials: PublicKeyCredentialDescriptor[]
-  ): Promise<WebAuthnOwner> {
-    const response = await webAuthnService.validateCredentials(
-      publicKeyCredentials
-    )
-
-    const webAuthnOwner = await this.getCurrentWebAuthnOwner(
-      hexArrayStr(response.rawId)
-    )
-
-    if (!webAuthnOwner) throw new Error('WebAuthn is undefined')
-
-    return webAuthnOwner
-  }
-
   public async addWebAuthnOwner(): Promise<string> {
     const isDeployed = await safeService.isDeployed(
       this.getAddress(),
@@ -505,15 +405,27 @@ export class AlembicWallet {
 
     if (!this.walletAddress) throw new Error('no wallet Address')
 
-    const getWebAuthnOwners = await this.API.getWebAuthnOwners(
-      this.walletAddress
-    )
+    let signerName
 
-    const signerName = `Alembic Connect - ${
-      getWebAuthnOwners ? getWebAuthnOwners.length + 1 : 1
-    }`
+    if (this.userId) {
+      const getWebAuthnOwners = await this.API.getWebAuthnOwnersByUserId(
+        this.userId
+      )
 
-    const webAuthnCredentials = await webAuthnService.createCredentials(
+      signerName = `${this.userId} - ${
+        getWebAuthnOwners ? getWebAuthnOwners.length + 1 : 1
+      }`
+    } else {
+      const getWebAuthnOwners = await this.API.getWebAuthnOwners(
+        this.walletAddress
+      )
+
+      signerName = `Alembic Connect - ${
+        getWebAuthnOwners ? getWebAuthnOwners.length + 1 : 1
+      }`
+    }
+
+    const webAuthnCredentials = await webAuthnService.createCredential(
       signerName
     )
 
@@ -534,20 +446,16 @@ export class AlembicWallet {
 
     const addOwnerTxSignature = await this.signTransaction(addOwnerTxData)
 
-    const message = `${publicKeyX},${publicKeyY},${publicKeyId}`
-    const signature = await this.signMessage(message)
-
-    await this.API.addWebAuthnOwner(
-      this.getAddress(),
+    await this.API.addWebAuthnOwner({
+      walletAddress: this.getAddress(),
       signerName,
       publicKeyId,
       publicKeyX,
       publicKeyY,
-      signature,
-      message,
-      JSON.stringify(addOwnerTxData),
-      addOwnerTxSignature
-    )
+      addOwnerTxData: JSON.stringify(addOwnerTxData),
+      addOwnerTxSignature,
+      userId: this.userId
+    })
 
     await webAuthnService.waitWebAuthnSignerDeployment(
       publicKeyX,
@@ -556,30 +464,8 @@ export class AlembicWallet {
       this.getProvider()
     )
 
-    webAuthnService.updateCurrentWebAuthnOwner(publicKeyId, this.getAddress())
-
     this.signer = new WebAuthnSigner(publicKeyId, predictedSignerAddress)
 
     return predictedSignerAddress
-  }
-
-  public async getCurrentWebAuthnOwner(
-    publicKeyId: string
-  ): Promise<WebAuthnOwner | undefined> {
-    const currentWebAuthnOwner = await this.API.getWebAuthnOwnerByPublicKeyId(
-      <string>publicKeyId
-    )
-
-    if (currentWebAuthnOwner === null) return undefined
-
-    const isSafeOwner = await safeService.isSafeOwner(
-      currentWebAuthnOwner.walletAddress,
-      currentWebAuthnOwner.signerAddress,
-      this.getProvider()
-    )
-
-    if (!isSafeOwner) return undefined
-
-    return currentWebAuthnOwner
   }
 }
