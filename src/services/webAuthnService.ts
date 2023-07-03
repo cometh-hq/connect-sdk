@@ -3,12 +3,17 @@ import { parseAuthenticatorData } from '@simplewebauthn/server/helpers'
 import CBOR from 'cbor-js'
 import { ec as EC } from 'elliptic'
 import { ethers } from 'ethers'
+import { SiweMessage } from 'siwe'
 import { v4 } from 'uuid'
 
 import { BLOCK_EVENT_GAP, networks, P256SignerCreationCode } from '../constants'
 import { P256SignerFactory__factory } from '../contracts/types/factories'
+import { API } from '../services'
 import { derToRS, findSequence, hexArrayStr, parseHex } from '../utils/utils'
+import { WebAuthnOwner } from '../wallet'
 import { AlembicProvider } from '../wallet/AlembicProvider'
+import safeService from './safeService'
+import siweService from './siweService'
 
 const curve = new EC('p256')
 
@@ -166,11 +171,147 @@ export async function platformAuthenticatorIsAvailable(): Promise<boolean> {
   return isUserVerifyingPlatformAuthenticatorAvailable
 }
 
+export async function signWithWebAuthn(
+  webAuthnOwners: WebAuthnOwner[],
+  challenge: string
+): Promise<{
+  encodedSignature: string
+  publicKeyId: string
+}> {
+  const publicKeyCredentials: PublicKeyCredentialDescriptor[] =
+    webAuthnOwners.map((webAuthnOwner) => {
+      return {
+        id: parseHex(webAuthnOwner.publicKeyId),
+        type: 'public-key'
+      }
+    })
+
+  const { encodedSignature, publicKeyId } = await getWebAuthnSignature(
+    ethers.utils.keccak256(ethers.utils.hashMessage(challenge)),
+    publicKeyCredentials
+  )
+
+  return { encodedSignature, publicKeyId }
+}
+
+export async function createWalletWithWebAuthn(
+  userId: string,
+  chainId: string
+): Promise<{
+  publicKeyX: string
+  publicKeyY: string
+  publicKeyId: string
+  signerName: string
+  signerAddress: string
+}> {
+  const signerName = `${userId} - 1`
+  const webAuthnCredentials = await createCredential(signerName)
+
+  const publicKeyX = `0x${webAuthnCredentials.point.getX().toString(16)}`
+  const publicKeyY = `0x${webAuthnCredentials.point.getY().toString(16)}`
+  const publicKeyId = webAuthnCredentials.id
+
+  const signerAddress = await predictSignerAddress(
+    publicKeyX,
+    publicKeyY,
+    +chainId
+  )
+
+  return {
+    publicKeyX,
+    publicKeyY,
+    publicKeyId,
+    signerName,
+    signerAddress
+  }
+}
+
+export async function createOrGetWebAuthnOwner(
+  userId: string,
+  chainId: string,
+  provider: StaticJsonRpcProvider,
+  API: API
+): Promise<{
+  publicKeyId: string
+  signerAddress: string
+}> {
+  const webAuthnOwners = await API.getWebAuthnOwnersByUserId(userId)
+
+  if (webAuthnOwners.length !== 0) {
+    const nonce = await API.getNonce(webAuthnOwners[0].walletAddress)
+    const message: SiweMessage = siweService.createMessage(
+      webAuthnOwners[0].walletAddress,
+      nonce,
+      +chainId
+    )
+    const { encodedSignature, publicKeyId } = await signWithWebAuthn(
+      webAuthnOwners,
+      message.prepareMessage()
+    )
+
+    const currentWebAuthnOwner = await API.getWebAuthnOwnerByPublicKeyId(
+      <string>publicKeyId
+    )
+    if (!currentWebAuthnOwner) throw new Error('WebAuthn is undefined')
+
+    const isSafeOwner = await safeService.isSafeOwner(
+      currentWebAuthnOwner.walletAddress,
+      currentWebAuthnOwner.signerAddress,
+      provider
+    )
+
+    if (!isSafeOwner) throw new Error('WebAuthn is undefined')
+
+    const formattedSignature = safeService.formatWebAuthnSignatureForSafe(
+      currentWebAuthnOwner.signerAddress,
+      encodedSignature
+    )
+
+    await API.connectToAlembicWallet({
+      message,
+      signature: formattedSignature,
+      walletAddress: webAuthnOwners[0].walletAddress,
+      userId
+    })
+
+    return {
+      publicKeyId: currentWebAuthnOwner.publicKeyId,
+      signerAddress: currentWebAuthnOwner.signerAddress
+    }
+  } else {
+    const { publicKeyX, publicKeyY, publicKeyId, signerName, signerAddress } =
+      await createWalletWithWebAuthn(userId, chainId)
+
+    const walletAddress = await API.getWalletAddress(signerAddress)
+
+    await API.createWalletWithWebAuthn({
+      walletAddress,
+      signerName,
+      publicKeyId,
+      publicKeyX,
+      publicKeyY,
+      userId
+    })
+
+    await waitWebAuthnSignerDeployment(
+      publicKeyX,
+      publicKeyY,
+      +chainId,
+      provider
+    )
+
+    return { publicKeyId, signerAddress }
+  }
+}
+
 export default {
   createCredential,
   sign,
   getWebAuthnSignature,
   predictSignerAddress,
   waitWebAuthnSignerDeployment,
-  platformAuthenticatorIsAvailable
+  platformAuthenticatorIsAvailable,
+  createWalletWithWebAuthn,
+  signWithWebAuthn,
+  createOrGetWebAuthnOwner
 }
