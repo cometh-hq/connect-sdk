@@ -11,13 +11,8 @@ import { derToRS, findSequence, hexArrayStr, parseHex } from '../utils/utils'
 import { AlembicProvider } from '../wallet/AlembicProvider'
 
 const curve = new EC('p256')
-const CREDENTIAL_ID = 'credentialId'
 
-const getCurrentPublicKeyId = (walletAddress: string): string | null => {
-  return window.localStorage.getItem(`${CREDENTIAL_ID}-${walletAddress}`)
-}
-
-const createCredentials = async (
+const createCredential = async (
   signerName: string
 ): Promise<{
   point: any
@@ -55,28 +50,6 @@ const createCredentials = async (
   }
 }
 
-const updateCurrentWebAuthnOwner = (
-  publicKeyId: string,
-  walletAddress: string
-): void => {
-  window.localStorage.setItem(`${CREDENTIAL_ID}-${walletAddress}`, publicKeyId)
-}
-
-const validateCredentials = async (
-  publicKeyCredentials: PublicKeyCredentialDescriptor[]
-): Promise<any> => {
-  const challenge = new TextEncoder().encode('connection')
-
-  const assertionPayload: any = await navigator.credentials.get({
-    publicKey: {
-      challenge,
-      allowCredentials: publicKeyCredentials
-    }
-  })
-
-  return assertionPayload
-}
-
 const sign = async (
   challenge: BufferSource,
   publicKeyCredential: PublicKeyCredentialDescriptor[]
@@ -88,25 +61,22 @@ const sign = async (
     }
   })
 
-  return assertionPayload?.response
+  return assertionPayload
 }
 
 const getWebAuthnSignature = async (
   hash: string,
-  publicKeyId: string
-): Promise<string> => {
+  publicKeyCredential: PublicKeyCredentialDescriptor[]
+): Promise<{ encodedSignature: string; publicKeyId: string }> => {
   const challenge = parseHex(hash.slice(2))
+  const assertionPayload = await sign(challenge, publicKeyCredential)
+  const publicKeyId = hexArrayStr(assertionPayload.rawId)
 
   const {
     signature,
     authenticatorData,
     clientDataJSON: clientData
-  } = await sign(challenge, [
-    {
-      id: parseHex(publicKeyId),
-      type: 'public-key'
-    }
-  ])
+  } = assertionPayload.response
 
   const rs = derToRS(new Uint8Array(signature))
 
@@ -128,7 +98,7 @@ const getWebAuthnSignature = async (
     ]
   )
 
-  return encodedSignature
+  return { encodedSignature, publicKeyId }
 }
 
 const predictSignerAddress = async (
@@ -197,10 +167,8 @@ export async function platformAuthenticatorIsAvailable(): Promise<boolean> {
 }
 
 export default {
-  getCurrentPublicKeyId,
-  createCredentials,
-  validateCredentials,
-  updateCurrentWebAuthnOwner,
+  createCredential,
+  sign,
   getWebAuthnSignature,
   predictSignerAddress,
   waitWebAuthnSignerDeployment,

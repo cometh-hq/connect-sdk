@@ -9,6 +9,7 @@ import { Bytes, ethers } from 'ethers'
 import { EIP712_SAFE_MESSAGE_TYPE, EIP712_SAFE_TX_TYPES } from '../../constants'
 import safeService from '../../services/safeService'
 import webAuthnService from '../../services/webAuthnService'
+import { parseHex } from '../../utils/utils'
 import { SafeTransactionDataPartial } from '../types'
 
 export class WebAuthnSigner extends Signer {
@@ -37,9 +38,16 @@ export class WebAuthnSigner extends Signer {
         ? ethers.utils._TypedDataEncoder.hash(domain, types, value)
         : ethers.utils.keccak256(value.message)
 
-    const encodedSignature = await webAuthnService.getWebAuthnSignature(
+    const publicKeyCredential: PublicKeyCredentialDescriptor[] = [
+      {
+        id: parseHex(this.publicKeyId),
+        type: 'public-key'
+      }
+    ]
+
+    const { encodedSignature } = await webAuthnService.getWebAuthnSignature(
       data,
-      this.publicKeyId
+      publicKeyCredential
     )
 
     return safeService.formatWebAuthnSignatureForSafe(

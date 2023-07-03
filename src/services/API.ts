@@ -38,16 +38,19 @@ export class API {
   async connectToAlembicWallet({
     message,
     signature,
-    walletAddress
+    walletAddress,
+    userId
   }: {
     message: SiweMessage
     signature: string
     walletAddress: string
+    userId?: string
   }): Promise<string> {
     const body = {
       message,
       signature,
-      walletAddress
+      walletAddress,
+      userId
     }
 
     const response = await api.post(`/wallets/connect`, body)
@@ -73,7 +76,7 @@ export class API {
     return response.data?.safeTxHash
   }
 
-  async connectWithWebAuthn({
+  async createWalletWithWebAuthn({
     walletAddress,
     signerName,
     publicKeyId,
@@ -97,7 +100,7 @@ export class API {
       userId
     }
 
-    const response = await api.post(`/wallets/connectWithWebAuthn`, body)
+    const response = await api.post(`/wallets/createWalletWithWebAuthn`, body)
     const data = response?.data
     return data.walletAddress
   }
