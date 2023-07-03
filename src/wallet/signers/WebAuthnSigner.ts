@@ -22,7 +22,7 @@ export class WebAuthnSigner extends Signer {
   }
 
   async getAddress(): Promise<string> {
-    throw new Error('get Address not supported')
+    return this.signerAddress ?? ''
   }
 
   async _signTypedData(
