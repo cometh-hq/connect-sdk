@@ -70,54 +70,34 @@ export class AlembicWallet {
       throw new Error('This network is not supported')
 
     if (!this.authAdapter) throw new Error('No EOA adapter found')
-    await this.authAdapter.connect()
-
-    const ownerAddress = await this.authAdapter.getAccount()
-    if (!ownerAddress) throw new Error('No owner Address found')
-    this.walletAddress = await this.API.getWalletAddress(ownerAddress)
-
-    this.signer = this.authAdapter.getSigner()
-
-    const nonce = await this.API.getNonce(this.walletAddress)
-    const message: SiweMessage = siweService.createMessage(
-      this.walletAddress,
-      nonce,
-      this.chainId
-    )
-    const signature = await this.signMessage(message.prepareMessage())
-
-    await this.API.connectToAlembicWallet({
-      message,
-      signature,
-      walletAddress: this.walletAddress,
-      userId
-    })
-
-    if (!this.signer) throw new Error('No signer found')
-    if (!this.walletAddress) throw new Error('No walletAddress found')
-
-    this.sponsoredAddresses = await this.API.getSponsoredAddresses()
-    this.connected = true
-  }
-
-  public async connectWebAuthn(userId: string): Promise<void> {
-    if (!networks[this.chainId])
-      throw new Error('This network is not supported')
-
-    await webAuthnService.platformAuthenticatorIsAvailable()
-
-    if (!this.authAdapter) throw new Error('No EOA adapter found')
     await this.authAdapter.connect(userId)
+
     const ownerAddress = await this.authAdapter.getAccount()
     if (!ownerAddress) throw new Error('No owner Address found')
     this.walletAddress = await this.API.getWalletAddress(ownerAddress)
+
     this.signer = this.authAdapter.getSigner()
+    if (!(this.signer instanceof WebAuthnSigner)) {
+      const nonce = await this.API.getNonce(this.walletAddress)
+      const message: SiweMessage = siweService.createMessage(
+        this.walletAddress,
+        nonce,
+        this.chainId
+      )
+      const signature = await this.signMessage(message.prepareMessage())
+
+      await this.API.connectToAlembicWallet({
+        message,
+        signature,
+        walletAddress: this.walletAddress,
+        userId
+      })
+    }
 
     if (!this.signer) throw new Error('No signer found')
     if (!this.walletAddress) throw new Error('No walletAddress found')
 
     this.sponsoredAddresses = await this.API.getSponsoredAddresses()
-    this.userId = userId
     this.connected = true
   }
 
