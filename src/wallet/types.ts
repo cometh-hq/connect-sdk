@@ -69,3 +69,10 @@ export type WebAuthnOwner = {
 export type UIConfig = {
   displayValidationModal: boolean
 }
+
+export type WalletInfos = {
+  address: string
+  connectionDate: Date
+  creationDate: Date
+  userId: string
+}

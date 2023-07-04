@@ -27,7 +27,7 @@ import {
   SendTransactionResponse,
   SponsoredTransaction,
   UIConfig,
-  UserInfos
+  WalletInfos
 } from './types'
 
 export interface AlembicWalletConfig {
@@ -111,17 +111,9 @@ export class AlembicWallet {
     return this.provider
   }
 
-  public async getUserInfos(): Promise<Partial<UserInfos>> {
-    try {
-      const userInfos = await this.authAdapter.getUserInfos()
-      return {
-        ...userInfos,
-        ownerAddress: await this.authAdapter.getSigner()?.getAddress(),
-        walletAddress: this.getAddress()
-      }
-    } catch {
-      return { walletAddress: this.getAddress() }
-    }
+  public async getUserInfos(): Promise<WalletInfos> {
+    const walletInfos = await this.API.getWalletInfos(this.getAddress())
+    return walletInfos
   }
 
   public getAddress(): string {

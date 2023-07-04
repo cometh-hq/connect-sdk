@@ -7,6 +7,7 @@ import {
   RelayTransactionType,
   SponsoredTransaction,
   UserNonceType,
+  WalletInfos,
   WebAuthnOwner
 } from '../wallet/types'
 
@@ -28,6 +29,11 @@ export class API {
   async getWalletAddress(ownerAddress: string): Promise<string> {
     const response = await api.get(`/wallets/${ownerAddress}/getWalletAddress`)
     return response?.data?.walletAddress
+  }
+
+  async getWalletInfos(walletAddress: string): Promise<WalletInfos> {
+    const response = await api.get(`/wallets/${walletAddress}/getWalletInfos`)
+    return response?.data?.walletInfos
   }
 
   async getSponsoredAddresses(): Promise<SponsoredTransaction[]> {
