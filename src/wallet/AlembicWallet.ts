@@ -5,7 +5,6 @@ import { SiweMessage } from 'siwe'
 
 import {
   DEFAULT_BASE_GAS,
-  DEFAULT_GUARDIAN,
   DEFAULT_REWARD_PERCENTILE,
   EIP712_SAFE_MESSAGE_TYPE,
   EIP712_SAFE_TX_TYPES,
@@ -216,8 +215,11 @@ export class AlembicWallet {
       this.getProvider()
     )
 
-    if (!isDeployed && DEFAULT_GUARDIAN) {
-      return this.sendBatchTransactions([safeTxData])
+    if (!isDeployed) {
+      const socialRecoveryConfig = await this.API.getSocialRecoveryConfig()
+      if (socialRecoveryConfig?.defaultGuardians?.length > 0) {
+        return this.sendBatchTransactions([safeTxData])
+      }
     }
 
     const safeTxGas = await gasService.estimateSafeTxGas(
@@ -279,20 +281,36 @@ export class AlembicWallet {
       this.getProvider()
     )
 
-    if (!isDeployed && DEFAULT_GUARDIAN) {
-      const enableSocialRecovery = await safeService.prepareEnableModuleTx(
-        this.walletAddress as string,
-        networks[this.chainId].socialRecoveryModuleAddress
-      )
-      const addDefaultGuardian =
-        await socialRecoveryService.prepareAddGuardianTx(
-          networks[this.chainId].socialRecoveryModuleAddress,
+    if (!isDeployed) {
+      const socialRecoveryConfig = await this.API.getSocialRecoveryConfig()
+      if (socialRecoveryConfig?.defaultGuardians?.length > 0) {
+        const enableSocialRecovery = await safeService.prepareEnableModuleTx(
           this.walletAddress as string,
-          DEFAULT_GUARDIAN,
-          1
+          networks[this.chainId].socialRecoveryModuleAddress
         )
-      safeTxData.unshift(enableSocialRecovery, addDefaultGuardian)
-      safeTxGas = safeTxGas.add(200000)
+
+        const addDefaultGuardians: MetaTransactionData[] = []
+
+        for (let i = 0; i < socialRecoveryConfig.defaultGuardians.length; i++) {
+          addDefaultGuardians.push(
+            await socialRecoveryService.prepareAddGuardianTx(
+              networks[this.chainId].socialRecoveryModuleAddress,
+              this.walletAddress as string,
+              socialRecoveryConfig.defaultGuardians[i],
+              Math.min(socialRecoveryConfig.defaultGuardiansThreshold, i + 1)
+            )
+          )
+        }
+
+        safeTxData = [enableSocialRecovery].concat(
+          addDefaultGuardians,
+          safeTxData
+        )
+
+        safeTxGas = safeTxGas.add(
+          100000 + 100000 * socialRecoveryConfig.defaultGuardians.length
+        )
+      }
     }
 
     const safeTxDataTyped = {

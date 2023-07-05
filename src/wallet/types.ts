@@ -70,6 +70,12 @@ export type UIConfig = {
   displayValidationModal: boolean
 }
 
+export type SocialRecoveryConfigType = {
+  customerId: string
+  defaultGuardians: string[]
+  defaultGuardiansThreshold: number
+}
+
 export type WalletInfos = {
   address: string
   connectionDate: Date
