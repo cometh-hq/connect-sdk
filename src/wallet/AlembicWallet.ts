@@ -393,8 +393,12 @@ export class AlembicWallet {
             )
           )
         }
-        safeTxData = addDefaultGuardians.concat(safeTxData)
-        safeTxData.unshift(enableSocialRecovery)
+
+        safeTxData = [enableSocialRecovery].concat(
+          addDefaultGuardians,
+          safeTxData
+        )
+
         safeTxGas = safeTxGas.add(
           100000 + 100000 * socialRecoveryConfig.defaultGuardians.length
         )
