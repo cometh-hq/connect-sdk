@@ -82,3 +82,9 @@ export type WalletInfos = {
   creationDate: Date
   userId: string
 }
+
+export type DeviceData = {
+  browser: string
+  os: string
+  platform: string
+}

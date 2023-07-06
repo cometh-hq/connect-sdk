@@ -11,6 +11,7 @@ import {
   networks
 } from '../constants'
 import { API } from '../services'
+import deviceService from '../services/deviceService'
 import gasService from '../services/gasService'
 import safeService from '../services/safeService'
 import siweService from '../services/siweService'
@@ -99,6 +100,7 @@ export class AlembicWallet {
     if (!this.walletAddress) throw new Error('No walletAddress found')
 
     this.sponsoredAddresses = await this.API.getSponsoredAddresses()
+    this.userId = userId
     this.connected = true
   }
 
@@ -414,29 +416,10 @@ export class AlembicWallet {
       )
 
     if (!this.walletAddress) throw new Error('no wallet Address')
-
-    let signerName
-
-    if (this.userId) {
-      const getWebAuthnOwners = await this.API.getWebAuthnOwnersByUserId(
-        this.userId
-      )
-
-      signerName = `${this.userId} - ${
-        getWebAuthnOwners ? getWebAuthnOwners.length + 1 : 1
-      }`
-    } else {
-      const getWebAuthnOwners = await this.API.getWebAuthnOwners(
-        this.walletAddress
-      )
-
-      signerName = `Alembic Connect - ${
-        getWebAuthnOwners ? getWebAuthnOwners.length + 1 : 1
-      }`
-    }
+    if (!this.userId) throw new Error('no user Id selected')
 
     const webAuthnCredentials = await webAuthnService.createCredential(
-      signerName
+      this.userId
     )
 
     const publicKeyX = `0x${webAuthnCredentials.point.getX().toString(16)}`
@@ -458,12 +441,13 @@ export class AlembicWallet {
 
     await this.API.addWebAuthnOwner({
       walletAddress: this.getAddress(),
-      signerName,
+      signerName: this.userId,
       publicKeyId,
       publicKeyX,
       publicKeyY,
       addOwnerTxData: JSON.stringify(addOwnerTxData),
       addOwnerTxSignature,
+      deviceData: deviceService.getDeviceData(),
       userId: this.userId
     })
 
