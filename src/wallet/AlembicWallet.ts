@@ -406,14 +406,8 @@ export class AlembicWallet {
    */
 
   public async addWebAuthnOwner(): Promise<string> {
-    const isDeployed = await safeService.isDeployed(
-      this.getAddress(),
-      this.getProvider()
-    )
-    if (!isDeployed)
-      throw new Error(
-        'You need to make a transaction before deploying a webAuth signer'
-      )
+    if (!(this.signer instanceof WebAuthnSigner))
+      throw new Error('This fuction needs a webAuthn adaptor to be used')
 
     if (!this.walletAddress) throw new Error('no wallet Address')
     if (!this.userId) throw new Error('no user Id selected')

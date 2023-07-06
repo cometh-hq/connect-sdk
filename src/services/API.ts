@@ -90,8 +90,8 @@ export class API {
     publicKeyId,
     publicKeyX,
     publicKeyY,
-    userId,
-    deviceData
+    deviceData,
+    userId
   }: {
     walletAddress: string
     signerName: string
@@ -107,8 +107,8 @@ export class API {
       publicKeyId,
       publicKeyX,
       publicKeyY,
-      userId,
-      deviceData
+      deviceData,
+      userId
     }
 
     const response = await api.post(`/wallets/createWalletWithWebAuthn`, body)
