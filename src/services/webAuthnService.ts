@@ -10,8 +10,9 @@ import { BLOCK_EVENT_GAP, networks, P256SignerCreationCode } from '../constants'
 import { P256SignerFactory__factory } from '../contracts/types/factories'
 import { API } from '../services'
 import { derToRS, findSequence, hexArrayStr, parseHex } from '../utils/utils'
-import { WebAuthnOwner } from '../wallet'
+import { DeviceData, WebAuthnOwner } from '../wallet'
 import { AlembicProvider } from '../wallet/AlembicProvider'
+import deviceService from './deviceService'
 import safeService from './safeService'
 import siweService from './siweService'
 
@@ -201,11 +202,9 @@ export async function createWalletWithWebAuthn(
   publicKeyX: string
   publicKeyY: string
   publicKeyId: string
-  signerName: string
   signerAddress: string
 }> {
-  const signerName = `${userId} - 1`
-  const webAuthnCredentials = await createCredential(signerName)
+  const webAuthnCredentials = await createCredential(userId)
 
   const publicKeyX = `0x${webAuthnCredentials.point.getX().toString(16)}`
   const publicKeyY = `0x${webAuthnCredentials.point.getY().toString(16)}`
@@ -221,7 +220,6 @@ export async function createWalletWithWebAuthn(
     publicKeyX,
     publicKeyY,
     publicKeyId,
-    signerName,
     signerAddress
   }
 }
@@ -262,14 +260,12 @@ export async function createOrGetWebAuthnOwner(
 
     if (!isSafeOwner) throw new Error('WebAuthn is undefined')
 
-    const formattedSignature = safeService.formatWebAuthnSignatureForSafe(
-      currentWebAuthnOwner.signerAddress,
-      encodedSignature
-    )
-
     await API.connectToAlembicWallet({
       message,
-      signature: formattedSignature,
+      signature: safeService.formatWebAuthnSignatureForSafe(
+        currentWebAuthnOwner.signerAddress,
+        encodedSignature
+      ),
       walletAddress: webAuthnOwners[0].walletAddress,
       userId
     })
@@ -279,17 +275,16 @@ export async function createOrGetWebAuthnOwner(
       signerAddress: currentWebAuthnOwner.signerAddress
     }
   } else {
-    const { publicKeyX, publicKeyY, publicKeyId, signerName, signerAddress } =
+    const { publicKeyX, publicKeyY, publicKeyId, signerAddress } =
       await createWalletWithWebAuthn(userId, chainId)
 
-    const walletAddress = await API.getWalletAddress(signerAddress)
-
     await API.createWalletWithWebAuthn({
-      walletAddress,
-      signerName,
+      walletAddress: await API.getWalletAddress(signerAddress),
+      signerName: userId,
       publicKeyId,
       publicKeyX,
       publicKeyY,
+      deviceData: deviceService.getDeviceData(),
       userId
     })
 

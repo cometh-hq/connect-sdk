@@ -4,6 +4,7 @@ import { SiweMessage } from 'siwe'
 
 import { API_URL } from '../constants'
 import {
+  DeviceData,
   RelayTransactionType,
   SocialRecoveryConfigType,
   SponsoredTransaction,
@@ -89,6 +90,7 @@ export class API {
     publicKeyId,
     publicKeyX,
     publicKeyY,
+    deviceData,
     userId
   }: {
     walletAddress: string
@@ -97,6 +99,7 @@ export class API {
     publicKeyX: string
     publicKeyY: string
     userId: string
+    deviceData: DeviceData
   }): Promise<WebAuthnOwner> {
     const body = {
       walletAddress,
@@ -104,6 +107,7 @@ export class API {
       publicKeyId,
       publicKeyX,
       publicKeyY,
+      deviceData,
       userId
     }
 
@@ -120,6 +124,7 @@ export class API {
     publicKeyY,
     addOwnerTxData,
     addOwnerTxSignature,
+    deviceData,
     userId
   }: {
     walletAddress: string
@@ -129,6 +134,7 @@ export class API {
     publicKeyY: string
     addOwnerTxData: any
     addOwnerTxSignature: string
+    deviceData: DeviceData
     userId?: string
   }): Promise<WebAuthnOwner> {
     const body = {
@@ -138,6 +144,7 @@ export class API {
       publicKeyY,
       addOwnerTxData,
       addOwnerTxSignature,
+      deviceData,
       userId
     }
 
