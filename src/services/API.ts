@@ -4,9 +4,12 @@ import { SiweMessage } from 'siwe'
 
 import { API_URL } from '../constants'
 import {
+  DeviceData,
   RelayTransactionType,
+  SocialRecoveryConfigType,
   SponsoredTransaction,
   UserNonceType,
+  WalletInfos,
   WebAuthnOwner
 } from '../wallet/types'
 
@@ -30,6 +33,11 @@ export class API {
     return response?.data?.walletAddress
   }
 
+  async getWalletInfos(walletAddress: string): Promise<WalletInfos> {
+    const response = await api.get(`/wallets/${walletAddress}/getWalletInfos`)
+    return response?.data?.walletInfos
+  }
+
   async getSponsoredAddresses(): Promise<SponsoredTransaction[]> {
     const response = await api.get(`/sponsored-address`)
     return response?.data?.sponsoredAddresses
@@ -38,16 +46,19 @@ export class API {
   async connectToAlembicWallet({
     message,
     signature,
-    walletAddress
+    walletAddress,
+    userId
   }: {
     message: SiweMessage
     signature: string
     walletAddress: string
+    userId?: string
   }): Promise<string> {
     const body = {
       message,
       signature,
-      walletAddress
+      walletAddress,
+      userId
     }
 
     const response = await api.post(`/wallets/connect`, body)
@@ -73,26 +84,68 @@ export class API {
     return response.data?.safeTxHash
   }
 
-  async addWebAuthnOwner(
+  async createWalletWithWebAuthn({
     walletAddress,
     signerName,
     publicKeyId,
     publicKeyX,
     publicKeyY,
-    signature,
-    message,
+    deviceData,
+    userId
+  }: {
+    walletAddress: string
+    signerName: string
+    publicKeyId: string
+    publicKeyX: string
+    publicKeyY: string
+    userId: string
+    deviceData: DeviceData
+  }): Promise<WebAuthnOwner> {
+    const body = {
+      walletAddress,
+      signerName,
+      publicKeyId,
+      publicKeyX,
+      publicKeyY,
+      deviceData,
+      userId
+    }
+
+    const response = await api.post(`/wallets/createWalletWithWebAuthn`, body)
+    const data = response?.data
+    return data.walletAddress
+  }
+
+  async addWebAuthnOwner({
+    walletAddress,
+    signerName,
+    publicKeyId,
+    publicKeyX,
+    publicKeyY,
     addOwnerTxData,
-    addOwnerTxSignature
-  ): Promise<WebAuthnOwner> {
+    addOwnerTxSignature,
+    deviceData,
+    userId
+  }: {
+    walletAddress: string
+    signerName: string
+    publicKeyId: string
+    publicKeyX: string
+    publicKeyY: string
+    addOwnerTxData: any
+    addOwnerTxSignature: string
+    deviceData: DeviceData
+    userId?: string
+  }): Promise<WebAuthnOwner> {
     const body = {
       signerName,
       publicKeyId,
       publicKeyX,
       publicKeyY,
-      signature,
-      message,
       addOwnerTxData,
-      addOwnerTxSignature
+      addOwnerTxSignature,
+      deviceData,
+      userId
     }
 
     const response = await api.post(
@@ -111,6 +164,11 @@ export class API {
 
   async getWebAuthnOwners(walletAddress: string): Promise<WebAuthnOwner[]> {
     const response = await api.get(`/webAuthnOwners/${walletAddress}/all`)
+    return response?.data?.webAuthnOwners
+  }
+
+  async getWebAuthnOwnersByUserId(userId: string): Promise<WebAuthnOwner[]> {
+    const response = await api.get(`/webAuthnOwners/${userId}/byUser`)
     return response?.data?.webAuthnOwners
   }
 
@@ -143,5 +201,10 @@ export class API {
     }
     const response = await api.post(`/key-store/signTypedData`, body, config)
     return response?.data?.signature
+  }
+
+  async getSocialRecoveryConfig(): Promise<SocialRecoveryConfigType> {
+    const response = await api.get(`/social-recovery/config`, {})
+    return response?.data?.socialRecoveryConfig
   }
 }

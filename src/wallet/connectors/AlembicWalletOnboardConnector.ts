@@ -9,11 +9,13 @@ import { WalletUiConfig } from '../types'
 export function AlembicWalletOnboardConnector({
   apiKey,
   authAdapter,
+  userId,
   rpcUrl,
   uiConfig
 }: {
   apiKey: string
   authAdapter: AUTHAdapter
+  userId?: string
   rpcUrl?: string
   uiConfig?: WalletUiConfig
 }): WalletInit {
@@ -32,7 +34,7 @@ export function AlembicWalletOnboardConnector({
           ...(uiConfig ?? { uiConfig })
         })
         const instanceProvider = new AlembicProvider(instance)
-        await instance.connect()
+        await instance.connect(userId)
 
         const provider = createEIP1193Provider(instanceProvider, {
           eth_requestAccounts: async () => {

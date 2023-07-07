@@ -63,8 +63,28 @@ export type WebAuthnOwner = {
   publicKeyY: string
   signature: string
   signerAddress: string
+  userId?: string
 }
 
 export type UIConfig = {
   displayValidationModal: boolean
+}
+
+export type SocialRecoveryConfigType = {
+  customerId: string
+  defaultGuardians: string[]
+  defaultGuardiansThreshold: number
+}
+
+export type WalletInfos = {
+  address: string
+  connectionDate: Date
+  creationDate: Date
+  userId: string
+}
+
+export type DeviceData = {
+  browser: string
+  os: string
+  platform: string
 }
