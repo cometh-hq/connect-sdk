@@ -218,8 +218,8 @@ export class AlembicWallet {
     )
 
     if (!isDeployed) {
-      const socialRecoveryConfig = await this.API.getSocialRecoveryConfig()
-      if (socialRecoveryConfig?.defaultGuardians?.length > 0) {
+      const guardian = await this.API.getGuardian()
+      if (guardian && guardian.enabled) {
         return this.sendBatchTransactions([safeTxData])
       }
     }
@@ -284,34 +284,26 @@ export class AlembicWallet {
     )
 
     if (!isDeployed) {
-      const socialRecoveryConfig = await this.API.getSocialRecoveryConfig()
-      if (socialRecoveryConfig?.defaultGuardians?.length > 0) {
+      const guardian = await this.API.getGuardian()
+      if (guardian && guardian.enabled) {
         const enableSocialRecovery = await safeService.prepareEnableModuleTx(
           this.walletAddress as string,
           networks[this.chainId].socialRecoveryModuleAddress
         )
 
-        const addDefaultGuardians: MetaTransactionData[] = []
-
-        for (let i = 0; i < socialRecoveryConfig.defaultGuardians.length; i++) {
-          addDefaultGuardians.push(
-            await socialRecoveryService.prepareAddGuardianTx(
-              networks[this.chainId].socialRecoveryModuleAddress,
-              this.walletAddress as string,
-              socialRecoveryConfig.defaultGuardians[i],
-              Math.min(socialRecoveryConfig.defaultGuardiansThreshold, i + 1)
-            )
+        const addDefaultGuardian =
+          await socialRecoveryService.prepareAddGuardianTx(
+            networks[this.chainId].socialRecoveryModuleAddress,
+            this.walletAddress as string,
+            guardian.address,
+            1
           )
-        }
 
-        safeTxData = [enableSocialRecovery].concat(
-          addDefaultGuardians,
+        safeTxData = [enableSocialRecovery, addDefaultGuardian].concat(
           safeTxData
         )
 
-        safeTxGas = safeTxGas.add(
-          100000 + 100000 * socialRecoveryConfig.defaultGuardians.length
-        )
+        safeTxGas = safeTxGas.add(100000 + 100000)
       }
     }
 
