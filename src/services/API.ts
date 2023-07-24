@@ -5,8 +5,8 @@ import { SiweMessage } from 'siwe'
 import { API_URL } from '../constants'
 import {
   DeviceData,
+  GuardianType,
   RelayTransactionType,
-  SocialRecoveryConfigType,
   SponsoredTransaction,
   UserNonceType,
   WalletInfos,
@@ -203,8 +203,8 @@ export class API {
     return response?.data?.signature
   }
 
-  async getSocialRecoveryConfig(): Promise<SocialRecoveryConfigType> {
-    const response = await api.get(`/social-recovery/config`, {})
-    return response?.data?.socialRecoveryConfig
+  async getGuardian(): Promise<GuardianType> {
+    const response = await api.get(`/social-recovery/guardian`, {})
+    return response?.data?.guardian
   }
 }

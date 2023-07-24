@@ -70,10 +70,10 @@ export type UIConfig = {
   displayValidationModal: boolean
 }
 
-export type SocialRecoveryConfigType = {
+export type GuardianType = {
   customerId: string
-  defaultGuardians: string[]
-  defaultGuardiansThreshold: number
+  address: string
+  enabled: boolean
 }
 
 export type WalletInfos = {
