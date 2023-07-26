@@ -28,7 +28,7 @@ export type UserNonceType = {
   connectionNonce: string
 }
 export type SponsoredTransaction = {
-  customerId: string
+  projectId: string
   targetAddress: string
 }
 export type RelayTransactionType = {
@@ -56,7 +56,7 @@ export interface WalletUiConfig {
 }
 
 export type WebAuthnOwner = {
-  customerId: string
+  projectId: string
   walletAddress: string
   publicKeyId: string
   publicKeyX: string
@@ -71,7 +71,7 @@ export type UIConfig = {
 }
 
 export type GuardianType = {
-  customerId: string
+  projectId: string
   address: string
   enabled: boolean
 }
