@@ -5,7 +5,6 @@ import { SiweMessage } from 'siwe'
 import { API_URL } from '../constants'
 import {
   DeviceData,
-  GuardianType,
   RelayTransactionType,
   SponsoredTransaction,
   UserNonceType,
@@ -201,10 +200,5 @@ export class API {
     }
     const response = await api.post(`/key-store/signTypedData`, body, config)
     return response?.data?.signature
-  }
-
-  async getGuardian(): Promise<GuardianType> {
-    const response = await api.get(`/social-recovery/guardian`, {})
-    return response?.data?.guardian
   }
 }

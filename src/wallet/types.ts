@@ -70,12 +70,6 @@ export type UIConfig = {
   displayValidationModal: boolean
 }
 
-export type GuardianType = {
-  projectId: string
-  address: string
-  enabled: boolean
-}
-
 export type WalletInfos = {
   address: string
   connectionDate: Date
