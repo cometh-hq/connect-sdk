@@ -189,7 +189,8 @@ export class AlembicWallet {
     for (let i = 0; i < safeTransactionData.length; i++) {
       const sponsoredAddress = this.sponsoredAddresses?.find(
         (sponsoredAddress) =>
-          sponsoredAddress.targetAddress === safeTransactionData[i].to
+          sponsoredAddress.targetAddress.toLowerCase() ===
+          safeTransactionData[i].to.toLowerCase()
       )
       if (!sponsoredAddress) return false
     }
