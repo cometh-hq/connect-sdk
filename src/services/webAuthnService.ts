@@ -30,8 +30,7 @@ const createCredential = async (
   const webAuthnCredentials: any = await navigator.credentials.create({
     publicKey: {
       rp: {
-        name: psl.parse(window.location.host).domain,
-        id: psl.parse(window.location.host).domain
+        name: 'wallet'
       },
       user: {
         id: new TextEncoder().encode(v4()),
