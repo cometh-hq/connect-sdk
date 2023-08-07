@@ -10,7 +10,7 @@ import { BLOCK_EVENT_GAP, networks, P256SignerCreationCode } from '../constants'
 import { P256SignerFactory__factory } from '../contracts/types/factories'
 import { API } from '../services'
 import { derToRS, findSequence, hexArrayStr, parseHex } from '../utils/utils'
-import { DeviceData, WebAuthnOwner } from '../wallet'
+import { WebAuthnOwner } from '../wallet'
 import { AlembicProvider } from '../wallet/AlembicProvider'
 import deviceService from './deviceService'
 import safeService from './safeService'
@@ -29,7 +29,8 @@ const createCredential = async (
   const webAuthnCredentials: any = await navigator.credentials.create({
     publicKey: {
       rp: {
-        name: 'wallet'
+        name: 'wallet',
+        id: 'cometh.tech'
       },
       user: {
         id: new TextEncoder().encode(v4()),
