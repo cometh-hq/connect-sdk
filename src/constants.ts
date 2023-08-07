@@ -1,4 +1,4 @@
-export const API_URL = 'https://account-abstraction.api.alembic.tech/'
+export const API_URL = 'https://alembic-api.develop.cometh.tech/'
 export const DEFAULT_CHAIN_ID = 137
 export const DEFAULT_RPC_TARGET = 'https://polygon-rpc.com'
 export const networks = {
