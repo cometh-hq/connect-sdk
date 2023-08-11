@@ -3,6 +3,7 @@ import { parseAuthenticatorData } from '@simplewebauthn/server/helpers'
 import CBOR from 'cbor-js'
 import { ec as EC } from 'elliptic'
 import { ethers } from 'ethers'
+import psl from 'psl'
 import { SiweMessage } from 'siwe'
 import { v4 } from 'uuid'
 
@@ -29,8 +30,8 @@ const createCredential = async (
   const webAuthnCredentials: any = await navigator.credentials.create({
     publicKey: {
       rp: {
-        name: 'wallet',
-        id: 'https://test.aa-demo.develop.cometh.tech/'
+        name: psl.parse(window.location.host).domain,
+        id: psl.parse(window.location.host).domain
       },
       user: {
         id: new TextEncoder().encode(v4()),
@@ -64,6 +65,7 @@ const sign = async (
   const assertionPayload: any = await navigator.credentials.get({
     publicKey: {
       challenge,
+      rpId: psl.parse(window.location.host).domain,
       allowCredentials: publicKeyCredential
     }
   })
