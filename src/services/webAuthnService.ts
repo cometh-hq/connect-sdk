@@ -7,7 +7,12 @@ import psl from 'psl'
 import { SiweMessage } from 'siwe'
 import { v4 } from 'uuid'
 
-import { BLOCK_EVENT_GAP, networks, P256SignerCreationCode } from '../constants'
+import {
+  BLOCK_EVENT_GAP,
+  challengePrefix,
+  networks,
+  P256SignerCreationCode
+} from '../constants'
 import { P256SignerFactory__factory } from '../contracts/types/factories'
 import { API } from '../services'
 import { derToRS, findSequence, hexArrayStr, parseHex } from '../utils/utils'
@@ -17,14 +22,13 @@ import deviceService from './deviceService'
 import safeService from './safeService'
 import siweService from './siweService'
 
-const curve = new EC('p256')
-
 const createCredential = async (
   signerName: string
 ): Promise<{
   point: any
   id: string
 }> => {
+  const curve = new EC('p256')
   const challenge = new TextEncoder().encode('credentialCreation')
 
   const webAuthnCredentials: any = await navigator.credentials.create({
@@ -90,12 +94,7 @@ const getWebAuthnSignature = async (
   const rs = derToRS(new Uint8Array(signature))
 
   const challengeOffset =
-    findSequence(
-      new Uint8Array(clientData),
-      parseHex('226368616c6c656e6765223a')
-    ) +
-    12 +
-    1
+    findSequence(new Uint8Array(clientData), parseHex(challengePrefix)) + 12 + 1
 
   const encodedSignature = ethers.utils.defaultAbiCoder.encode(
     ['bytes', 'bytes', 'uint256', 'uint256[2]'],
