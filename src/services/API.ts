@@ -201,4 +201,50 @@ export class API {
     const response = await api.post(`/key-store/signTypedData`, body, config)
     return response?.data?.signature
   }
+
+  async verifyEncryptionKey(jwtToken: string): Promise<any> {
+    return {}
+  }
+
+  async getEncryptionKey(
+    jwtToken: string,
+    passwordHash: ArrayBuffer
+  ): Promise<any> {
+    return {}
+  }
+
+  async getEncryptedWallet(
+    jwtToken: string,
+    passwordHash: ArrayBuffer
+  ): Promise<any> {
+    return {}
+  }
+
+  async createEncryptedAccount({
+    iterations,
+    passwordHash,
+    passwordDerivedKeyHash,
+    encryptedEncryptionKey,
+    encryptedEncryptionKeyIV
+  }: {
+    iterations: number
+    passwordHash: ArrayBuffer
+    passwordDerivedKeyHash: ArrayBuffer
+    encryptedEncryptionKey: ArrayBuffer
+    encryptedEncryptionKeyIV: Uint8Array
+  }): Promise<any> {
+    return {}
+  }
+
+  async createEncryptedWallet({
+    passwordHash,
+    encryptedMnemonic,
+    encryptedMnemonicIV
+  }: {
+    passwordHash: ArrayBuffer
+    encryptedMnemonic: ArrayBuffer
+    encryptedMnemonicIV: ArrayBuffer
+  }): Promise<any> {
+    return {}
+  }
 }
