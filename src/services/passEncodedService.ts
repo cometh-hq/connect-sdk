@@ -26,7 +26,7 @@ function _encodeUTF8(s: string): ArrayBuffer {
 export const connectEncryptedWallet = async (
   password: string,
   userId: string,
-  jwtToken: string,
+  token: string,
   API: API
 ): Promise<Wallet> => {
   const encodedPassword = _encodeUTF8(password)
@@ -44,10 +44,7 @@ export const connectEncryptedWallet = async (
     1
   )
 
-  const encryptedEncryptionKey = await API.getEncryptionKey(
-    jwtToken,
-    passwordHash
-  )
+  const encryptedEncryptionKey = await API.getEncryptionKey(token, passwordHash)
 
   const encryptionKey = await cryptolib.decryptAESCBC(
     passwordDerivedKey,
@@ -55,7 +52,7 @@ export const connectEncryptedWallet = async (
     encryptedEncryptionKey.data
   )
 
-  const encryptedWallets = await API.getEncryptedWallet(jwtToken, passwordHash)
+  const encryptedWallets = await API.getEncryptedWallet(token, passwordHash)
   if (encryptedWallets.length !== 1) {
     throw new Error(
       `account needs exactly one encrypted wallet, but has ${encryptedWallets.length}`
@@ -74,7 +71,7 @@ export const connectEncryptedWallet = async (
 export const createEncryptedWallet = async (
   password: string,
   userId: string,
-  jwtToken: string,
+  token: string,
   API: API
 ): Promise<Wallet> => {
   const encryptionKey = getRandomPrivateKey()
@@ -101,6 +98,7 @@ export const createEncryptedWallet = async (
   )
 
   const account = {
+    token,
     iterations,
     passwordHash,
     passwordDerivedKeyHash: await cryptolib.sha512(passwordDerivedKey),
@@ -120,6 +118,7 @@ export const createEncryptedWallet = async (
   )
 
   await API.createEncryptedWallet({
+    token,
     passwordHash,
     encryptedMnemonic,
     encryptedMnemonicIV: mnemonicIV

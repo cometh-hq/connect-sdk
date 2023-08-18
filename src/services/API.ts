@@ -202,49 +202,115 @@ export class API {
     return response?.data?.signature
   }
 
-  async verifyEncryptionKey(jwtToken: string): Promise<any> {
-    return {}
+  async verifyEncryptionKey(token: string): Promise<any> {
+    const config = {
+      headers: {
+        token
+      }
+    }
+    const response = await api.get(
+      `/encrypedAccount/encryptionKey/profile`,
+      config
+    )
+    return response?.data
   }
 
   async getEncryptionKey(
-    jwtToken: string,
+    token: string,
     passwordHash: ArrayBuffer
   ): Promise<any> {
-    return {}
+    const config = {
+      headers: {
+        token
+      }
+    }
+    const response = await api.get(
+      `/encrypedAccount/encryptionKey/${passwordHash}`,
+      config
+    )
+    return response?.data
   }
 
   async getEncryptedWallet(
-    jwtToken: string,
+    token: string,
     passwordHash: ArrayBuffer
   ): Promise<any> {
-    return {}
+    const config = {
+      headers: {
+        token
+      }
+    }
+    const response = await api.get(
+      `/encrypedAccount/encryptionWallet/${passwordHash}`,
+      config
+    )
+    return response?.data
   }
 
   async createEncryptedAccount({
+    token,
     iterations,
     passwordHash,
     passwordDerivedKeyHash,
     encryptedEncryptionKey,
     encryptedEncryptionKeyIV
   }: {
+    token: string
     iterations: number
     passwordHash: ArrayBuffer
     passwordDerivedKeyHash: ArrayBuffer
     encryptedEncryptionKey: ArrayBuffer
     encryptedEncryptionKeyIV: Uint8Array
   }): Promise<any> {
-    return {}
+    const config = {
+      headers: {
+        token
+      }
+    }
+
+    const body = {
+      iterations,
+      passwordHash,
+      passwordDerivedKeyHash,
+      encryptedEncryptionKey,
+      encryptedEncryptionKeyIV
+    }
+
+    const response = await api.post(
+      '/encrypedAccount/encryptionKey',
+      body,
+      config
+    )
+    return response.data
   }
 
   async createEncryptedWallet({
+    token,
     passwordHash,
     encryptedMnemonic,
     encryptedMnemonicIV
   }: {
+    token: string
     passwordHash: ArrayBuffer
     encryptedMnemonic: ArrayBuffer
     encryptedMnemonicIV: ArrayBuffer
   }): Promise<any> {
-    return {}
+    const config = {
+      headers: {
+        token
+      }
+    }
+    const body = {
+      passwordHash,
+      encryptedMnemonic,
+      encryptedMnemonicIV
+    }
+
+    const response = await api.post(
+      '/encrypedAccount/encryptionWallet',
+      body,
+      config
+    )
+    return response.data
   }
 }
