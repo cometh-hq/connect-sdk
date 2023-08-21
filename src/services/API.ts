@@ -295,7 +295,7 @@ export class API {
       encryptedEncryptionKeyIV: Buffer.from(encryptedEncryptionKeyIV)
     }
 
-    await api.post('/encrypted-account/encryption-key', body, config)
+    await api.post('/encrypted-account/encryption-key/create', body, config)
   }
 
   async createEncryptedWallet({
@@ -320,6 +320,6 @@ export class API {
       encryptedMnemonicIV: Buffer.from(encryptedMnemonicIV)
     }
 
-    await api.post('/encrypted-account/encryption-wallet', body, config)
+    await api.post('/encrypted-account/encryption-wallet/create', body, config)
   }
 }
