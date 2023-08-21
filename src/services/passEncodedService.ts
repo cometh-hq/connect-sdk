@@ -2,30 +2,19 @@ import { ethers, Wallet } from 'ethers'
 
 import { Pbkdf2Iterations } from '../constants'
 import * as cryptolib from '../services/cryptoService'
+import * as utils from '../utils/utils'
 import { API } from './API'
 
-function getRandomPrivateKey(): Uint8Array {
+const getRandomPrivateKey = (): Uint8Array => {
   const array = new Uint8Array(32)
   cryptolib.getRandomValues(array)
   return array
 }
 
-function getRandomIV(): Uint8Array {
+const getRandomIV = (): Uint8Array => {
   const array = new Uint8Array(16)
   cryptolib.getRandomValues(array)
   return array
-}
-function _decodeUTF8(b: ArrayBuffer): string {
-  return new TextDecoder().decode(b)
-}
-
-function _encodeUTF8(s: string): ArrayBuffer {
-  return new TextEncoder().encode(s)
-}
-
-function bufferToArrayBuffer(bufferObject): ArrayBuffer {
-  const buffer = Buffer.from(bufferObject.data)
-  return Uint8Array.from(buffer).buffer
 }
 
 export const connectEncryptedWallet = async (
@@ -34,8 +23,8 @@ export const connectEncryptedWallet = async (
   token: string,
   API: API
 ): Promise<Wallet> => {
-  const encodedPassword = _encodeUTF8(password)
-  const encodedUserId = _encodeUTF8(userId)
+  const encodedPassword = utils._encodeUTF8(password)
+  const encodedUserId = utils._encodeUTF8(userId)
   const iterations = Pbkdf2Iterations
 
   const passwordDerivedKey = await cryptolib.pbkdf2(
@@ -51,23 +40,23 @@ export const connectEncryptedWallet = async (
   )
 
   const { encryptedEncryptionKey, encryptedEncryptionKeyIV } =
-    await API.getEncryptionKey(token, _decodeUTF8(passwordHash))
+    await API.getEncryptionKey(token, utils._decodeUTF8(passwordHash))
 
   const encryptionKey = await cryptolib.decryptAESCBC(
     passwordDerivedKey,
-    bufferToArrayBuffer(encryptedEncryptionKeyIV),
-    bufferToArrayBuffer(encryptedEncryptionKey)
+    utils.bufferToArrayBuffer(encryptedEncryptionKeyIV),
+    utils.bufferToArrayBuffer(encryptedEncryptionKey)
   )
 
   const { encryptedMnemonic, encryptedMnemonicIV } =
-    await API.getEncryptedWallet(token, _decodeUTF8(passwordHash))
+    await API.getEncryptedWallet(token, utils._decodeUTF8(passwordHash))
 
   const mnemonic = await cryptolib.decryptAESCBC(
     encryptionKey,
-    bufferToArrayBuffer(encryptedMnemonicIV),
-    bufferToArrayBuffer(encryptedMnemonic)
+    utils.bufferToArrayBuffer(encryptedMnemonicIV),
+    utils.bufferToArrayBuffer(encryptedMnemonic)
   )
-  const wallet = ethers.Wallet.fromMnemonic(_decodeUTF8(mnemonic))
+  const wallet = ethers.Wallet.fromMnemonic(utils._decodeUTF8(mnemonic))
   return wallet
 }
 
@@ -79,8 +68,8 @@ export const createEncryptedWallet = async (
 ): Promise<Wallet> => {
   const encryptionKey = getRandomPrivateKey()
 
-  const encodedPassword = _encodeUTF8(password)
-  const encodedUserId = _encodeUTF8(userId)
+  const encodedPassword = utils._encodeUTF8(password)
+  const encodedUserId = utils._encodeUTF8(userId)
   const iterations = Pbkdf2Iterations
   const passwordDerivedKey = await cryptolib.pbkdf2(
     encodedPassword,
@@ -103,7 +92,7 @@ export const createEncryptedWallet = async (
   const account = {
     token,
     iterations,
-    passwordHash: _decodeUTF8(passwordHash),
+    passwordHash: utils._decodeUTF8(passwordHash),
     passwordDerivedKeyHash: await cryptolib.sha512(passwordDerivedKey),
     encryptedEncryptionKey: encryptedEncryptionKey,
     encryptedEncryptionKeyIV: iv
@@ -112,7 +101,7 @@ export const createEncryptedWallet = async (
 
   const wallet = ethers.Wallet.createRandom()
 
-  const encodedMnemonic = _encodeUTF8(wallet.mnemonic.phrase)
+  const encodedMnemonic = utils._encodeUTF8(wallet.mnemonic.phrase)
   const mnemonicIV = getRandomIV()
   const encryptedMnemonic = await cryptolib.encryptAESCBC(
     encryptionKey,
@@ -122,7 +111,7 @@ export const createEncryptedWallet = async (
 
   await API.createEncryptedWallet({
     token,
-    passwordHash: _decodeUTF8(passwordHash),
+    passwordHash: utils._decodeUTF8(passwordHash),
     encryptedMnemonic,
     encryptedMnemonicIV: mnemonicIV
   })
