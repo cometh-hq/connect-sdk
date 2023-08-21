@@ -73,7 +73,7 @@ export class AlembicWallet {
    * Connection Section
    */
 
-  public async connect(alembicInitOptions: AlembicInitOptions): Promise<void> {
+  public async connect(alembicInitOptions?: AlembicInitOptions): Promise<void> {
     if (!networks[this.chainId])
       throw new Error('This network is not supported')
 
@@ -98,7 +98,7 @@ export class AlembicWallet {
         message,
         signature,
         walletAddress: this.walletAddress,
-        userId: alembicInitOptions.userId
+        userId: alembicInitOptions?.userId
       })
     }
 
@@ -106,7 +106,7 @@ export class AlembicWallet {
     if (!this.walletAddress) throw new Error('No walletAddress found')
 
     this.sponsoredAddresses = await this.API.getSponsoredAddresses()
-    this.userId = alembicInitOptions.userId
+    this.userId = alembicInitOptions?.userId
     this.connected = true
   }
 

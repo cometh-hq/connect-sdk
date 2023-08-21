@@ -10,7 +10,7 @@ import { AlembicInitOptions, UserInfos } from '../types'
 
 export interface AUTHAdapter {
   logout(): Promise<void>
-  connect(alembicInitOptions: AlembicInitOptions): Promise<void>
+  connect(alembicInitOptions?: AlembicInitOptions): Promise<void>
   getAccount(): Promise<string | null>
   getSigner():
     | JsonRpcSigner
