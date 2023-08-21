@@ -87,3 +87,12 @@ export type AlembicInitOptions = {
   userId?: string
   password?: string
 }
+
+export type EncryptedEncryptionKeyParams = {
+  encryptedEncryptionKey: ArrayBuffer
+  encryptedEncryptionKeyIV: ArrayBuffer
+}
+export type EncryptedWalletParams = {
+  encryptedMnemonic: ArrayBuffer
+  encryptedMnemonicIV: ArrayBuffer
+}

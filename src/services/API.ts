@@ -5,6 +5,8 @@ import { SiweMessage } from 'siwe'
 import { API_URL } from '../constants'
 import {
   DeviceData,
+  EncryptedEncryptionKeyParams,
+  EncryptedWalletParams,
   RelayTransactionType,
   SponsoredTransaction,
   UserNonceType,
@@ -61,9 +63,8 @@ export class API {
     }
 
     const response = await api.post(`/wallets/connect`, body)
-    const data = response?.data
 
-    return data.walletAddress
+    return response?.data.walletAddress
   }
 
   async relayTransaction({
@@ -111,8 +112,7 @@ export class API {
     }
 
     const response = await api.post(`/wallets/createWalletWithWebAuthn`, body)
-    const data = response?.data
-    return data.walletAddress
+    return response?.data.walletAddress
   }
 
   async addWebAuthnOwner({
@@ -202,7 +202,9 @@ export class API {
     return response?.data?.signature
   }
 
-  async verifyEncryptionKey(token: string): Promise<any> {
+  async verifyEncryptionKey(
+    token: string
+  ): Promise<{ exists: boolean; userId: string }> {
     const config = {
       headers: {
         token
@@ -213,11 +215,16 @@ export class API {
       `/encrypted-account/encryption-key/verify`,
       config
     )
+    const exists = response?.data.exists
+    const userId = response?.data.userId
 
-    return response?.data
+    return { exists, userId }
   }
 
-  async getEncryptionKey(token: string, passwordHash: string): Promise<any> {
+  async getEncryptionKey(
+    token: string,
+    passwordHash: string
+  ): Promise<EncryptedEncryptionKeyParams> {
     const config = {
       headers: {
         token
@@ -236,7 +243,10 @@ export class API {
     return { encryptedEncryptionKey, encryptedEncryptionKeyIV }
   }
 
-  async getEncryptedWallet(token: string, passwordHash: string): Promise<any> {
+  async getEncryptedWallet(
+    token: string,
+    passwordHash: string
+  ): Promise<EncryptedWalletParams> {
     const config = {
       headers: {
         token
@@ -270,7 +280,7 @@ export class API {
     passwordDerivedKeyHash: ArrayBuffer
     encryptedEncryptionKey: ArrayBuffer
     encryptedEncryptionKeyIV: ArrayBuffer
-  }): Promise<any> {
+  }): Promise<void> {
     const config = {
       headers: {
         token
@@ -285,12 +295,7 @@ export class API {
       encryptedEncryptionKeyIV: Buffer.from(encryptedEncryptionKeyIV)
     }
 
-    const response = await api.post(
-      '/encrypted-account/encryption-key',
-      body,
-      config
-    )
-    return response.data
+    await api.post('/encrypted-account/encryption-key', body, config)
   }
 
   async createEncryptedWallet({
@@ -303,7 +308,7 @@ export class API {
     passwordHash: string
     encryptedMnemonic: ArrayBuffer
     encryptedMnemonicIV: ArrayBuffer
-  }): Promise<any> {
+  }): Promise<void> {
     const config = {
       headers: {
         token
@@ -315,11 +320,6 @@ export class API {
       encryptedMnemonicIV: Buffer.from(encryptedMnemonicIV)
     }
 
-    const response = await api.post(
-      '/encrypted-account/encryption-wallet',
-      body,
-      config
-    )
-    return response.data
+    await api.post('/encrypted-account/encryption-wallet', body, config)
   }
 }
