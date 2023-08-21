@@ -28,9 +28,9 @@ export class PassEncodedSigner extends Signer {
   }
 
   async connectSigner(password: string): Promise<void> {
-    const { encryptionKeyAlreadyExist, userId } =
-      await this.API.verifyEncryptionKey(this.jwtToken)
-    if (encryptionKeyAlreadyExist) {
+    const { exists, userId } = await this.API.verifyEncryptionKey(this.jwtToken)
+
+    if (!exists) {
       this.wallet = await createEncryptedWallet(
         password,
         userId,

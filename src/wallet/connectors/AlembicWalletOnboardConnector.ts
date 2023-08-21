@@ -1,7 +1,7 @@
 import { WalletInit, WalletInterface, WalletModule } from '@web3-onboard/common'
 import { ethers } from 'ethers'
 
-import { AUTHAdapter } from '../adapters'
+import { AUTHAdapter, PassEncodedAdaptor } from '../adapters'
 import { AlembicProvider } from '../AlembicProvider'
 import { AlembicWallet } from '../AlembicWallet'
 import { WalletUiConfig } from '../types'
@@ -10,12 +10,14 @@ export function AlembicWalletOnboardConnector({
   apiKey,
   authAdapter,
   userId,
+  password,
   rpcUrl,
   uiConfig
 }: {
   apiKey: string
   authAdapter: AUTHAdapter
   userId?: string
+  password?: string
   rpcUrl?: string
   uiConfig?: WalletUiConfig
 }): WalletInit {
@@ -34,7 +36,11 @@ export function AlembicWalletOnboardConnector({
           ...(uiConfig ?? { uiConfig })
         })
         const instanceProvider = new AlembicProvider(instance)
-        await instance.connect(userId)
+        if (authAdapter instanceof PassEncodedAdaptor) {
+          await instance.connect(password)
+        } else {
+          await instance.connect(userId)
+        }
 
         const provider = createEIP1193Provider(instanceProvider, {
           eth_requestAccounts: async () => {

@@ -23,6 +23,11 @@ function _encodeUTF8(s: string): ArrayBuffer {
   return new TextEncoder().encode(s)
 }
 
+function bufferToArrayBuffer(bufferObject): ArrayBuffer {
+  const buffer = Buffer.from(bufferObject.data)
+  return Uint8Array.from(buffer).buffer
+}
+
 export const connectEncryptedWallet = async (
   password: string,
   userId: string,
@@ -38,31 +43,29 @@ export const connectEncryptedWallet = async (
     encodedUserId,
     iterations
   )
+
   const passwordHash = await cryptolib.pbkdf2(
     passwordDerivedKey,
     encodedPassword,
     1
   )
 
-  const encryptedEncryptionKey = await API.getEncryptionKey(token, passwordHash)
+  const { encryptedEncryptionKey, encryptedEncryptionKeyIV } =
+    await API.getEncryptionKey(token, _decodeUTF8(passwordHash))
 
   const encryptionKey = await cryptolib.decryptAESCBC(
     passwordDerivedKey,
-    encryptedEncryptionKey.iv,
-    encryptedEncryptionKey.data
+    bufferToArrayBuffer(encryptedEncryptionKeyIV),
+    bufferToArrayBuffer(encryptedEncryptionKey)
   )
 
-  const encryptedWallets = await API.getEncryptedWallet(token, passwordHash)
-  if (encryptedWallets.length !== 1) {
-    throw new Error(
-      `account needs exactly one encrypted wallet, but has ${encryptedWallets.length}`
-    )
-  }
+  const { encryptedMnemonic, encryptedMnemonicIV } =
+    await API.getEncryptedWallet(token, _decodeUTF8(passwordHash))
 
   const mnemonic = await cryptolib.decryptAESCBC(
     encryptionKey,
-    encryptedWallets[0].encryptedMnemonicIV,
-    encryptedWallets[0].encryptedMnemonic
+    bufferToArrayBuffer(encryptedMnemonicIV),
+    bufferToArrayBuffer(encryptedMnemonic)
   )
   const wallet = ethers.Wallet.fromMnemonic(_decodeUTF8(mnemonic))
   return wallet
@@ -100,16 +103,16 @@ export const createEncryptedWallet = async (
   const account = {
     token,
     iterations,
-    passwordHash,
+    passwordHash: _decodeUTF8(passwordHash),
     passwordDerivedKeyHash: await cryptolib.sha512(passwordDerivedKey),
-    encryptedEncryptionKey,
+    encryptedEncryptionKey: encryptedEncryptionKey,
     encryptedEncryptionKeyIV: iv
   }
   await API.createEncryptedAccount(account)
 
   const wallet = ethers.Wallet.createRandom()
 
-  const encodedMnemonic = _encodeUTF8(wallet.mnemonic.toString())
+  const encodedMnemonic = _encodeUTF8(wallet.mnemonic.phrase)
   const mnemonicIV = getRandomIV()
   const encryptedMnemonic = await cryptolib.encryptAESCBC(
     encryptionKey,
@@ -119,7 +122,7 @@ export const createEncryptedWallet = async (
 
   await API.createEncryptedWallet({
     token,
-    passwordHash,
+    passwordHash: _decodeUTF8(passwordHash),
     encryptedMnemonic,
     encryptedMnemonicIV: mnemonicIV
   })

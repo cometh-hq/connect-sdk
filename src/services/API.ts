@@ -208,43 +208,52 @@ export class API {
         token
       }
     }
+
     const response = await api.get(
-      `/encrypedAccount/encryptionKey/profile`,
+      `/encrypted-account/encryption-key/verify`,
       config
     )
+
     return response?.data
   }
 
-  async getEncryptionKey(
-    token: string,
-    passwordHash: ArrayBuffer
-  ): Promise<any> {
+  async getEncryptionKey(token: string, passwordHash: string): Promise<any> {
     const config = {
       headers: {
         token
       }
     }
-    const response = await api.get(
-      `/encrypedAccount/encryptionKey/${passwordHash}`,
+    const body = {
+      passwordHash
+    }
+    const response = await api.post(
+      `/encrypted-account/encryption-key/retrieve`,
+      body,
       config
     )
-    return response?.data
+    const encryptedEncryptionKey = response?.data.encryptedEncryptionKey
+    const encryptedEncryptionKeyIV = response?.data.encryptedEncryptionKeyIV
+    return { encryptedEncryptionKey, encryptedEncryptionKeyIV }
   }
 
-  async getEncryptedWallet(
-    token: string,
-    passwordHash: ArrayBuffer
-  ): Promise<any> {
+  async getEncryptedWallet(token: string, passwordHash: string): Promise<any> {
     const config = {
       headers: {
         token
       }
     }
-    const response = await api.get(
-      `/encrypedAccount/encryptionWallet/${passwordHash}`,
+    const body = {
+      passwordHash
+    }
+    const response = await api.post(
+      `/encrypted-account/encryption-wallet/retrieve`,
+      body,
       config
     )
-    return response?.data
+
+    const encryptedMnemonic = response?.data.encryptedMnemonic
+    const encryptedMnemonicIV = response?.data.encryptedMnemonicIV
+    return { encryptedMnemonic, encryptedMnemonicIV }
   }
 
   async createEncryptedAccount({
@@ -257,10 +266,10 @@ export class API {
   }: {
     token: string
     iterations: number
-    passwordHash: ArrayBuffer
+    passwordHash: string
     passwordDerivedKeyHash: ArrayBuffer
     encryptedEncryptionKey: ArrayBuffer
-    encryptedEncryptionKeyIV: Uint8Array
+    encryptedEncryptionKeyIV: ArrayBuffer
   }): Promise<any> {
     const config = {
       headers: {
@@ -271,13 +280,13 @@ export class API {
     const body = {
       iterations,
       passwordHash,
-      passwordDerivedKeyHash,
-      encryptedEncryptionKey,
-      encryptedEncryptionKeyIV
+      passwordDerivedKeyHash: Buffer.from(passwordDerivedKeyHash),
+      encryptedEncryptionKey: Buffer.from(encryptedEncryptionKey),
+      encryptedEncryptionKeyIV: Buffer.from(encryptedEncryptionKeyIV)
     }
 
     const response = await api.post(
-      '/encrypedAccount/encryptionKey',
+      '/encrypted-account/encryption-key',
       body,
       config
     )
@@ -291,7 +300,7 @@ export class API {
     encryptedMnemonicIV
   }: {
     token: string
-    passwordHash: ArrayBuffer
+    passwordHash: string
     encryptedMnemonic: ArrayBuffer
     encryptedMnemonicIV: ArrayBuffer
   }): Promise<any> {
@@ -302,12 +311,12 @@ export class API {
     }
     const body = {
       passwordHash,
-      encryptedMnemonic,
-      encryptedMnemonicIV
+      encryptedMnemonic: Buffer.from(encryptedMnemonic),
+      encryptedMnemonicIV: Buffer.from(encryptedMnemonicIV)
     }
 
     const response = await api.post(
-      '/encrypedAccount/encryptionWallet',
+      '/encrypted-account/encryption-wallet',
       body,
       config
     )

@@ -198,6 +198,7 @@ export class AlembicWallet {
           sponsoredAddress.targetAddress.toLowerCase() ===
           safeTransactionData[i].to.toLowerCase()
       )
+
       if (!sponsoredAddress) return false
     }
     return true
