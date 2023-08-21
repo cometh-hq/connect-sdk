@@ -22,6 +22,7 @@ import { PassEncodedSigner } from './signers'
 import { AlembicAuthSigner } from './signers/AlembicAuthSigner'
 import { WebAuthnSigner } from './signers/WebAuthnSigner'
 import {
+  AlembicInitOptions,
   MetaTransactionData,
   SafeTransactionDataPartial,
   SendTransactionResponse,
@@ -72,12 +73,12 @@ export class AlembicWallet {
    * Connection Section
    */
 
-  public async connect(userId?: string): Promise<void> {
+  public async connect(alembicInitOptions: AlembicInitOptions): Promise<void> {
     if (!networks[this.chainId])
       throw new Error('This network is not supported')
 
     if (!this.authAdapter) throw new Error('No EOA adapter found')
-    await this.authAdapter.connect(userId)
+    await this.authAdapter.connect(alembicInitOptions)
 
     const ownerAddress = await this.authAdapter.getAccount()
     if (!ownerAddress) throw new Error('No owner Address found')
@@ -97,7 +98,7 @@ export class AlembicWallet {
         message,
         signature,
         walletAddress: this.walletAddress,
-        userId
+        userId: alembicInitOptions.userId
       })
     }
 
@@ -105,7 +106,7 @@ export class AlembicWallet {
     if (!this.walletAddress) throw new Error('No walletAddress found')
 
     this.sponsoredAddresses = await this.API.getSponsoredAddresses()
-    this.userId = userId
+    this.userId = alembicInitOptions.userId
     this.connected = true
   }
 

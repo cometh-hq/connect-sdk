@@ -4,7 +4,7 @@ import { networks } from '../../constants'
 import { API } from '../../services'
 import webAuthnService from '../../services/webAuthnService'
 import { WebAuthnSigner } from '../signers/WebAuthnSigner'
-import { UserInfos } from '../types'
+import { AlembicInitOptions, UserInfos } from '../types'
 import { AUTHAdapter } from './types'
 
 export class WebAuthnAdaptor implements AUTHAdapter {
@@ -20,12 +20,12 @@ export class WebAuthnAdaptor implements AUTHAdapter {
     )
   }
 
-  async connect(userId: string): Promise<void> {
-    if (!userId) throw new Error('no userId found')
+  async connect(alembicInitOptions: AlembicInitOptions): Promise<void> {
+    if (!alembicInitOptions.userId) throw new Error('no userId found')
 
     const { publicKeyId, signerAddress } =
       await webAuthnService.createOrGetWebAuthnOwner(
-        userId,
+        alembicInitOptions.userId,
         this.chainId,
         this.provider,
         this.API

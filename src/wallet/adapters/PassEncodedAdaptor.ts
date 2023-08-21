@@ -1,6 +1,6 @@
 import { API } from '../../services'
 import { PassEncodedSigner } from '../signers'
-import { UserInfos } from '../types'
+import { AlembicInitOptions, UserInfos } from '../types'
 import { AUTHAdapter } from './types'
 
 export class PassEncodedAdaptor implements AUTHAdapter {
@@ -14,9 +14,11 @@ export class PassEncodedAdaptor implements AUTHAdapter {
     this.API = new API(apiKey, +chainId)
   }
 
-  async connect(password: string): Promise<void> {
+  async connect(alembicInitOptions: AlembicInitOptions): Promise<void> {
+    if (!alembicInitOptions.password) throw new Error('no password found')
+
     this.signer = new PassEncodedSigner(this.jwtToken, this.API)
-    await this.signer.connectSigner(password)
+    await this.signer.connectSigner(alembicInitOptions.password)
   }
 
   async logout(): Promise<void> {

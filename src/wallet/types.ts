@@ -82,3 +82,8 @@ export type DeviceData = {
   os: string
   platform: string
 }
+
+export type AlembicInitOptions = {
+  userId?: string
+  password?: string
+}
