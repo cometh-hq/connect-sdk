@@ -230,12 +230,9 @@ export class API {
         token
       }
     }
-    const body = {
-      passwordHash
-    }
-    const response = await api.post(
-      `/encrypted-account/encryption-key/retrieve`,
-      body,
+
+    const response = await api.get(
+      `/encrypted-account/${passwordHash}/encryption-key`,
       config
     )
     const encryptedEncryptionKey = response?.data.encryptedEncryptionKey
@@ -252,12 +249,9 @@ export class API {
         token
       }
     }
-    const body = {
-      passwordHash
-    }
-    const response = await api.post(
-      `/encrypted-account/encryption-wallet/retrieve`,
-      body,
+
+    const response = await api.get(
+      `/encrypted-account/${passwordHash}/encryption-wallet`,
       config
     )
 
@@ -295,7 +289,7 @@ export class API {
       encryptedEncryptionKeyIV: Buffer.from(encryptedEncryptionKeyIV)
     }
 
-    await api.post('/encrypted-account/encryption-key/create', body, config)
+    await api.post('/encrypted-account/encryption-key', body, config)
   }
 
   async createEncryptedWallet({
@@ -320,6 +314,6 @@ export class API {
       encryptedMnemonicIV: Buffer.from(encryptedMnemonicIV)
     }
 
-    await api.post('/encrypted-account/encryption-wallet/create', body, config)
+    await api.post('/encrypted-account/encryption-wallet', body, config)
   }
 }

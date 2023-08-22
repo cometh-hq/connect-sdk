@@ -54,3 +54,7 @@ export const bufferToArrayBuffer = (bufferObject): ArrayBuffer => {
   const buffer = Buffer.from(bufferObject.data)
   return Uint8Array.from(buffer).buffer
 }
+
+export const bufferToBase64 = (s: ArrayBuffer): string => {
+  return Buffer.from(s).toString('base64')
+}
