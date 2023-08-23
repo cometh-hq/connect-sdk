@@ -55,6 +55,6 @@ export const bufferToArrayBuffer = (bufferObject): ArrayBuffer => {
   return Uint8Array.from(buffer).buffer
 }
 
-export const bufferToBase64 = (s: ArrayBuffer): string => {
-  return Buffer.from(s).toString('base64')
+export const bufferToHex = (s: ArrayBuffer): string => {
+  return Buffer.from(s).toString('hex')
 }

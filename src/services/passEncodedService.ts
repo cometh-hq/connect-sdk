@@ -40,7 +40,7 @@ export const connectEncryptedWallet = async (
   )
 
   const { encryptedEncryptionKey, encryptedEncryptionKeyIV } =
-    await API.getEncryptionKey(token, utils.bufferToBase64(passwordHash))
+    await API.getEncryptionKey(token, utils.bufferToHex(passwordHash))
 
   const encryptionKey = await cryptolib.decryptAESCBC(
     passwordDerivedKey,
@@ -49,7 +49,7 @@ export const connectEncryptedWallet = async (
   )
 
   const { encryptedMnemonic, encryptedMnemonicIV } =
-    await API.getEncryptedWallet(token, utils.bufferToBase64(passwordHash))
+    await API.getEncryptedWallet(token, utils.bufferToHex(passwordHash))
 
   const mnemonic = await cryptolib.decryptAESCBC(
     encryptionKey,
@@ -92,7 +92,7 @@ export const createEncryptedWallet = async (
   const account = {
     token,
     iterations,
-    passwordHash: utils.bufferToBase64(passwordHash),
+    passwordHash: utils.bufferToHex(passwordHash),
     passwordDerivedKeyHash: await cryptolib.sha512(passwordDerivedKey),
     encryptedEncryptionKey: encryptedEncryptionKey,
     encryptedEncryptionKeyIV: iv
@@ -111,7 +111,7 @@ export const createEncryptedWallet = async (
 
   await API.createEncryptedWallet({
     token,
-    passwordHash: utils.bufferToBase64(passwordHash),
+    passwordHash: utils.bufferToHex(passwordHash),
     encryptedMnemonic,
     encryptedMnemonicIV: mnemonicIV
   })
