@@ -18,9 +18,11 @@ import siweService from '../services/siweService'
 import webAuthnService from '../services/webAuthnService'
 import { GasModal } from '../ui'
 import { AUTHAdapter } from './adapters'
+import { PassEncodedSigner } from './signers'
 import { AlembicAuthSigner } from './signers/AlembicAuthSigner'
 import { WebAuthnSigner } from './signers/WebAuthnSigner'
 import {
+  AlembicInitOptions,
   MetaTransactionData,
   SafeTransactionDataPartial,
   SendTransactionResponse,
@@ -45,7 +47,12 @@ export class AlembicWallet {
   private provider: StaticJsonRpcProvider
   private sponsoredAddresses?: SponsoredTransaction[]
   private walletAddress?: string
-  private signer?: JsonRpcSigner | Wallet | WebAuthnSigner | AlembicAuthSigner
+  private signer?:
+    | JsonRpcSigner
+    | Wallet
+    | WebAuthnSigner
+    | AlembicAuthSigner
+    | PassEncodedSigner
   private userId?: string
   private uiConfig: UIConfig = {
     displayValidationModal: true
@@ -66,12 +73,12 @@ export class AlembicWallet {
    * Connection Section
    */
 
-  public async connect(userId?: string): Promise<void> {
+  public async connect(alembicInitOptions?: AlembicInitOptions): Promise<void> {
     if (!networks[this.chainId])
       throw new Error('This network is not supported')
 
     if (!this.authAdapter) throw new Error('No EOA adapter found')
-    await this.authAdapter.connect(userId)
+    await this.authAdapter.connect(alembicInitOptions)
 
     const ownerAddress = await this.authAdapter.getAccount()
     if (!ownerAddress) throw new Error('No owner Address found')
@@ -91,7 +98,7 @@ export class AlembicWallet {
         message,
         signature,
         walletAddress: this.walletAddress,
-        userId
+        userId: alembicInitOptions?.userId
       })
     }
 
@@ -99,7 +106,7 @@ export class AlembicWallet {
     if (!this.walletAddress) throw new Error('No walletAddress found')
 
     this.sponsoredAddresses = await this.API.getSponsoredAddresses()
-    this.userId = userId
+    this.userId = alembicInitOptions?.userId
     this.connected = true
   }
 
@@ -192,6 +199,7 @@ export class AlembicWallet {
           sponsoredAddress.targetAddress.toLowerCase() ===
           safeTransactionData[i].to.toLowerCase()
       )
+
       if (!sponsoredAddress) return false
     }
     return true

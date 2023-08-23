@@ -15,7 +15,7 @@ import {
 } from '../constants'
 import { P256SignerFactory__factory } from '../contracts/types/factories'
 import { API } from '../services'
-import { derToRS, findSequence, hexArrayStr, parseHex } from '../utils/utils'
+import * as utils from '../utils/utils'
 import { WebAuthnOwner } from '../wallet'
 import { AlembicProvider } from '../wallet/AlembicProvider'
 import deviceService from './deviceService'
@@ -58,7 +58,7 @@ const createCredential = async (
 
   return {
     point,
-    id: hexArrayStr(webAuthnCredentials.rawId)
+    id: utils.hexArrayStr(webAuthnCredentials.rawId)
   }
 }
 
@@ -81,9 +81,9 @@ const getWebAuthnSignature = async (
   hash: string,
   publicKeyCredential: PublicKeyCredentialDescriptor[]
 ): Promise<{ encodedSignature: string; publicKeyId: string }> => {
-  const challenge = parseHex(hash.slice(2))
+  const challenge = utils.parseHex(hash.slice(2))
   const assertionPayload = await sign(challenge, publicKeyCredential)
-  const publicKeyId = hexArrayStr(assertionPayload.rawId)
+  const publicKeyId = utils.hexArrayStr(assertionPayload.rawId)
 
   const {
     signature,
@@ -91,18 +91,23 @@ const getWebAuthnSignature = async (
     clientDataJSON: clientData
   } = assertionPayload.response
 
-  const rs = derToRS(new Uint8Array(signature))
+  const rs = utils.derToRS(new Uint8Array(signature))
 
   const challengeOffset =
-    findSequence(new Uint8Array(clientData), parseHex(challengePrefix)) + 12 + 1
+    utils.findSequence(
+      new Uint8Array(clientData),
+      utils.parseHex(challengePrefix)
+    ) +
+    12 +
+    1
 
   const encodedSignature = ethers.utils.defaultAbiCoder.encode(
     ['bytes', 'bytes', 'uint256', 'uint256[2]'],
     [
-      hexArrayStr(authenticatorData),
-      hexArrayStr(clientData),
+      utils.hexArrayStr(authenticatorData),
+      utils.hexArrayStr(clientData),
       challengeOffset,
-      [hexArrayStr(rs[0]), hexArrayStr(rs[1])]
+      [utils.hexArrayStr(rs[0]), utils.hexArrayStr(rs[1])]
     ]
   )
 
@@ -184,7 +189,7 @@ export async function signWithWebAuthn(
   const publicKeyCredentials: PublicKeyCredentialDescriptor[] =
     webAuthnOwners.map((webAuthnOwner) => {
       return {
-        id: parseHex(webAuthnOwner.publicKeyId),
+        id: utils.parseHex(webAuthnOwner.publicKeyId),
         type: 'public-key'
       }
     })

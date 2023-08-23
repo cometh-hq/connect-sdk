@@ -10,12 +10,14 @@ export function AlembicWalletOnboardConnector({
   apiKey,
   authAdapter,
   userId,
+  password,
   rpcUrl,
   uiConfig
 }: {
   apiKey: string
   authAdapter: AUTHAdapter
   userId?: string
+  password?: string
   rpcUrl?: string
   uiConfig?: WalletUiConfig
 }): WalletInit {
@@ -26,6 +28,10 @@ export function AlembicWalletOnboardConnector({
         (await import('../../ui/images/alembicLogoDark')).default,
       getInterface: async (): Promise<WalletInterface> => {
         const { createEIP1193Provider } = await import('@web3-onboard/common')
+        const alembicInitOptions = {
+          userId,
+          password
+        }
 
         const instance = new AlembicWallet({
           authAdapter,
@@ -34,7 +40,7 @@ export function AlembicWalletOnboardConnector({
           ...(uiConfig ?? { uiConfig })
         })
         const instanceProvider = new AlembicProvider(instance)
-        await instance.connect(userId)
+        await instance.connect(alembicInitOptions)
 
         const provider = createEIP1193Provider(instanceProvider, {
           eth_requestAccounts: async () => {

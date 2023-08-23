@@ -4,7 +4,7 @@ import { UserInfos } from '../types'
 import { AUTHAdapter } from './types'
 
 export class BurnerWalletAdaptor implements AUTHAdapter {
-  private wallet: Wallet | undefined
+  private wallet?: Wallet
   readonly chainId: string
 
   constructor(chainId: string) {

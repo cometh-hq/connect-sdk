@@ -41,3 +41,20 @@ export const findSequence = (arr, seq): number => {
   }
   return -1
 }
+
+export const _decodeUTF8 = (b: ArrayBuffer): string => {
+  return new TextDecoder().decode(b)
+}
+
+export const _encodeUTF8 = (s: string): ArrayBuffer => {
+  return new TextEncoder().encode(s)
+}
+
+export const bufferToArrayBuffer = (bufferObject): ArrayBuffer => {
+  const buffer = Buffer.from(bufferObject.data)
+  return Uint8Array.from(buffer).buffer
+}
+
+export const bufferToBase64 = (s: ArrayBuffer): string => {
+  return Buffer.from(s).toString('base64')
+}
