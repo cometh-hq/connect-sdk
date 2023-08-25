@@ -57,13 +57,15 @@ export interface WalletUiConfig {
 
 export type WebAuthnOwner = {
   projectId: string
+  userId: string
+  chainId: string
   walletAddress: string
   publicKeyId: string
   publicKeyX: string
   publicKeyY: string
-  signature: string
   signerAddress: string
-  userId?: string
+  deviceData: DeviceData
+  isSigner: boolean
 }
 
 export type UIConfig = {
@@ -84,7 +86,6 @@ export type DeviceData = {
 }
 
 export type AlembicInitOptions = {
-  userId?: string
   password?: string
 }
 

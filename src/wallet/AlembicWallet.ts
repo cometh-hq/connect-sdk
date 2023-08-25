@@ -53,7 +53,7 @@ export class AlembicWallet {
     | WebAuthnSigner
     | AlembicAuthSigner
     | PassEncodedSigner
-  private userId?: string
+
   private uiConfig: UIConfig = {
     displayValidationModal: true
   }
@@ -97,8 +97,7 @@ export class AlembicWallet {
       await this.API.connectToAlembicWallet({
         message,
         signature,
-        walletAddress: this.walletAddress,
-        userId: alembicInitOptions?.userId
+        walletAddress: this.walletAddress
       })
     }
 
@@ -106,7 +105,6 @@ export class AlembicWallet {
     if (!this.walletAddress) throw new Error('No walletAddress found')
 
     this.sponsoredAddresses = await this.API.getSponsoredAddresses()
-    this.userId = alembicInitOptions?.userId
     this.connected = true
   }
 
@@ -364,16 +362,13 @@ export class AlembicWallet {
    * WebAuthn Section
    */
 
-  public async addWebAuthnOwner(): Promise<string> {
+  public async addWebAuthnOwner(token: string): Promise<string> {
     if (!(this.signer instanceof WebAuthnSigner))
       throw new Error('This fuction needs a webAuthn adaptor to be used')
 
     if (!this.walletAddress) throw new Error('no wallet Address')
-    if (!this.userId) throw new Error('no user Id selected')
 
-    const webAuthnCredentials = await webAuthnService.createCredential(
-      this.userId
-    )
+    const webAuthnCredentials = await webAuthnService.createCredential()
 
     const publicKeyX = `0x${webAuthnCredentials.point.getX().toString(16)}`
     const publicKeyY = `0x${webAuthnCredentials.point.getY().toString(16)}`
@@ -393,15 +388,14 @@ export class AlembicWallet {
     const addOwnerTxSignature = await this.signTransaction(addOwnerTxData)
 
     await this.API.addWebAuthnOwner({
+      token,
       walletAddress: this.getAddress(),
-      signerName: this.userId,
       publicKeyId,
       publicKeyX,
       publicKeyY,
       addOwnerTxData: JSON.stringify(addOwnerTxData),
       addOwnerTxSignature,
-      deviceData: deviceService.getDeviceData(),
-      userId: this.userId
+      deviceData: deviceService.getDeviceData()
     })
 
     await webAuthnService.waitWebAuthnSignerDeployment(
@@ -414,5 +408,26 @@ export class AlembicWallet {
     this.signer = new WebAuthnSigner(publicKeyId, predictedSignerAddress)
 
     return predictedSignerAddress
+  }
+
+  public async createAddDeviceRequest(token: string): Promise<void> {
+    if (!this.walletAddress) throw new Error('no wallet Address')
+
+    const { publicKeyX, publicKeyY, publicKeyId, signerAddress, deviceData } =
+      await webAuthnService.getWebAuthnSigner(this.chainId)
+
+    const addDeviceRequest = {
+      token,
+      walletAddress: this.walletAddress,
+      publicKeyX,
+      publicKeyY,
+      publicKeyId,
+      signerAddress,
+      deviceData
+    }
+
+    await this.API.createAddDeviceRequest(addDeviceRequest)
+
+    return
   }
 }

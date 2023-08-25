@@ -47,19 +47,16 @@ export class API {
   async connectToAlembicWallet({
     message,
     signature,
-    walletAddress,
-    userId
+    walletAddress
   }: {
     message: SiweMessage
     signature: string
     walletAddress: string
-    userId?: string
   }): Promise<string> {
     const body = {
       message,
       signature,
-      walletAddress,
-      userId
+      walletAddress
     }
 
     const response = await api.post(`/wallets/connect`, body)
@@ -84,92 +81,161 @@ export class API {
     return response.data?.safeTxHash
   }
 
+  /**
+   * WebAuthn Section
+   */
+
   async createWalletWithWebAuthn({
+    token,
     walletAddress,
-    signerName,
     publicKeyId,
     publicKeyX,
     publicKeyY,
-    deviceData,
-    userId
+    deviceData
   }: {
+    token: string
     walletAddress: string
-    signerName: string
     publicKeyId: string
     publicKeyX: string
     publicKeyY: string
-    userId: string
     deviceData: DeviceData
-  }): Promise<WebAuthnOwner> {
+  }): Promise<void> {
+    const config = {
+      headers: {
+        token
+      }
+    }
     const body = {
       walletAddress,
-      signerName,
       publicKeyId,
       publicKeyX,
       publicKeyY,
-      deviceData,
-      userId
+      deviceData
     }
 
-    const response = await api.post(`/wallets/createWalletWithWebAuthn`, body)
-    return response?.data.walletAddress
+    await api.post(`/wallets/createWalletWithWebAuthn`, body, config)
   }
 
   async addWebAuthnOwner({
+    token,
     walletAddress,
-    signerName,
     publicKeyId,
     publicKeyX,
     publicKeyY,
     addOwnerTxData,
     addOwnerTxSignature,
-    deviceData,
-    userId
+    deviceData
   }: {
+    token: string
     walletAddress: string
-    signerName: string
     publicKeyId: string
     publicKeyX: string
     publicKeyY: string
     addOwnerTxData: any
     addOwnerTxSignature: string
     deviceData: DeviceData
-    userId?: string
   }): Promise<WebAuthnOwner> {
+    const config = {
+      headers: {
+        token
+      }
+    }
+
     const body = {
-      signerName,
       publicKeyId,
       publicKeyX,
       publicKeyY,
       addOwnerTxData,
       addOwnerTxSignature,
-      deviceData,
-      userId
+      deviceData
     }
 
     const response = await api.post(
       `/wallets/${walletAddress}/webAuthnOwner`,
-      body
+      body,
+      config
     )
     return response.data?.webAuthnOwner
   }
 
   async getWebAuthnOwnerByPublicKeyId(
+    token: string,
     publicKeyId: string
   ): Promise<WebAuthnOwner> {
-    const response = await api.get(`/webAuthnOwners/${publicKeyId}`)
+    const config = {
+      headers: {
+        token
+      }
+    }
+    const response = await api.get(
+      `/webAuthnOwners/${publicKeyId}/byCredential`,
+      config
+    )
     return response?.data?.webAuthnOwner
   }
 
-  async getWebAuthnOwners(walletAddress: string): Promise<WebAuthnOwner[]> {
-    const response = await api.get(`/webAuthnOwners/${walletAddress}/all`)
+  async getWebAuthnOwners(
+    token: string,
+    walletAddress: string
+  ): Promise<WebAuthnOwner[]> {
+    const config = {
+      headers: {
+        token
+      }
+    }
+    const response = await api.get(
+      `/webAuthnOwners/${walletAddress}/all`,
+      config
+    )
     return response?.data?.webAuthnOwners
   }
 
-  async getWebAuthnOwnersByUserId(userId: string): Promise<WebAuthnOwner[]> {
-    const response = await api.get(`/webAuthnOwners/${userId}/byUser`)
+  async getWebAuthnOwnersByUser(token: string): Promise<WebAuthnOwner[]> {
+    const config = {
+      headers: {
+        token
+      }
+    }
+    const response = await api.get(`/webAuthnOwners/byUser`, config)
     return response?.data?.webAuthnOwners
   }
+
+  async createAddDeviceRequest({
+    token,
+    walletAddress,
+    publicKeyX,
+    publicKeyY,
+    publicKeyId,
+    signerAddress,
+    deviceData
+  }: {
+    token: string
+    walletAddress: string
+    publicKeyX: string
+    publicKeyY: string
+    publicKeyId: string
+    signerAddress: string
+    deviceData: DeviceData
+  }): Promise<void> {
+    const config = {
+      headers: {
+        token
+      }
+    }
+    const body = {
+      walletAddress,
+      publicKeyX,
+      publicKeyY,
+      publicKeyId,
+      signerAddress,
+      deviceData
+    }
+    await api.post(`/webAuthnOwners/add-device`, body, config)
+  }
+
+  /**
+   * Alembic Auth Section
+   */
 
   async connectToAlembicAuth(token: string): Promise<string> {
     const config = {
