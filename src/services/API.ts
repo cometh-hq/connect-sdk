@@ -30,12 +30,12 @@ export class API {
   }
 
   async getWalletAddress(ownerAddress: string): Promise<string> {
-    const response = await api.get(`/wallets/${ownerAddress}/getWalletAddress`)
+    const response = await api.get(`/wallets/${ownerAddress}/wallet-address`)
     return response?.data?.walletAddress
   }
 
   async getWalletInfos(walletAddress: string): Promise<WalletInfos> {
-    const response = await api.get(`/wallets/${walletAddress}/getWalletInfos`)
+    const response = await api.get(`/wallets/${walletAddress}/wallet-infos`)
     return response?.data?.walletInfos
   }
 
@@ -113,7 +113,7 @@ export class API {
       deviceData
     }
 
-    await api.post(`/wallets/createWalletWithWebAuthn`, body, config)
+    await api.post(`/wallets/create-wallet-with-webAuthn`, body, config)
   }
 
   async addWebAuthnOwner({
@@ -168,7 +168,7 @@ export class API {
       }
     }
     const response = await api.get(
-      `/webAuthnOwners/${publicKeyId}/byCredential`,
+      `/webAuthnOwners/${publicKeyId}/by-credential`,
       config
     )
     return response?.data?.webAuthnOwner
@@ -196,7 +196,7 @@ export class API {
         token
       }
     }
-    const response = await api.get(`/webAuthnOwners/byUser`, config)
+    const response = await api.get(`/webAuthnOwners/by-user`, config)
     return response?.data?.webAuthnOwners
   }
 

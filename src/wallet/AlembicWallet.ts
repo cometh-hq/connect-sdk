@@ -11,7 +11,6 @@ import {
   networks
 } from '../constants'
 import { API } from '../services'
-import deviceService from '../services/deviceService'
 import gasService from '../services/gasService'
 import safeService from '../services/safeService'
 import siweService from '../services/siweService'
