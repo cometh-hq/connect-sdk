@@ -368,21 +368,12 @@ export class AlembicWallet {
 
     if (!this.walletAddress) throw new Error('no wallet Address')
 
-    const webAuthnCredentials = await webAuthnService.createCredential()
-
-    const publicKeyX = `0x${webAuthnCredentials.point.getX().toString(16)}`
-    const publicKeyY = `0x${webAuthnCredentials.point.getY().toString(16)}`
-    const publicKeyId = webAuthnCredentials.id
-
-    const predictedSignerAddress = await webAuthnService.predictSignerAddress(
-      publicKeyX,
-      publicKeyY,
-      this.chainId
-    )
+    const { publicKeyX, publicKeyY, publicKeyId, signerAddress, deviceData } =
+      await webAuthnService.createWebAuthnSigner(this.chainId)
 
     const addOwnerTxData = await safeService.prepareAddOwnerTx(
       this.getAddress(),
-      predictedSignerAddress
+      signerAddress
     )
 
     const addOwnerTxSignature = await this.signTransaction(addOwnerTxData)
@@ -395,7 +386,7 @@ export class AlembicWallet {
       publicKeyY,
       addOwnerTxData: JSON.stringify(addOwnerTxData),
       addOwnerTxSignature,
-      deviceData: deviceService.getDeviceData()
+      deviceData
     })
 
     await webAuthnService.waitWebAuthnSignerDeployment(
@@ -405,16 +396,16 @@ export class AlembicWallet {
       this.getProvider()
     )
 
-    this.signer = new WebAuthnSigner(publicKeyId, predictedSignerAddress)
+    this.signer = new WebAuthnSigner(publicKeyId, signerAddress)
 
-    return predictedSignerAddress
+    return signerAddress
   }
 
   public async createAddDeviceRequest(token: string): Promise<void> {
     if (!this.walletAddress) throw new Error('no wallet Address')
 
     const { publicKeyX, publicKeyY, publicKeyId, signerAddress, deviceData } =
-      await webAuthnService.getWebAuthnSigner(this.chainId)
+      await webAuthnService.createWebAuthnSigner(this.chainId)
 
     const addDeviceRequest = {
       token,

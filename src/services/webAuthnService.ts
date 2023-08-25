@@ -62,7 +62,7 @@ const createCredential = async (): Promise<{
   }
 }
 
-const getWebAuthnSigner = async (
+const createWebAuthnSigner = async (
   chainId: number
 ): Promise<{
   publicKeyX: string
@@ -246,7 +246,7 @@ export async function createOrGetWebAuthnOwner(
 
   if (webAuthnOwners.length === 0) {
     const { publicKeyX, publicKeyY, publicKeyId, signerAddress, deviceData } =
-      await getWebAuthnSigner(+chainId)
+      await createWebAuthnSigner(+chainId)
 
     await API.createWalletWithWebAuthn({
       token,
@@ -319,7 +319,7 @@ export default {
   predictSignerAddress,
   waitWebAuthnSignerDeployment,
   platformAuthenticatorIsAvailable,
-  getWebAuthnSigner,
+  createWebAuthnSigner,
   signWithWebAuthn,
   createOrGetWebAuthnOwner
 }
