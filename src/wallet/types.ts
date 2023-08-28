@@ -65,7 +65,7 @@ export type WebAuthnOwner = {
   publicKeyY: string
   signerAddress: string
   deviceData: DeviceData
-  isSigner: boolean
+  isActive: boolean
 }
 
 export type UIConfig = {
