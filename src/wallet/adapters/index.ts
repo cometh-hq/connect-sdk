@@ -1,5 +1,6 @@
 export * from './AlembicAuthAdaptor'
 export * from './BurnerWalletAdaptor'
+export * from './CustomAuthAdaptor'
 export * from './MagicLinkAdapter'
 export * from './PassEncodedAdaptor'
 export * from './types'

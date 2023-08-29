@@ -64,6 +64,33 @@ export class API {
     return response?.data.walletAddress
   }
 
+  async customConnectToAlembicWallet({
+    token,
+    message,
+    signature,
+    walletAddress
+  }: {
+    token: string
+    message: SiweMessage
+    signature: string
+    walletAddress: string
+  }): Promise<string> {
+    const config = {
+      headers: {
+        token
+      }
+    }
+    const body = {
+      message,
+      signature,
+      walletAddress
+    }
+
+    const response = await api.post(`/wallets/custom-connect`, body, config)
+
+    return response?.data.walletAddress
+  }
+
   async relayTransaction({
     walletAddress,
     safeTxData,
@@ -113,7 +140,7 @@ export class API {
       deviceData
     }
 
-    await api.post(`/wallets/create-wallet-with-webAuthn`, body, config)
+    await api.post(`/wallets/connect-with-webAuthn`, body, config)
   }
 
   async addWebAuthnOwner({

@@ -17,6 +17,7 @@ import siweService from '../services/siweService'
 import webAuthnService from '../services/webAuthnService'
 import { GasModal } from '../ui'
 import { AUTHAdapter } from './adapters'
+import { CustomAuthAdaptor } from './adapters/CustomAuthAdaptor'
 import { PassEncodedSigner } from './signers'
 import { AlembicAuthSigner } from './signers/AlembicAuthSigner'
 import { WebAuthnSigner } from './signers/WebAuthnSigner'
@@ -84,7 +85,10 @@ export class AlembicWallet {
     this.walletAddress = await this.API.getWalletAddress(ownerAddress)
 
     this.signer = this.authAdapter.getSigner()
-    if (!(this.signer instanceof WebAuthnSigner)) {
+    if (
+      !(this.signer instanceof WebAuthnSigner) &&
+      !(this.authAdapter instanceof CustomAuthAdaptor)
+    ) {
       const nonce = await this.API.getNonce(this.walletAddress)
       const message: SiweMessage = siweService.createMessage(
         this.walletAddress,
