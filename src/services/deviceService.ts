@@ -4,7 +4,7 @@ import { DeviceData } from '../wallet'
 
 const getDeviceData = (): DeviceData => {
   const userAgentDataBrands = (navigator as any).userAgentData
-    ? (navigator as any).userAgentData.brands
+    ? (navigator as any).userAgentData?.brands
     : undefined
 
   const result: any = Bowser.getParser(window.navigator.userAgent)

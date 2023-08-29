@@ -29,7 +29,6 @@ export function AlembicWalletOnboardConnector({
       getInterface: async (): Promise<WalletInterface> => {
         const { createEIP1193Provider } = await import('@web3-onboard/common')
         const alembicInitOptions = {
-          userId,
           password
         }
 

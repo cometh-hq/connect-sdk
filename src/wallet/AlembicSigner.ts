@@ -48,8 +48,8 @@ export class AlembicSigner extends Signer {
     return await this.provider.getTransaction(transactionResponse.safeTxHash)
   }
 
-  async addWebAuthnOwner(): Promise<string> {
-    return this.smartWallet.addWebAuthnOwner()
+  async addWebAuthnOwner(token: string): Promise<string> {
+    return this.smartWallet.addWebAuthnOwner(token)
   }
 
   signTransaction(
