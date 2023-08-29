@@ -151,7 +151,7 @@ export class API {
     }
 
     const response = await api.post(
-      `/wallets/${walletAddress}/webAuthnOwner`,
+      `/wallets/${walletAddress}/webauthn-owner`,
       body,
       config
     )
@@ -168,7 +168,7 @@ export class API {
       }
     }
     const response = await api.get(
-      `/webAuthnOwners/${publicKeyId}/by-credential`,
+      `/webauthn-owners/public-key-id/${publicKeyId}`,
       config
     )
     return response?.data?.webAuthnOwner
@@ -184,7 +184,7 @@ export class API {
       }
     }
     const response = await api.get(
-      `/webAuthnOwners/${walletAddress}/all`,
+      `/webauthn-owners/${walletAddress}/all`,
       config
     )
     return response?.data?.webAuthnOwners
@@ -196,7 +196,7 @@ export class API {
         token
       }
     }
-    const response = await api.get(`/webAuthnOwners/by-user`, config)
+    const response = await api.get(`/webauthn-owners`, config)
     return response?.data?.webAuthnOwners
   }
 
@@ -230,7 +230,7 @@ export class API {
       signerAddress,
       deviceData
     }
-    await api.post(`/webAuthnOwners/add-device`, body, config)
+    await api.post(`/webauthn-owners`, body, config)
   }
 
   /**
