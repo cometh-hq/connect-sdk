@@ -38,7 +38,7 @@ export class MagicLinkAdapter
     this.ethProvider = new ethers.providers.Web3Provider(provider)
 
     const walletAddress = await this.getWalletAddress()
-    await this.signConnectionMessage(walletAddress, this.getSigner())
+    await this.signAndConnect(walletAddress, this.getSigner())
   }
 
   async logout(): Promise<void> {

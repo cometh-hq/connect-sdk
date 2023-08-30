@@ -37,7 +37,7 @@ export class Web3AuthAdapter extends IConnectionSigning implements AUTHAdapter {
     )
 
     const walletAddress = await this.getWalletAddress()
-    await this.signConnectionMessage(walletAddress, this.getSigner())
+    await this.signAndConnect(walletAddress, this.getSigner())
   }
 
   async logout(): Promise<void> {

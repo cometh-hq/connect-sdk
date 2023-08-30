@@ -23,7 +23,7 @@ export class PassEncodedAdaptor
     await this.signer.connectSigner(alembicInitOptions.password)
 
     const walletAddress = await this.getWalletAddress()
-    await this.signConnectionMessage(walletAddress, this.getSigner())
+    await this.signAndConnect(walletAddress, this.getSigner())
   }
 
   async logout(): Promise<void> {

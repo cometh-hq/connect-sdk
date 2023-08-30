@@ -13,10 +13,7 @@ export class IConnectionSigning {
     this.API = new API(apiKey, +chainId)
   }
 
-  async signConnectionMessage(
-    walletAddress: string,
-    signer: Signer
-  ): Promise<void> {
+  async signAndConnect(walletAddress: string, signer: Signer): Promise<void> {
     const nonce = await this.API.getNonce(walletAddress)
     const message: SiweMessage = siweService.createMessage(
       walletAddress,

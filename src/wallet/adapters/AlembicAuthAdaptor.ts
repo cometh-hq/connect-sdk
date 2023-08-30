@@ -19,7 +19,7 @@ export class AlembicAuthAdaptor
     await this.signer.connectSigner()
 
     const walletAddress = await this.getWalletAddress()
-    await this.signConnectionMessage(walletAddress, this.getSigner())
+    await this.signAndConnect(walletAddress, this.getSigner())
   }
 
   async logout(): Promise<void> {
