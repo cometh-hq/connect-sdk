@@ -1,8 +1,6 @@
 import { ethers, Wallet } from 'ethers'
-import { SiweMessage } from 'siwe'
 
 import { API } from '../../services'
-import siweService from '../../services/siweService'
 import { UserInfos } from '../types'
 import { AUTHAdapter } from './types'
 
@@ -55,7 +53,8 @@ export class CustomAuthAdaptor implements AUTHAdapter {
   async getWalletAddress(): Promise<string> {
     const ownerAddress = await this.getAccount()
     if (!ownerAddress) throw new Error('No owner address found')
-    return await this.API.getWalletAddress(ownerAddress)
+    const walletAddress = await this.API.getWalletAddress(ownerAddress)
+    return walletAddress
   }
 
   async getUserInfos(): Promise<Partial<UserInfos>> {

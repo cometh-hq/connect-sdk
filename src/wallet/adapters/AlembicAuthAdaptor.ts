@@ -1,20 +1,17 @@
-import { SiweMessage } from 'siwe'
-
-import { API } from '../../services'
-import siweService from '../../services/siweService'
+import { IConnectionSigning } from '../IConnectionSigning'
 import { AlembicAuthSigner } from '../signers/AlembicAuthSigner'
 import { UserInfos } from '../types'
 import { AUTHAdapter } from './types'
 
-export class AlembicAuthAdaptor implements AUTHAdapter {
+export class AlembicAuthAdaptor
+  extends IConnectionSigning
+  implements AUTHAdapter
+{
   private signer?: AlembicAuthSigner
-  readonly chainId: string
   private jwtToken: string
-  private API: API
   constructor(chainId: string, jwtToken: string, apiKey: string) {
-    this.chainId = chainId
+    super(chainId, apiKey)
     this.jwtToken = jwtToken
-    this.API = new API(apiKey, +chainId)
   }
 
   async connect(): Promise<void> {
@@ -22,22 +19,7 @@ export class AlembicAuthAdaptor implements AUTHAdapter {
     await this.signer.connectSigner()
 
     const walletAddress = await this.getWalletAddress()
-    const nonce = await this.API.getNonce(walletAddress)
-    const message: SiweMessage = siweService.createMessage(
-      walletAddress,
-      nonce,
-      +this.chainId
-    )
-
-    const signature = await this.getSigner().signMessage(
-      message.prepareMessage()
-    )
-
-    await this.API.connectToAlembicWallet({
-      message,
-      signature,
-      walletAddress
-    })
+    await this.signConnectionMessage(walletAddress, this.getSigner())
   }
 
   async logout(): Promise<void> {

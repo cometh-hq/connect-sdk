@@ -1,19 +1,17 @@
 import { ethers, Wallet } from 'ethers'
-import { SiweMessage } from 'siwe'
 
-import { API } from '../../services'
-import siweService from '../../services/siweService'
+import { IConnectionSigning } from '../IConnectionSigning'
 import { UserInfos } from '../types'
 import { AUTHAdapter } from './types'
 
-export class BurnerWalletAdaptor implements AUTHAdapter {
+export class BurnerWalletAdaptor
+  extends IConnectionSigning
+  implements AUTHAdapter
+{
   private wallet?: Wallet
-  readonly chainId: string
-  private API: API
 
   constructor(chainId: string, apiKey: string) {
-    this.chainId = chainId
-    this.API = new API(apiKey, +chainId)
+    super(chainId, apiKey)
   }
 
   async connect(): Promise<void> {
@@ -31,22 +29,7 @@ export class BurnerWalletAdaptor implements AUTHAdapter {
       )
     }
     const walletAddress = await this.getWalletAddress()
-    const nonce = await this.API.getNonce(walletAddress)
-    const message: SiweMessage = siweService.createMessage(
-      walletAddress,
-      nonce,
-      +this.chainId
-    )
-
-    const signature = await this.getSigner().signMessage(
-      message.prepareMessage()
-    )
-
-    await this.API.connectToAlembicWallet({
-      message,
-      signature,
-      walletAddress
-    })
+    await this.signConnectionMessage(walletAddress, this.getSigner())
   }
 
   async logout(): Promise<void> {

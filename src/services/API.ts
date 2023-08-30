@@ -101,7 +101,7 @@ export class API {
       ownerAddress
     }
 
-    const response = await api.post(`/wallets/init`, body, config)
+    const response = await api.post(`/custom-auth/init`, body, config)
 
     return response?.data.walletAddress
   }
@@ -112,7 +112,7 @@ export class API {
         token
       }
     }
-    const response = await api.get(`/wallets/wallet-address`, config)
+    const response = await api.get(`/custom-auth/wallet-address`, config)
     return response?.data?.walletAddress
   }
 
@@ -148,7 +148,7 @@ export class API {
       deviceData
     }
 
-    await api.post(`/wallets/connect-with-webAuthn`, body, config)
+    await api.post(`/custom-auth/connect-with-webAuthn`, body, config)
   }
 
   async addWebAuthnOwner({
@@ -186,7 +186,7 @@ export class API {
     }
 
     const response = await api.post(
-      `/wallets/${walletAddress}/webauthn-owner`,
+      `/custom-auth/${walletAddress}/webauthn-owner`,
       body,
       config
     )

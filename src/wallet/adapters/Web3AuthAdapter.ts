@@ -2,28 +2,23 @@ import { ExternalProvider, JsonRpcSigner } from '@ethersproject/providers'
 import { Web3AuthCoreOptions } from '@web3auth/core'
 import { Web3Auth, Web3AuthOptions } from '@web3auth/modal'
 import { ethers } from 'ethers'
-import { SiweMessage } from 'siwe'
 
-import { API } from '../../services'
-import siweService from '../../services/siweService'
+import { IConnectionSigning } from '../IConnectionSigning'
 import { UserInfos } from '../types'
 import { AUTHAdapter } from './types'
 
-export class Web3AuthAdapter implements AUTHAdapter {
+export class Web3AuthAdapter extends IConnectionSigning implements AUTHAdapter {
   private web3auth: Web3Auth | null = null
   private ethProvider: ethers.providers.Web3Provider | null = null
   private web3authConfig: Web3AuthOptions
-  readonly chainId: string
-  private API: API
 
   constructor(
     web3authConfig: Web3AuthCoreOptions,
     chainId: string,
     apiKey: string
   ) {
+    super(chainId, apiKey)
     this.web3authConfig = web3authConfig
-    this.chainId = web3authConfig.chainConfig.chainId!
-    this.API = new API(apiKey, +chainId)
   }
 
   async connect(): Promise<void> {
@@ -42,22 +37,7 @@ export class Web3AuthAdapter implements AUTHAdapter {
     )
 
     const walletAddress = await this.getWalletAddress()
-    const nonce = await this.API.getNonce(walletAddress)
-    const message: SiweMessage = siweService.createMessage(
-      walletAddress,
-      nonce,
-      +this.chainId
-    )
-
-    const signature = await this.getSigner().signMessage(
-      message.prepareMessage()
-    )
-
-    await this.API.connectToAlembicWallet({
-      message,
-      signature,
-      walletAddress
-    })
+    await this.signConnectionMessage(walletAddress, this.getSigner())
   }
 
   async logout(): Promise<void> {
