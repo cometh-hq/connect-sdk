@@ -1,24 +1,29 @@
-import { API } from '../../services'
+import { IConnectionSigning } from '../IConnectionSigning'
 import { PassEncodedSigner } from '../signers'
 import { AlembicInitOptions, UserInfos } from '../types'
 import { AUTHAdapter } from './types'
 
-export class PassEncodedAdaptor implements AUTHAdapter {
+export class PassEncodedAdaptor
+  extends IConnectionSigning
+  implements AUTHAdapter
+{
   private signer?: PassEncodedSigner
-  readonly chainId: string
   private jwtToken: string
-  private API: API
+
   constructor(chainId: string, jwtToken: string, apiKey: string) {
-    this.chainId = chainId
+    super(chainId, apiKey)
     this.jwtToken = jwtToken
-    this.API = new API(apiKey, +chainId)
   }
 
   async connect(alembicInitOptions: AlembicInitOptions): Promise<void> {
     if (!alembicInitOptions.password) throw new Error('no password found')
 
     this.signer = new PassEncodedSigner(this.jwtToken, this.API)
+
     await this.signer.connectSigner(alembicInitOptions.password)
+
+    const walletAddress = await this.getWalletAddress()
+    await this.signAndConnect(walletAddress, this.getSigner())
   }
 
   async logout(): Promise<void> {
@@ -34,6 +39,12 @@ export class PassEncodedAdaptor implements AUTHAdapter {
   getSigner(): PassEncodedSigner {
     if (!this.signer) throw new Error('No signer found')
     return this.signer
+  }
+
+  async getWalletAddress(): Promise<string> {
+    const ownerAddress = await this.getAccount()
+    if (!ownerAddress) throw new Error('No owner address found')
+    return await this.API.getWalletAddress(ownerAddress)
   }
 
   async getUserInfos(): Promise<Partial<UserInfos>> {

@@ -32,7 +32,8 @@ const createCredential = async (): Promise<{
   const webAuthnCredentials: any = await navigator.credentials.create({
     publicKey: {
       rp: {
-        name: 'test'
+        name: psl.parse(window.location.host).domain,
+        id: psl.parse(window.location.host).domain
       },
       user: {
         id: new TextEncoder().encode(v4()),
@@ -99,7 +100,7 @@ const sign = async (
   const assertionPayload: any = await navigator.credentials.get({
     publicKey: {
       challenge,
-      /*  rpId: psl.parse(window.location.host).domain, */
+      rpId: psl.parse(window.location.host).domain,
       allowCredentials: publicKeyCredential
     }
   })
@@ -194,28 +195,24 @@ const waitWebAuthnSignerDeployment = async (
   return signerDeploymentEvent[0].args.signer
 }
 
-export async function platformAuthenticatorIsAvailable(): Promise<boolean> {
-  if (!window.PublicKeyCredential)
-    throw new Error('Error: Device does not support WebAuthn Authentification')
+const isWebAuthnCompatible = async (): Promise<boolean> => {
+  if (!window.PublicKeyCredential) return false
 
   const isUserVerifyingPlatformAuthenticatorAvailable =
-    PublicKeyCredential.isUserVerifyingPlatformAuthenticatorAvailable()
+    await PublicKeyCredential.isUserVerifyingPlatformAuthenticatorAvailable()
 
-  if (!isUserVerifyingPlatformAuthenticatorAvailable)
-    throw new Error(
-      'Error: Device does not support WebAuthn Platform Authentification'
-    )
+  if (!isUserVerifyingPlatformAuthenticatorAvailable) return false
 
-  return isUserVerifyingPlatformAuthenticatorAvailable
+  return true
 }
 
-export async function signWithWebAuthn(
+const signWithWebAuthn = async (
   webAuthnOwners: WebAuthnOwner[],
   challenge: string
 ): Promise<{
   encodedSignature: string
   publicKeyId: string
-}> {
+}> => {
   const publicKeyCredentials: PublicKeyCredentialDescriptor[] =
     webAuthnOwners.map((webAuthnOwner) => {
       return {
@@ -232,23 +229,28 @@ export async function signWithWebAuthn(
   return { encodedSignature, publicKeyId }
 }
 
-export async function createOrGetWebAuthnOwner(
+const createOrGetWebAuthnOwner = async (
   token: string,
   chainId: string,
   provider: StaticJsonRpcProvider,
   API: API,
-  storedCredentalId: string | null
+  walletAddress: string | undefined
 ): Promise<{
   publicKeyId: string
   signerAddress: string
-}> {
+}> => {
   const webAuthnOwners = await API.getWebAuthnOwnersByUser(token)
 
   if (webAuthnOwners.length === 0) {
+    if (walletAddress)
+      throw new Error(
+        'New Domain detected. You need to add that domain as signer'
+      )
+
     const { publicKeyX, publicKeyY, publicKeyId, signerAddress, deviceData } =
       await createWebAuthnSigner(+chainId)
 
-    await API.createWalletWithWebAuthn({
+    await API.connectWithWebAuthn({
       token,
       walletAddress: await API.getWalletAddress(signerAddress),
       publicKeyId,
@@ -266,9 +268,7 @@ export async function createOrGetWebAuthnOwner(
 
     return { publicKeyId, signerAddress }
   } else {
-    if (!storedCredentalId) {
-      throw new Error('No credential find for that device')
-    }
+    let signatureParams
 
     const nonce = await API.getNonce(webAuthnOwners[0].walletAddress)
     const message: SiweMessage = siweService.createMessage(
@@ -276,33 +276,30 @@ export async function createOrGetWebAuthnOwner(
       nonce,
       +chainId
     )
+
+    try {
+      signatureParams = await signWithWebAuthn(
+        webAuthnOwners,
+        message.prepareMessage()
+      )
+    } catch {
+      throw new Error(
+        'New Domain detected. You need to add that domain as signer'
+      )
+    }
+
     const currentWebAuthnOwner = await API.getWebAuthnOwnerByPublicKeyId(
       token,
-      storedCredentalId
+      signatureParams.publicKeyId
     )
-
-    if (!currentWebAuthnOwner) throw new Error('WebAuthn is undefined')
-
-    const { encodedSignature } = await signWithWebAuthn(
-      [currentWebAuthnOwner],
-      message.prepareMessage()
-    )
-
-    const isSafeOwner = await safeService.isSafeOwner(
-      currentWebAuthnOwner.walletAddress,
-      currentWebAuthnOwner.signerAddress,
-      provider
-    )
-
-    if (!isSafeOwner) throw new Error('credential found is not owner')
 
     await API.connectToAlembicWallet({
       message,
       signature: safeService.formatWebAuthnSignatureForSafe(
         currentWebAuthnOwner.signerAddress,
-        encodedSignature
+        signatureParams.encodedSignature
       ),
-      walletAddress: webAuthnOwners[0].walletAddress
+      walletAddress: currentWebAuthnOwner.walletAddress
     })
 
     return {
@@ -318,7 +315,7 @@ export default {
   getWebAuthnSignature,
   predictSignerAddress,
   waitWebAuthnSignerDeployment,
-  platformAuthenticatorIsAvailable,
+  isWebAuthnCompatible,
   createWebAuthnSigner,
   signWithWebAuthn,
   createOrGetWebAuthnOwner

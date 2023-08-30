@@ -82,10 +82,45 @@ export class API {
   }
 
   /**
+   * Custom Auth Section
+   */
+
+  async initWalletForUserID({
+    token,
+    ownerAddress
+  }: {
+    token: string
+    ownerAddress: string
+  }): Promise<string> {
+    const config = {
+      headers: {
+        token
+      }
+    }
+    const body = {
+      ownerAddress
+    }
+
+    const response = await api.post(`/custom-auth/init`, body, config)
+
+    return response?.data.walletAddress
+  }
+
+  async getWalletAddressFromUserID(token: string): Promise<string> {
+    const config = {
+      headers: {
+        token
+      }
+    }
+    const response = await api.get(`/custom-auth/wallet-address`, config)
+    return response?.data?.walletAddress
+  }
+
+  /**
    * WebAuthn Section
    */
 
-  async createWalletWithWebAuthn({
+  async connectWithWebAuthn({
     token,
     walletAddress,
     publicKeyId,
@@ -113,7 +148,7 @@ export class API {
       deviceData
     }
 
-    await api.post(`/wallets/create-wallet-with-webAuthn`, body, config)
+    await api.post(`/custom-auth/connect-with-webAuthn`, body, config)
   }
 
   async addWebAuthnOwner({
@@ -151,7 +186,7 @@ export class API {
     }
 
     const response = await api.post(
-      `/wallets/${walletAddress}/webauthn-owner`,
+      `/custom-auth/${walletAddress}/webauthn-owner`,
       body,
       config
     )

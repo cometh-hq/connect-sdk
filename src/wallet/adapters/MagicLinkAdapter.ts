@@ -2,6 +2,7 @@ import { JsonRpcSigner } from '@ethersproject/providers'
 import { ethers } from 'ethers'
 import { Magic, MagicSDKAdditionalConfiguration } from 'magic-sdk'
 
+import { IConnectionSigning } from '../IConnectionSigning'
 import { UserInfos } from '../types'
 import { AUTHAdapter } from './types'
 
@@ -12,15 +13,17 @@ export interface MagicLinkAdapterConfig {
   }
 }
 
-export class MagicLinkAdapter implements AUTHAdapter {
+export class MagicLinkAdapter
+  extends IConnectionSigning
+  implements AUTHAdapter
+{
   private magic: Magic | null = null
   private ethProvider: ethers.providers.Web3Provider | null = null
   private magicConfig: MagicLinkAdapterConfig
-  readonly chainId: string
 
-  constructor(magicConfig: MagicLinkAdapterConfig) {
+  constructor(magicConfig: MagicLinkAdapterConfig, apiKey: string) {
+    super(magicConfig.options.chainId, apiKey)
     this.magicConfig = magicConfig
-    this.chainId = magicConfig.options.chainId!
   }
 
   public async connect(): Promise<void> {
@@ -33,6 +36,9 @@ export class MagicLinkAdapter implements AUTHAdapter {
     await this.magic.wallet.connectWithUI()
     const provider = await this.magic.wallet.getProvider()
     this.ethProvider = new ethers.providers.Web3Provider(provider)
+
+    const walletAddress = await this.getWalletAddress()
+    await this.signAndConnect(walletAddress, this.getSigner())
   }
 
   async logout(): Promise<void> {
@@ -44,6 +50,12 @@ export class MagicLinkAdapter implements AUTHAdapter {
     const signer = this.getSigner()
     if (!signer) throw new Error('No signer found')
     return await signer.getAddress()
+  }
+
+  async getWalletAddress(): Promise<string> {
+    const ownerAddress = await this.getAccount()
+    if (!ownerAddress) throw new Error('No owner address found')
+    return await this.API.getWalletAddress(ownerAddress)
   }
 
   getSigner(): JsonRpcSigner {

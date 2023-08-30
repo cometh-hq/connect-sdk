@@ -35,7 +35,7 @@ export class WebAuthnAdaptor implements AUTHAdapter {
           this.chainId,
           this.provider,
           this.API,
-          localStorage.getItem('credentialId')
+          undefined
         )
       this.signer = new WebAuthnSigner(publicKeyId, signerAddress)
     } catch (err) {
@@ -56,6 +56,12 @@ export class WebAuthnAdaptor implements AUTHAdapter {
   getSigner(): WebAuthnSigner {
     if (!this.signer) throw new Error('No signer found')
     return this.signer
+  }
+
+  async getWalletAddress(): Promise<string> {
+    const ownerAddress = await this.getAccount()
+    if (!ownerAddress) throw new Error('No owner address found')
+    return await this.API.getWalletAddress(ownerAddress)
   }
 
   async getUserInfos(): Promise<Partial<UserInfos>> {

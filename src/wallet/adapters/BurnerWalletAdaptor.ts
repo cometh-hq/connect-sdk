@@ -1,19 +1,22 @@
 import { ethers, Wallet } from 'ethers'
 
+import { IConnectionSigning } from '../IConnectionSigning'
 import { UserInfos } from '../types'
 import { AUTHAdapter } from './types'
 
-export class BurnerWalletAdaptor implements AUTHAdapter {
+export class BurnerWalletAdaptor
+  extends IConnectionSigning
+  implements AUTHAdapter
+{
   private wallet?: Wallet
-  readonly chainId: string
 
-  constructor(chainId: string) {
-    this.chainId = chainId
+  constructor(chainId: string, apiKey: string) {
+    super(chainId, apiKey)
   }
 
   async connect(): Promise<void> {
     const currentPrivateKey = window.localStorage.getItem(
-      'burnerWallet-private-key'
+      'burner-wallet-private-key'
     )
 
     if (currentPrivateKey) {
@@ -21,10 +24,12 @@ export class BurnerWalletAdaptor implements AUTHAdapter {
     } else {
       this.wallet = ethers.Wallet.createRandom()
       window.localStorage.setItem(
-        'burnerWallet-private-key',
+        'burner-wallet-private-key',
         this.wallet.privateKey
       )
     }
+    const walletAddress = await this.getWalletAddress()
+    await this.signAndConnect(walletAddress, this.getSigner())
   }
 
   async logout(): Promise<void> {
@@ -35,6 +40,11 @@ export class BurnerWalletAdaptor implements AUTHAdapter {
   async getAccount(): Promise<string> {
     if (!this.wallet) throw new Error('No Wallet instance found')
     return this.wallet.getAddress()
+  }
+
+  async getWalletAddress(): Promise<string> {
+    if (!this.wallet) throw new Error('No Wallet instance found')
+    return this.wallet.address
   }
 
   getSigner(): Wallet {

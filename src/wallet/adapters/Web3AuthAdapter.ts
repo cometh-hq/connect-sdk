@@ -3,18 +3,22 @@ import { Web3AuthCoreOptions } from '@web3auth/core'
 import { Web3Auth, Web3AuthOptions } from '@web3auth/modal'
 import { ethers } from 'ethers'
 
+import { IConnectionSigning } from '../IConnectionSigning'
 import { UserInfos } from '../types'
 import { AUTHAdapter } from './types'
 
-export class Web3AuthAdapter implements AUTHAdapter {
+export class Web3AuthAdapter extends IConnectionSigning implements AUTHAdapter {
   private web3auth: Web3Auth | null = null
   private ethProvider: ethers.providers.Web3Provider | null = null
   private web3authConfig: Web3AuthOptions
-  readonly chainId: string
 
-  constructor(web3authConfig: Web3AuthCoreOptions) {
+  constructor(
+    web3authConfig: Web3AuthCoreOptions,
+    chainId: string,
+    apiKey: string
+  ) {
+    super(chainId, apiKey)
     this.web3authConfig = web3authConfig
-    this.chainId = web3authConfig.chainConfig.chainId!
   }
 
   async connect(): Promise<void> {
@@ -31,6 +35,9 @@ export class Web3AuthAdapter implements AUTHAdapter {
     this.ethProvider = new ethers.providers.Web3Provider(
       this.web3auth?.provider as ExternalProvider
     )
+
+    const walletAddress = await this.getWalletAddress()
+    await this.signAndConnect(walletAddress, this.getSigner())
   }
 
   async logout(): Promise<void> {
@@ -47,6 +54,12 @@ export class Web3AuthAdapter implements AUTHAdapter {
   getSigner(): JsonRpcSigner {
     if (!this.ethProvider) throw new Error('No Web3Auth provider found')
     return this.ethProvider.getSigner()
+  }
+
+  async getWalletAddress(): Promise<string> {
+    const ownerAddress = await this.getAccount()
+    if (!ownerAddress) throw new Error('No owner address found')
+    return await this.API.getWalletAddress(ownerAddress)
   }
 
   async getUserInfos(): Promise<Partial<UserInfos>> {
