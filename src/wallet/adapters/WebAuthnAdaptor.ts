@@ -34,8 +34,7 @@ export class WebAuthnAdaptor implements AUTHAdapter {
           this.jwtToken,
           this.chainId,
           this.provider,
-          this.API,
-          localStorage.getItem('credentialId')
+          this.API
         )
       this.signer = new WebAuthnSigner(publicKeyId, signerAddress)
     } catch (err) {
