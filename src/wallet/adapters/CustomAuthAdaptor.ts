@@ -27,20 +27,14 @@ export class CustomAuthAdaptor implements AUTHAdapter {
       this.wallet = ethers.Wallet.createRandom()
       window.localStorage.setItem('custom-auth-connect', this.wallet.privateKey)
     }
-    const nonce = await this.API.getNonce(this.wallet.address)
-    const message: SiweMessage = siweService.createMessage(
-      this.wallet.address,
-      nonce,
-      +this.chainId
+    const walletAddress = await this.API.getWalletAddressFromUserID(
+      this.jwtToken
     )
-    const signature = await this.wallet.signMessage(message.prepareMessage())
-
-    await this.API.customConnectToAlembicWallet({
-      token: this.jwtToken,
-      message,
-      signature,
-      walletAddress: this.wallet.address
-    })
+    if (!walletAddress) {
+      const ownerAddress = await this.getAccount()
+      if (!ownerAddress) throw new Error('No owner address found')
+      await this.API.initWalletForUserID({ token: this.jwtToken, ownerAddress })
+    }
   }
 
   async logout(): Promise<void> {
@@ -56,6 +50,12 @@ export class CustomAuthAdaptor implements AUTHAdapter {
   getSigner(): Wallet {
     if (!this.wallet) throw new Error('No Wallet instance found')
     return this.wallet
+  }
+
+  async getWalletAddress(): Promise<string> {
+    const ownerAddress = await this.getAccount()
+    if (!ownerAddress) throw new Error('No owner address found')
+    return await this.API.getWalletAddress(ownerAddress)
   }
 
   async getUserInfos(): Promise<Partial<UserInfos>> {

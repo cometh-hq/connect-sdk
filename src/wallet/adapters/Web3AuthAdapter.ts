@@ -2,7 +2,10 @@ import { ExternalProvider, JsonRpcSigner } from '@ethersproject/providers'
 import { Web3AuthCoreOptions } from '@web3auth/core'
 import { Web3Auth, Web3AuthOptions } from '@web3auth/modal'
 import { ethers } from 'ethers'
+import { SiweMessage } from 'siwe'
 
+import { API } from '../../services'
+import siweService from '../../services/siweService'
 import { UserInfos } from '../types'
 import { AUTHAdapter } from './types'
 
@@ -11,10 +14,16 @@ export class Web3AuthAdapter implements AUTHAdapter {
   private ethProvider: ethers.providers.Web3Provider | null = null
   private web3authConfig: Web3AuthOptions
   readonly chainId: string
+  private API: API
 
-  constructor(web3authConfig: Web3AuthCoreOptions) {
+  constructor(
+    web3authConfig: Web3AuthCoreOptions,
+    chainId: string,
+    apiKey: string
+  ) {
     this.web3authConfig = web3authConfig
     this.chainId = web3authConfig.chainConfig.chainId!
+    this.API = new API(apiKey, +chainId)
   }
 
   async connect(): Promise<void> {
@@ -31,6 +40,24 @@ export class Web3AuthAdapter implements AUTHAdapter {
     this.ethProvider = new ethers.providers.Web3Provider(
       this.web3auth?.provider as ExternalProvider
     )
+
+    const walletAddress = await this.getWalletAddress()
+    const nonce = await this.API.getNonce(walletAddress)
+    const message: SiweMessage = siweService.createMessage(
+      walletAddress,
+      nonce,
+      +this.chainId
+    )
+
+    const signature = await this.getSigner().signMessage(
+      message.prepareMessage()
+    )
+
+    await this.API.connectToAlembicWallet({
+      message,
+      signature,
+      walletAddress
+    })
   }
 
   async logout(): Promise<void> {
@@ -47,6 +74,12 @@ export class Web3AuthAdapter implements AUTHAdapter {
   getSigner(): JsonRpcSigner {
     if (!this.ethProvider) throw new Error('No Web3Auth provider found')
     return this.ethProvider.getSigner()
+  }
+
+  async getWalletAddress(): Promise<string> {
+    const ownerAddress = await this.getAccount()
+    if (!ownerAddress) throw new Error('No owner address found')
+    return await this.API.getWalletAddress(ownerAddress)
   }
 
   async getUserInfos(): Promise<Partial<UserInfos>> {

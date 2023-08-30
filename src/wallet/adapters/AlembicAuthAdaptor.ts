@@ -1,4 +1,7 @@
+import { SiweMessage } from 'siwe'
+
 import { API } from '../../services'
+import siweService from '../../services/siweService'
 import { AlembicAuthSigner } from '../signers/AlembicAuthSigner'
 import { UserInfos } from '../types'
 import { AUTHAdapter } from './types'
@@ -17,6 +20,24 @@ export class AlembicAuthAdaptor implements AUTHAdapter {
   async connect(): Promise<void> {
     this.signer = new AlembicAuthSigner(this.jwtToken, this.API)
     await this.signer.connectSigner()
+
+    const walletAddress = await this.getWalletAddress()
+    const nonce = await this.API.getNonce(walletAddress)
+    const message: SiweMessage = siweService.createMessage(
+      walletAddress,
+      nonce,
+      +this.chainId
+    )
+
+    const signature = await this.getSigner().signMessage(
+      message.prepareMessage()
+    )
+
+    await this.API.connectToAlembicWallet({
+      message,
+      signature,
+      walletAddress
+    })
   }
 
   async logout(): Promise<void> {
@@ -32,6 +53,12 @@ export class AlembicAuthAdaptor implements AUTHAdapter {
   getSigner(): AlembicAuthSigner {
     if (!this.signer) throw new Error('No signer found')
     return this.signer
+  }
+
+  async getWalletAddress(): Promise<string> {
+    const ownerAddress = await this.getAccount()
+    if (!ownerAddress) throw new Error('No owner address found')
+    return await this.API.getWalletAddress(ownerAddress)
   }
 
   async getUserInfos(): Promise<Partial<UserInfos>> {

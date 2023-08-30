@@ -58,6 +58,12 @@ export class WebAuthnAdaptor implements AUTHAdapter {
     return this.signer
   }
 
+  async getWalletAddress(): Promise<string> {
+    const ownerAddress = await this.getAccount()
+    if (!ownerAddress) throw new Error('No owner address found')
+    return await this.API.getWalletAddress(ownerAddress)
+  }
+
   async getUserInfos(): Promise<Partial<UserInfos>> {
     return { walletAddress: await this.getAccount() } ?? {}
   }

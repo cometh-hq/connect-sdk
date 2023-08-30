@@ -18,6 +18,7 @@ export interface AUTHAdapter {
     | AlembicAuthSigner
     | WebAuthnSigner
     | PassEncodedSigner
+  getWalletAddress(): Promise<string>
   getUserInfos(): Promise<Partial<UserInfos>>
   readonly chainId: string
 }

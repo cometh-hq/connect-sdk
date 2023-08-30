@@ -1,7 +1,6 @@
 import { JsonRpcSigner, StaticJsonRpcProvider } from '@ethersproject/providers'
 import { BigNumber, Bytes, ethers, Wallet } from 'ethers'
 import { encodeMulti } from 'ethers-multisend'
-import { SiweMessage } from 'siwe'
 
 import {
   DEFAULT_BASE_GAS,
@@ -13,11 +12,9 @@ import {
 import { API } from '../services'
 import gasService from '../services/gasService'
 import safeService from '../services/safeService'
-import siweService from '../services/siweService'
 import webAuthnService from '../services/webAuthnService'
 import { GasModal } from '../ui'
 import { AUTHAdapter } from './adapters'
-import { CustomAuthAdaptor } from './adapters/CustomAuthAdaptor'
 import { PassEncodedSigner } from './signers'
 import { AlembicAuthSigner } from './signers/AlembicAuthSigner'
 import { WebAuthnSigner } from './signers/WebAuthnSigner'
@@ -80,29 +77,8 @@ export class AlembicWallet {
     if (!this.authAdapter) throw new Error('No EOA adapter found')
     await this.authAdapter.connect(alembicInitOptions)
 
-    const ownerAddress = await this.authAdapter.getAccount()
-    if (!ownerAddress) throw new Error('No owner Address found')
-    this.walletAddress = await this.API.getWalletAddress(ownerAddress)
-
     this.signer = this.authAdapter.getSigner()
-    if (
-      !(this.signer instanceof WebAuthnSigner) &&
-      !(this.authAdapter instanceof CustomAuthAdaptor)
-    ) {
-      const nonce = await this.API.getNonce(this.walletAddress)
-      const message: SiweMessage = siweService.createMessage(
-        this.walletAddress,
-        nonce,
-        this.chainId
-      )
-      const signature = await this.signMessage(message.prepareMessage())
-
-      await this.API.connectToAlembicWallet({
-        message,
-        signature,
-        walletAddress: this.walletAddress
-      })
-    }
+    this.walletAddress = await this.authAdapter.getWalletAddress()
 
     if (!this.signer) throw new Error('No signer found')
     if (!this.walletAddress) throw new Error('No walletAddress found')

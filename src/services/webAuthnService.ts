@@ -248,7 +248,7 @@ export async function createOrGetWebAuthnOwner(
     const { publicKeyX, publicKeyY, publicKeyId, signerAddress, deviceData } =
       await createWebAuthnSigner(+chainId)
 
-    await API.createWalletWithWebAuthn({
+    await API.connectWithWebAuthn({
       token,
       walletAddress: await API.getWalletAddress(signerAddress),
       publicKeyId,
