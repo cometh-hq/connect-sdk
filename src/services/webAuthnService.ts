@@ -32,7 +32,8 @@ const createCredential = async (): Promise<{
   const webAuthnCredentials: any = await navigator.credentials.create({
     publicKey: {
       rp: {
-        name: 'test'
+        name: psl.parse(window.location.host).domain,
+        id: psl.parse(window.location.host).domain
       },
       user: {
         id: new TextEncoder().encode(v4()),
@@ -99,7 +100,7 @@ const sign = async (
   const assertionPayload: any = await navigator.credentials.get({
     publicKey: {
       challenge,
-      /*  rpId: psl.parse(window.location.host).domain, */
+      rpId: psl.parse(window.location.host).domain,
       allowCredentials: publicKeyCredential
     }
   })
@@ -232,7 +233,8 @@ const createOrGetWebAuthnOwner = async (
   token: string,
   chainId: string,
   provider: StaticJsonRpcProvider,
-  API: API
+  API: API,
+  walletAddress: string | undefined
 ): Promise<{
   publicKeyId: string
   signerAddress: string
@@ -240,6 +242,11 @@ const createOrGetWebAuthnOwner = async (
   const webAuthnOwners = await API.getWebAuthnOwnersByUser(token)
 
   if (webAuthnOwners.length === 0) {
+    if (walletAddress)
+      throw new Error(
+        'New Domain detected. You need to add that domain as signer'
+      )
+
     const { publicKeyX, publicKeyY, publicKeyId, signerAddress, deviceData } =
       await createWebAuthnSigner(+chainId)
 

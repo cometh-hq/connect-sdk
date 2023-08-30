@@ -33,7 +33,6 @@ export class CustomAuthAdaptor implements AUTHAdapter {
     const walletAddress = await this.API.getWalletAddressFromUserID(
       this.jwtToken
     )
-
     const isWebAuthnCompatible = await webAuthnService.isWebAuthnCompatible()
 
     if (!isWebAuthnCompatible) {
@@ -50,7 +49,8 @@ export class CustomAuthAdaptor implements AUTHAdapter {
             this.jwtToken,
             this.chainId,
             this.provider,
-            this.API
+            this.API,
+            walletAddress
           )
         this.signer = new WebAuthnSigner(publicKeyId, signerAddress)
       } catch (err) {
