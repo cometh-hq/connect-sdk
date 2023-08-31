@@ -3,6 +3,7 @@ import { ethers, Wallet } from 'ethers'
 
 import { networks } from '../../constants'
 import { API } from '../../services'
+import safeService from '../../services/safeService'
 import webAuthnService from '../../services/webAuthnService'
 import { WebAuthnSigner } from '../signers/WebAuthnSigner'
 import { UserInfos } from '../types'
@@ -66,17 +67,46 @@ export class CustomAuthAdaptor implements AUTHAdapter {
     }
   }
 
-  createOrGetBurnerWallet = (walletAddress: string): void => {
+  async createOrGetBurnerWallet(walletAddress: string): Promise<void> {
     const currentPrivateKey = window.localStorage.getItem('custom-auth-connect')
-
-    if (currentPrivateKey && walletAddress) {
-      this.signer = new ethers.Wallet(currentPrivateKey)
-      return
-    }
 
     if (!walletAddress) {
       this.signer = ethers.Wallet.createRandom()
       window.localStorage.setItem('custom-auth-connect', this.signer.privateKey)
+      return
+    }
+
+    if (currentPrivateKey) {
+      const storageSigner = new ethers.Wallet(currentPrivateKey)
+
+      const isDeployed = await safeService.isDeployed(
+        walletAddress,
+        this.provider
+      )
+
+      if (isDeployed) {
+        const isSafeOwner = await safeService.isSafeOwner(
+          walletAddress,
+          storageSigner.address,
+          this.provider
+        )
+
+        if (!isSafeOwner)
+          throw new Error(
+            'New Domain detected. You need to add that domain as signer'
+          )
+      } else {
+        const predictedWalletAddress = await this.API.getWalletAddress(
+          storageSigner.address
+        )
+
+        if (predictedWalletAddress !== walletAddress)
+          throw new Error(
+            'New Domain detected. You need to add that domain as signer'
+          )
+      }
+
+      this.signer = storageSigner
       return
     } else {
       throw new Error(
