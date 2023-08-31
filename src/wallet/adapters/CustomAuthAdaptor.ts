@@ -6,7 +6,13 @@ import { API } from '../../services'
 import safeService from '../../services/safeService'
 import webAuthnService from '../../services/webAuthnService'
 import { WebAuthnSigner } from '../signers/WebAuthnSigner'
-import { UserInfos } from '../types'
+import {
+  DeviceData,
+  DomainRequest,
+  DomainRequestType,
+  SendTransactionResponse,
+  UserInfos
+} from '../types'
 import { AUTHAdapter } from './types'
 
 export class CustomAuthAdaptor implements AUTHAdapter {
@@ -99,7 +105,6 @@ export class CustomAuthAdaptor implements AUTHAdapter {
         const predictedWalletAddress = await this.API.getWalletAddress(
           storageSigner.address
         )
-
         if (predictedWalletAddress !== walletAddress)
           throw new Error(
             'New Domain detected. You need to add that domain as signer'
@@ -113,6 +118,71 @@ export class CustomAuthAdaptor implements AUTHAdapter {
         'New Domain detected. You need to add that domain as signer'
       )
     }
+  }
+
+  public async createDomainRequest(): Promise<void> {
+    const { publicKeyX, publicKeyY, publicKeyId, signerAddress, deviceData } =
+      await webAuthnService.createWebAuthnSigner(+this.chainId)
+
+    const type =
+      this.signer instanceof WebAuthnSigner
+        ? DomainRequestType.WEBAUTHN
+        : DomainRequestType.BURNER_WALLET
+
+    const addDeviceRequest = {
+      token: this.jwtToken,
+      walletAddress: await this.getWalletAddress(),
+      signerAddress,
+      deviceData,
+      type,
+      publicKeyId,
+      publicKeyX,
+      publicKeyY
+    }
+
+    await this.API.createDomainRequest(addDeviceRequest)
+  }
+
+  public async getDomainRequestByUser(): Promise<DomainRequest[] | null> {
+    return await this.API.getDomainRequestByUser(this.jwtToken)
+  }
+
+  public async deleteDomainRequest(signerAddress: string): Promise<void> {
+    return await this.API.deleteDomainRequest({
+      token: this.jwtToken,
+      signerAddress
+    })
+  }
+
+  public async addWebAuthnOwner({
+    walletAddress,
+    publicKeyId,
+    publicKeyX,
+    publicKeyY,
+    addOwnerTxData,
+    addOwnerTxSignature,
+    deviceData
+  }: {
+    walletAddress: string
+    publicKeyId: string
+    publicKeyX: string
+    publicKeyY: string
+    addOwnerTxData: string
+    addOwnerTxSignature: string
+    deviceData: DeviceData
+  }): Promise<SendTransactionResponse> {
+    const safeTxHash = await this.API.addWebAuthnOwner({
+      token: this.jwtToken,
+      walletAddress,
+      publicKeyId,
+      publicKeyX,
+      publicKeyY,
+      addOwnerTxData,
+      addOwnerTxSignature,
+      deviceData
+    })
+
+    return { safeTxHash }
   }
 
   async logout(): Promise<void> {

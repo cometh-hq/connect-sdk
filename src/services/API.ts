@@ -5,6 +5,8 @@ import { SiweMessage } from 'siwe'
 import { API_URL } from '../constants'
 import {
   DeviceData,
+  DomainRequest,
+  DomainRequestType,
   EncryptedEncryptionKeyParams,
   EncryptedWalletParams,
   RelayTransactionType,
@@ -169,7 +171,7 @@ export class API {
     addOwnerTxData: any
     addOwnerTxSignature: string
     deviceData: DeviceData
-  }): Promise<WebAuthnOwner> {
+  }): Promise<string> {
     const config = {
       headers: {
         token
@@ -190,7 +192,10 @@ export class API {
       body,
       config
     )
-    return response.data?.webAuthnOwner
+
+    console.log(response.data)
+    console.log(response.data.safeTxHash)
+    return response.data?.safeTxHash
   }
 
   async getWebAuthnOwnerByPublicKeyId(
@@ -235,22 +240,24 @@ export class API {
     return response?.data?.webAuthnOwners
   }
 
-  async createAddDeviceRequest({
+  async createDomainRequest({
     token,
     walletAddress,
+    signerAddress,
+    deviceData,
+    type,
     publicKeyX,
     publicKeyY,
-    publicKeyId,
-    signerAddress,
-    deviceData
+    publicKeyId
   }: {
     token: string
     walletAddress: string
-    publicKeyX: string
-    publicKeyY: string
-    publicKeyId: string
     signerAddress: string
     deviceData: DeviceData
+    type: DomainRequestType
+    publicKeyId: string
+    publicKeyX: string
+    publicKeyY: string
   }): Promise<void> {
     const config = {
       headers: {
@@ -259,13 +266,42 @@ export class API {
     }
     const body = {
       walletAddress,
+      signerAddress,
+      deviceData,
+      type,
       publicKeyX,
       publicKeyY,
-      publicKeyId,
-      signerAddress,
-      deviceData
+      publicKeyId
     }
-    await api.post(`/webauthn-owners`, body, config)
+    await api.post(`/custom-auth/domain-request`, body, config)
+  }
+
+  async getDomainRequestByUser(token: string): Promise<DomainRequest[] | null> {
+    const config = {
+      headers: {
+        token
+      }
+    }
+
+    const response = await api.get(`/custom-auth/domain-request`, config)
+
+    return response.data.domainRequests
+  }
+
+  async deleteDomainRequest({
+    token,
+    signerAddress
+  }: {
+    token: string
+    signerAddress: string
+  }): Promise<void> {
+    const config = {
+      headers: {
+        token
+      }
+    }
+
+    await api.delete(`/custom-auth/domain-request/${signerAddress}`, config)
   }
 
   /**

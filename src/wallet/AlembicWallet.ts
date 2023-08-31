@@ -14,12 +14,14 @@ import gasService from '../services/gasService'
 import safeService from '../services/safeService'
 import webAuthnService from '../services/webAuthnService'
 import { GasModal } from '../ui'
-import { AUTHAdapter } from './adapters'
+import { AUTHAdapter, CustomAuthAdaptor } from './adapters'
 import { PassEncodedSigner } from './signers'
 import { AlembicAuthSigner } from './signers/AlembicAuthSigner'
 import { WebAuthnSigner } from './signers/WebAuthnSigner'
 import {
   AlembicInitOptions,
+  DomainRequest,
+  DomainRequestType,
   MetaTransactionData,
   SafeTransactionDataPartial,
   SendTransactionResponse,
@@ -338,66 +340,78 @@ export class AlembicWallet {
   }
 
   /**
-   * WebAuthn Section
+   * Domain Section
    */
 
-  public async addWebAuthnOwner(token: string): Promise<string> {
-    if (!(this.signer instanceof WebAuthnSigner))
-      throw new Error('This fuction needs a webAuthn adaptor to be used')
-
+  public async createDomainRequest(): Promise<void> {
     if (!this.walletAddress) throw new Error('no wallet Address')
 
-    const { publicKeyX, publicKeyY, publicKeyId, signerAddress, deviceData } =
-      await webAuthnService.createWebAuthnSigner(this.chainId)
+    if (!(this.authAdapter instanceof CustomAuthAdaptor))
+      throw new Error('not possible with this authAdapter')
 
-    const addOwnerTxData = await safeService.prepareAddOwnerTx(
-      this.getAddress(),
-      signerAddress
-    )
-
-    const addOwnerTxSignature = await this.signTransaction(addOwnerTxData)
-
-    await this.API.addWebAuthnOwner({
-      token,
-      walletAddress: this.getAddress(),
-      publicKeyId,
-      publicKeyX,
-      publicKeyY,
-      addOwnerTxData: JSON.stringify(addOwnerTxData),
-      addOwnerTxSignature,
-      deviceData
-    })
-
-    await webAuthnService.waitWebAuthnSignerDeployment(
-      publicKeyX,
-      publicKeyY,
-      this.chainId,
-      this.getProvider()
-    )
-
-    this.signer = new WebAuthnSigner(publicKeyId, signerAddress)
-
-    return signerAddress
+    await this.authAdapter.createDomainRequest()
   }
 
-  public async createAddDeviceRequest(token: string): Promise<void> {
+  public async validateDomainRequest(
+    domainRequest: DomainRequest
+  ): Promise<SendTransactionResponse> {
     if (!this.walletAddress) throw new Error('no wallet Address')
 
-    const { publicKeyX, publicKeyY, publicKeyId, signerAddress, deviceData } =
-      await webAuthnService.createWebAuthnSigner(this.chainId)
+    if (!(this.authAdapter instanceof CustomAuthAdaptor))
+      throw new Error('not possible with this authAdapter')
 
-    const addDeviceRequest = {
-      token,
-      walletAddress: this.walletAddress,
-      publicKeyX,
-      publicKeyY,
-      publicKeyId,
-      signerAddress,
-      deviceData
+    let tx: SendTransactionResponse
+
+    if (domainRequest.type === DomainRequestType.WEBAUTHN) {
+      const addOwnerTxData = await safeService.prepareAddOwnerTx(
+        this.getAddress(),
+        domainRequest.signerAddress
+      )
+
+      const addOwnerTxSignature = await this.signTransaction(addOwnerTxData)
+
+      const request = {
+        walletAddress: domainRequest.walletAddress,
+        publicKeyId: domainRequest.publicKeyId!,
+        publicKeyX: domainRequest.publicKeyX!,
+        publicKeyY: domainRequest.publicKeyY!,
+        addOwnerTxData: JSON.stringify(addOwnerTxData),
+        addOwnerTxSignature,
+        deviceData: domainRequest.deviceData
+      }
+
+      tx = await this.authAdapter.addWebAuthnOwner(request)
+
+      await webAuthnService.waitWebAuthnSignerDeployment(
+        domainRequest.publicKeyX!,
+        domainRequest.publicKeyY!,
+        this.chainId,
+        this.getProvider()
+      )
+    } else {
+      tx = await this.addOwner(domainRequest.signerAddress)
     }
 
-    await this.API.createAddDeviceRequest(addDeviceRequest)
+    await this.deleteDomainRequest(domainRequest.signerAddress)
 
-    return
+    return tx
+  }
+
+  public async getDomainRequestByUser(): Promise<DomainRequest[] | null> {
+    if (!this.walletAddress) throw new Error('no wallet Address')
+
+    if (!(this.authAdapter instanceof CustomAuthAdaptor))
+      throw new Error('not possible with this authAdapter')
+
+    return await this.authAdapter.getDomainRequestByUser()
+  }
+
+  public async deleteDomainRequest(signerAddress: string): Promise<void> {
+    if (!this.walletAddress) throw new Error('no wallet Address')
+
+    if (!(this.authAdapter instanceof CustomAuthAdaptor))
+      throw new Error('not possible with this authAdapter')
+
+    await this.authAdapter.deleteDomainRequest(signerAddress)
   }
 }

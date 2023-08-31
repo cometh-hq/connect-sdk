@@ -36,7 +36,7 @@ export class IConnectionSigning {
     })
   }
 
-  public async signMessage(
+  private async signMessage(
     walletAddress: string,
     messageToSign: string | Bytes,
     signer: any
