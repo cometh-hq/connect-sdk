@@ -20,11 +20,12 @@ export class CustomAuthAdaptor implements AUTHAdapter {
     chainId: string,
     jwtToken: string,
     apiKey: string,
-    rpcUrl?: string
+    rpcUrl?: string,
+    baseUrl?: string
   ) {
     this.chainId = chainId
     this.jwtToken = jwtToken
-    this.API = new API(apiKey, +chainId)
+    this.API = new API(apiKey, +chainId, baseUrl)
     this.provider = new StaticJsonRpcProvider(
       rpcUrl ? rpcUrl : networks[+this.chainId].RPCUrl
     )

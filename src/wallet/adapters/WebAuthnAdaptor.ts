@@ -17,10 +17,11 @@ export class WebAuthnAdaptor implements AUTHAdapter {
     chainId: string,
     jwtToken: string,
     apiKey: string,
-    rpcUrl?: string
+    rpcUrl?: string,
+    baseUrl?: string
   ) {
     this.chainId = chainId
-    this.API = new API(apiKey, +chainId)
+    this.API = new API(apiKey, +chainId, baseUrl)
     this.jwtToken = jwtToken
     this.provider = new StaticJsonRpcProvider(
       rpcUrl ? rpcUrl : networks[+this.chainId].RPCUrl

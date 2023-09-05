@@ -9,9 +9,9 @@ export class IConnectionSigning {
   readonly chainId: string
   protected API: API
 
-  constructor(chainId: string, apiKey: string) {
+  constructor(chainId: string, apiKey: string, baseUrl?: string) {
     this.chainId = chainId!
-    this.API = new API(apiKey, +chainId)
+    this.API = new API(apiKey, +chainId, baseUrl)
   }
 
   async signAndConnect(walletAddress: string, signer: any): Promise<void> {
