@@ -5,10 +5,11 @@ import { SiweMessage } from 'siwe'
 import { API_URL } from '../constants'
 import {
   DeviceData,
-  DomainRequest,
-  DomainRequestType,
   EncryptedEncryptionKeyParams,
   EncryptedWalletParams,
+  MetaTransactionData,
+  NewSignerRequest,
+  NewSignerRequestType,
   RelayTransactionType,
   SponsoredTransaction,
   UserNonceType,
@@ -153,51 +154,6 @@ export class API {
     await api.post(`/custom-auth/connect-with-webAuthn`, body, config)
   }
 
-  async addWebAuthnOwner({
-    token,
-    walletAddress,
-    publicKeyId,
-    publicKeyX,
-    publicKeyY,
-    addOwnerTxData,
-    addOwnerTxSignature,
-    deviceData
-  }: {
-    token: string
-    walletAddress: string
-    publicKeyId: string
-    publicKeyX: string
-    publicKeyY: string
-    addOwnerTxData: any
-    addOwnerTxSignature: string
-    deviceData: DeviceData
-  }): Promise<string> {
-    const config = {
-      headers: {
-        token
-      }
-    }
-
-    const body = {
-      publicKeyId,
-      publicKeyX,
-      publicKeyY,
-      addOwnerTxData,
-      addOwnerTxSignature,
-      deviceData
-    }
-
-    const response = await api.post(
-      `/custom-auth/${walletAddress}/webauthn-owner`,
-      body,
-      config
-    )
-
-    console.log(response.data)
-    console.log(response.data.safeTxHash)
-    return response.data?.safeTxHash
-  }
-
   async getWebAuthnOwnerByPublicKeyId(
     token: string,
     publicKeyId: string
@@ -240,7 +196,7 @@ export class API {
     return response?.data?.webAuthnOwners
   }
 
-  async createDomainRequest({
+  async createNewSignerRequest({
     token,
     walletAddress,
     signerAddress,
@@ -254,7 +210,7 @@ export class API {
     walletAddress: string
     signerAddress: string
     deviceData: DeviceData
-    type: DomainRequestType
+    type: NewSignerRequestType
     publicKeyId: string
     publicKeyX: string
     publicKeyY: string
@@ -273,22 +229,58 @@ export class API {
       publicKeyY,
       publicKeyId
     }
-    await api.post(`/custom-auth/domain-request`, body, config)
+    await api.post(`/custom-auth/new-signer-request`, body, config)
   }
 
-  async getDomainRequestByUser(token: string): Promise<DomainRequest[] | null> {
+  async validateNewSignerRequest({
+    token,
+    signerAddress,
+    addOwnerTxData,
+    addOwnerTxSignature
+  }: {
+    token: string
+    signerAddress: string
+    addOwnerTxData: MetaTransactionData
+    addOwnerTxSignature: string
+  }): Promise<string> {
     const config = {
       headers: {
         token
       }
     }
 
-    const response = await api.get(`/custom-auth/domain-request`, config)
+    const body = {
+      signerAddress,
+      addOwnerTxData,
+      addOwnerTxSignature
+    }
 
-    return response.data.domainRequests
+    const response = await api.post(
+      `/custom-auth/new-signer-request/validate`,
+      body,
+      config
+    )
+
+    console.log(response.data)
+
+    return response.data?.safeTxHash
   }
 
-  async deleteDomainRequest({
+  async getNewSignerRequestByUser(
+    token: string
+  ): Promise<NewSignerRequest[] | null> {
+    const config = {
+      headers: {
+        token
+      }
+    }
+
+    const response = await api.get(`/custom-auth/new-signer-request`, config)
+
+    return response.data.newSignerRequests
+  }
+
+  async deleteNewSignerRequest({
     token,
     signerAddress
   }: {
@@ -301,7 +293,7 @@ export class API {
       }
     }
 
-    await api.delete(`/custom-auth/domain-request/${signerAddress}`, config)
+    await api.delete(`/custom-auth/new-signer-request/${signerAddress}`, config)
   }
 
   /**

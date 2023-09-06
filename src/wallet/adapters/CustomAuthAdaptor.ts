@@ -3,13 +3,14 @@ import { ethers, Wallet } from 'ethers'
 
 import { networks } from '../../constants'
 import { API } from '../../services'
+import deviceService from '../../services/deviceService'
 import safeService from '../../services/safeService'
 import webAuthnService from '../../services/webAuthnService'
 import { WebAuthnSigner } from '../signers/WebAuthnSigner'
 import {
-  DeviceData,
-  DomainRequest,
-  DomainRequestType,
+  MetaTransactionData,
+  NewSignerRequest,
+  NewSignerRequestType,
   SendTransactionResponse,
   UserInfos
 } from '../types'
@@ -44,7 +45,7 @@ export class CustomAuthAdaptor implements AUTHAdapter {
 
     if (!isWebAuthnCompatible) {
       try {
-        this.createOrGetBurnerWallet(walletAddress)
+        await this.createOrGetBurnerWallet(walletAddress)
       } catch (err) {
         console.log(err)
         return
@@ -120,67 +121,62 @@ export class CustomAuthAdaptor implements AUTHAdapter {
     }
   }
 
-  public async createDomainRequest(): Promise<void> {
-    const { publicKeyX, publicKeyY, publicKeyId, signerAddress, deviceData } =
-      await webAuthnService.createWebAuthnSigner(+this.chainId)
+  public async createNewSignerRequest(): Promise<void> {
+    let addNewSignerRequest
+    if (this.signer instanceof WebAuthnSigner) {
+      const { publicKeyX, publicKeyY, publicKeyId, signerAddress, deviceData } =
+        await webAuthnService.createWebAuthnSigner(+this.chainId)
 
-    const type =
-      this.signer instanceof WebAuthnSigner
-        ? DomainRequestType.WEBAUTHN
-        : DomainRequestType.BURNER_WALLET
-
-    const addDeviceRequest = {
-      token: this.jwtToken,
-      walletAddress: await this.getWalletAddress(),
-      signerAddress,
-      deviceData,
-      type,
-      publicKeyId,
-      publicKeyX,
-      publicKeyY
+      addNewSignerRequest = {
+        token: this.jwtToken,
+        walletAddress: await this.getWalletAddress(),
+        signerAddress,
+        deviceData,
+        type: NewSignerRequestType.WEBAUTHN,
+        publicKeyId,
+        publicKeyX,
+        publicKeyY
+      }
+    } else {
+      addNewSignerRequest = {
+        token: this.jwtToken,
+        walletAddress: await this.getWalletAddress(),
+        signerAddress: this.signer?.address,
+        deviceData: deviceService.getDeviceData(),
+        type: NewSignerRequestType.BURNER_WALLET
+      }
     }
 
-    await this.API.createDomainRequest(addDeviceRequest)
+    await this.API.createNewSignerRequest(addNewSignerRequest)
   }
 
-  public async getDomainRequestByUser(): Promise<DomainRequest[] | null> {
-    return await this.API.getDomainRequestByUser(this.jwtToken)
+  public async getNewSignerRequestByUser(): Promise<NewSignerRequest[] | null> {
+    return await this.API.getNewSignerRequestByUser(this.jwtToken)
   }
 
-  public async deleteDomainRequest(signerAddress: string): Promise<void> {
-    return await this.API.deleteDomainRequest({
+  public async deleteNewSignerRequest(signerAddress: string): Promise<void> {
+    return await this.API.deleteNewSignerRequest({
       token: this.jwtToken,
       signerAddress
     })
   }
 
-  public async addWebAuthnOwner({
-    walletAddress,
-    publicKeyId,
-    publicKeyX,
-    publicKeyY,
+  public async validateNewSignerRequest({
+    signerAddress,
     addOwnerTxData,
-    addOwnerTxSignature,
-    deviceData
+    addOwnerTxSignature
   }: {
-    walletAddress: string
-    publicKeyId: string
-    publicKeyX: string
-    publicKeyY: string
-    addOwnerTxData: string
+    signerAddress: string
+    addOwnerTxData: MetaTransactionData
     addOwnerTxSignature: string
-    deviceData: DeviceData
   }): Promise<SendTransactionResponse> {
-    const safeTxHash = await this.API.addWebAuthnOwner({
+    const safeTxHash = await this.API.validateNewSignerRequest({
       token: this.jwtToken,
-      walletAddress,
-      publicKeyId,
-      publicKeyX,
-      publicKeyY,
+      signerAddress,
       addOwnerTxData,
-      addOwnerTxSignature,
-      deviceData
+      addOwnerTxSignature
     })
+    console.log(safeTxHash)
 
     return { safeTxHash }
   }

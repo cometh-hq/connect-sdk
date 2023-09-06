@@ -12,7 +12,6 @@ import {
 import { API } from '../services'
 import gasService from '../services/gasService'
 import safeService from '../services/safeService'
-import webAuthnService from '../services/webAuthnService'
 import { GasModal } from '../ui'
 import { AUTHAdapter, CustomAuthAdaptor } from './adapters'
 import { PassEncodedSigner } from './signers'
@@ -20,9 +19,8 @@ import { AlembicAuthSigner } from './signers/AlembicAuthSigner'
 import { WebAuthnSigner } from './signers/WebAuthnSigner'
 import {
   AlembicInitOptions,
-  DomainRequest,
-  DomainRequestType,
   MetaTransactionData,
+  NewSignerRequest,
   SafeTransactionDataPartial,
   SendTransactionResponse,
   SponsoredTransaction,
@@ -340,78 +338,57 @@ export class AlembicWallet {
   }
 
   /**
-   * Domain Section
+   * New Signer Request Section
    */
 
-  public async createDomainRequest(): Promise<void> {
+  public async createNewSignerRequest(): Promise<void> {
     if (!this.walletAddress) throw new Error('no wallet Address')
 
     if (!(this.authAdapter instanceof CustomAuthAdaptor))
       throw new Error('not possible with this authAdapter')
 
-    await this.authAdapter.createDomainRequest()
+    await this.authAdapter.createNewSignerRequest()
   }
 
-  public async validateDomainRequest(
-    domainRequest: DomainRequest
+  public async validateNewSignerRequest(
+    signerAddress: string
   ): Promise<SendTransactionResponse> {
     if (!this.walletAddress) throw new Error('no wallet Address')
 
     if (!(this.authAdapter instanceof CustomAuthAdaptor))
       throw new Error('not possible with this authAdapter')
 
-    let tx: SendTransactionResponse
+    const addOwnerTxData = await safeService.prepareAddOwnerTx(
+      this.getAddress(),
+      signerAddress
+    )
 
-    if (domainRequest.type === DomainRequestType.WEBAUTHN) {
-      const addOwnerTxData = await safeService.prepareAddOwnerTx(
-        this.getAddress(),
-        domainRequest.signerAddress
-      )
+    const addOwnerTxSignature = await this.signTransaction(addOwnerTxData)
 
-      const addOwnerTxSignature = await this.signTransaction(addOwnerTxData)
-
-      const request = {
-        walletAddress: domainRequest.walletAddress,
-        publicKeyId: domainRequest.publicKeyId!,
-        publicKeyX: domainRequest.publicKeyX!,
-        publicKeyY: domainRequest.publicKeyY!,
-        addOwnerTxData: JSON.stringify(addOwnerTxData),
-        addOwnerTxSignature,
-        deviceData: domainRequest.deviceData
-      }
-
-      tx = await this.authAdapter.addWebAuthnOwner(request)
-
-      await webAuthnService.waitWebAuthnSignerDeployment(
-        domainRequest.publicKeyX!,
-        domainRequest.publicKeyY!,
-        this.chainId,
-        this.getProvider()
-      )
-    } else {
-      tx = await this.addOwner(domainRequest.signerAddress)
-    }
-
-    await this.deleteDomainRequest(domainRequest.signerAddress)
+    const tx = await this.authAdapter.validateNewSignerRequest({
+      signerAddress,
+      addOwnerTxData,
+      addOwnerTxSignature
+    })
 
     return tx
   }
 
-  public async getDomainRequestByUser(): Promise<DomainRequest[] | null> {
+  public async getNewSignerRequestByUser(): Promise<NewSignerRequest[] | null> {
     if (!this.walletAddress) throw new Error('no wallet Address')
 
     if (!(this.authAdapter instanceof CustomAuthAdaptor))
       throw new Error('not possible with this authAdapter')
 
-    return await this.authAdapter.getDomainRequestByUser()
+    return await this.authAdapter.getNewSignerRequestByUser()
   }
 
-  public async deleteDomainRequest(signerAddress: string): Promise<void> {
+  public async deleteNewSignerRequest(signerAddress: string): Promise<void> {
     if (!this.walletAddress) throw new Error('no wallet Address')
 
     if (!(this.authAdapter instanceof CustomAuthAdaptor))
       throw new Error('not possible with this authAdapter')
 
-    await this.authAdapter.deleteDomainRequest(signerAddress)
+    await this.authAdapter.deleteNewSignerRequest(signerAddress)
   }
 }

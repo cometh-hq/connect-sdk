@@ -98,19 +98,19 @@ export type EncryptedWalletParams = {
   encryptedMnemonicIV: ArrayBuffer
 }
 
-export enum DomainRequestType {
+export enum NewSignerRequestType {
   WEBAUTHN = 'WEBAUTHN',
   BURNER_WALLET = 'BURNER_WALLET'
 }
 
-export type DomainRequest = {
+export type NewSignerRequest = {
   projectId: string
   userId: string
   chainId: string
   walletAddress: string
   signerAddress: string
   deviceData: DeviceData
-  type: DomainRequestType
+  type: NewSignerRequestType
   publicKeyId?: string
   publicKeyX?: string
   publicKeyY?: string
