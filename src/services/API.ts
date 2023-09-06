@@ -242,11 +242,13 @@ export class API {
     token,
     signerAddress,
     addOwnerTxData,
+    nonce,
     addOwnerTxSignature
   }: {
     token: string
     signerAddress: string
     addOwnerTxData: MetaTransactionData
+    nonce: number
     addOwnerTxSignature: string
   }): Promise<string> {
     const config = {
@@ -258,6 +260,7 @@ export class API {
     const body = {
       signerAddress,
       addOwnerTxData,
+      nonce,
       addOwnerTxSignature
     }
 
@@ -266,8 +269,6 @@ export class API {
       body,
       config
     )
-
-    console.log(response.data)
 
     return response.data?.safeTxHash
   }

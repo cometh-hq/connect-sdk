@@ -366,9 +366,12 @@ export class AlembicWallet {
 
     const addOwnerTxSignature = await this.signTransaction(addOwnerTxData)
 
+    const nonce = await safeService.getNonce(this.getAddress(), this.provider)
+
     const tx = await this.authAdapter.validateNewSignerRequest({
       signerAddress,
       addOwnerTxData,
+      nonce,
       addOwnerTxSignature
     })
 

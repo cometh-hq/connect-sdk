@@ -165,16 +165,19 @@ export class CustomAuthAdaptor implements AUTHAdapter {
   public async validateNewSignerRequest({
     signerAddress,
     addOwnerTxData,
+    nonce,
     addOwnerTxSignature
   }: {
     signerAddress: string
     addOwnerTxData: MetaTransactionData
+    nonce: number
     addOwnerTxSignature: string
   }): Promise<SendTransactionResponse> {
     const safeTxHash = await this.API.validateNewSignerRequest({
       token: this.jwtToken,
       signerAddress,
       addOwnerTxData,
+      nonce,
       addOwnerTxSignature
     })
     console.log(safeTxHash)
