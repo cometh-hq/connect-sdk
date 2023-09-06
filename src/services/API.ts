@@ -1,4 +1,4 @@
-import axios from 'axios'
+import axios, { AxiosInstance } from 'axios'
 import { TypedDataDomain, TypedDataField } from 'ethers'
 import { SiweMessage } from 'siwe'
 
@@ -17,33 +17,36 @@ import {
   WebAuthnOwner
 } from '../wallet/types'
 
-export const api = axios.create({
-  baseURL: API_URL
-})
-
 export class API {
-  constructor(apiKey: string, chainId: number) {
-    api.defaults.headers.common['apikey'] = apiKey
-    api.defaults.headers.common['chainId'] = chainId
+  private readonly api: AxiosInstance
+
+  constructor(apiKey: string, chainId: number, baseUrl?: string) {
+    this.api = axios.create({ baseURL: baseUrl || API_URL })
+    this.api.defaults.headers.common['apikey'] = apiKey
+    this.api.defaults.headers.common['chainId'] = chainId
   }
 
   async getNonce(account: string): Promise<UserNonceType> {
-    const response = await api.get(`/wallets/connection-nonce/${account}`)
+    const response = await this.api.get(`/wallets/connection-nonce/${account}`)
     return response?.data?.userNonce
   }
 
   async getWalletAddress(ownerAddress: string): Promise<string> {
-    const response = await api.get(`/wallets/${ownerAddress}/wallet-address`)
+    const response = await this.api.get(
+      `/wallets/${ownerAddress}/wallet-address`
+    )
     return response?.data?.walletAddress
   }
 
   async getWalletInfos(walletAddress: string): Promise<WalletInfos> {
-    const response = await api.get(`/wallets/${walletAddress}/wallet-infos`)
+    const response = await this.api.get(
+      `/wallets/${walletAddress}/wallet-infos`
+    )
     return response?.data?.walletInfos
   }
 
   async getSponsoredAddresses(): Promise<SponsoredTransaction[]> {
-    const response = await api.get(`/sponsored-address`)
+    const response = await this.api.get(`/sponsored-address`)
     return response?.data?.sponsoredAddresses
   }
 
@@ -62,7 +65,7 @@ export class API {
       walletAddress
     }
 
-    const response = await api.post(`/wallets/connect`, body)
+    const response = await this.api.post(`/wallets/connect`, body)
 
     return response?.data.walletAddress
   }
@@ -80,7 +83,10 @@ export class API {
       safeTxGas: safeTxData?.safeTxGas?.toString(),
       signatures
     }
-    const response = await api.post(`/wallets/${walletAddress}/relay`, body)
+    const response = await this.api.post(
+      `/wallets/${walletAddress}/relay`,
+      body
+    )
     return response.data?.safeTxHash
   }
 
@@ -104,7 +110,7 @@ export class API {
       ownerAddress
     }
 
-    const response = await api.post(`/custom-auth/init`, body, config)
+    const response = await this.api.post(`/custom-auth/init`, body, config)
 
     return response?.data.walletAddress
   }
@@ -115,7 +121,7 @@ export class API {
         token
       }
     }
-    const response = await api.get(`/custom-auth/wallet-address`, config)
+    const response = await this.api.get(`/custom-auth/wallet-address`, config)
     return response?.data?.walletAddress
   }
 
@@ -151,7 +157,7 @@ export class API {
       deviceData
     }
 
-    await api.post(`/custom-auth/connect-with-webAuthn`, body, config)
+    await this.api.post(`/custom-auth/connect-with-webAuthn`, body, config)
   }
 
   async getWebAuthnOwnerByPublicKeyId(
@@ -163,7 +169,7 @@ export class API {
         token
       }
     }
-    const response = await api.get(
+    const response = await this.api.get(
       `/webauthn-owners/public-key-id/${publicKeyId}`,
       config
     )
@@ -179,7 +185,7 @@ export class API {
         token
       }
     }
-    const response = await api.get(
+    const response = await this.api.get(
       `/webauthn-owners/${walletAddress}/all`,
       config
     )
@@ -192,7 +198,7 @@ export class API {
         token
       }
     }
-    const response = await api.get(`/webauthn-owners`, config)
+    const response = await this.api.get(`/webauthn-owners`, config)
     return response?.data?.webAuthnOwners
   }
 
@@ -229,7 +235,7 @@ export class API {
       publicKeyY,
       publicKeyId
     }
-    await api.post(`/custom-auth/new-signer-request`, body, config)
+    await this.api.post(`/custom-auth/new-signer-request`, body, config)
   }
 
   async validateNewSignerRequest({
@@ -255,7 +261,7 @@ export class API {
       addOwnerTxSignature
     }
 
-    const response = await api.post(
+    const response = await this.api.post(
       `/custom-auth/new-signer-request/validate`,
       body,
       config
@@ -275,7 +281,10 @@ export class API {
       }
     }
 
-    const response = await api.get(`/custom-auth/new-signer-request`, config)
+    const response = await this.api.get(
+      `/custom-auth/new-signer-request`,
+      config
+    )
 
     return response.data.newSignerRequests
   }
@@ -293,7 +302,10 @@ export class API {
       }
     }
 
-    await api.delete(`/custom-auth/new-signer-request/${signerAddress}`, config)
+    await this.api.delete(
+      `/custom-auth/new-signer-request/${signerAddress}`,
+      config
+    )
   }
 
   /**
@@ -307,7 +319,7 @@ export class API {
       }
     }
 
-    const response = await api.post(`/key-store/connect`, {}, config)
+    const response = await this.api.post(`/key-store/connect`, {}, config)
     return response?.data?.address
   }
 
@@ -327,7 +339,11 @@ export class API {
       types,
       value
     }
-    const response = await api.post(`/key-store/signTypedData`, body, config)
+    const response = await this.api.post(
+      `/key-store/signTypedData`,
+      body,
+      config
+    )
     return response?.data?.signature
   }
 
@@ -340,7 +356,7 @@ export class API {
       }
     }
 
-    const response = await api.get(
+    const response = await this.api.get(
       `/encrypted-account/encryption-key/verify`,
       config
     )
@@ -360,7 +376,7 @@ export class API {
       }
     }
 
-    const response = await api.get(
+    const response = await this.api.get(
       `/encrypted-account/${passwordHash}/encryption-key`,
       config
     )
@@ -379,7 +395,7 @@ export class API {
       }
     }
 
-    const response = await api.get(
+    const response = await this.api.get(
       `/encrypted-account/${passwordHash}/encryption-wallet`,
       config
     )
@@ -418,7 +434,7 @@ export class API {
       encryptedEncryptionKeyIV: Buffer.from(encryptedEncryptionKeyIV)
     }
 
-    await api.post('/encrypted-account/encryption-key', body, config)
+    await this.api.post('/encrypted-account/encryption-key', body, config)
   }
 
   async createEncryptedWallet({
@@ -443,6 +459,6 @@ export class API {
       encryptedMnemonicIV: Buffer.from(encryptedMnemonicIV)
     }
 
-    await api.post('/encrypted-account/encryption-wallet', body, config)
+    await this.api.post('/encrypted-account/encryption-wallet', body, config)
   }
 }

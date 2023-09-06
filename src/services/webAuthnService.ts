@@ -40,6 +40,7 @@ const createCredential = async (): Promise<{
         name: 'Cometh Connect',
         displayName: 'Cometh Connect'
       },
+      authenticatorSelection: { authenticatorAttachment: 'platform' },
       challenge,
       pubKeyCredParams: [{ alg: -7, type: 'public-key' }]
     }

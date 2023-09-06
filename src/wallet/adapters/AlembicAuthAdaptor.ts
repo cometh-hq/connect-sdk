@@ -9,8 +9,13 @@ export class AlembicAuthAdaptor
 {
   private signer?: AlembicAuthSigner
   private jwtToken: string
-  constructor(chainId: string, jwtToken: string, apiKey: string) {
-    super(chainId, apiKey)
+  constructor(
+    chainId: string,
+    jwtToken: string,
+    apiKey: string,
+    baseURL?: string
+  ) {
+    super(chainId, apiKey, baseURL)
     this.jwtToken = jwtToken
   }
 

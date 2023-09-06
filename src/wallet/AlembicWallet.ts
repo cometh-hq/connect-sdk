@@ -33,6 +33,7 @@ export interface AlembicWalletConfig {
   apiKey: string
   rpcUrl?: string
   uiConfig?: UIConfig
+  baseUrl?: string
 }
 export class AlembicWallet {
   public authAdapter: AUTHAdapter
@@ -55,10 +56,10 @@ export class AlembicWallet {
     displayValidationModal: true
   }
 
-  constructor({ authAdapter, apiKey, rpcUrl }: AlembicWalletConfig) {
+  constructor({ authAdapter, apiKey, rpcUrl, baseUrl }: AlembicWalletConfig) {
     this.authAdapter = authAdapter
     this.chainId = +authAdapter.chainId
-    this.API = new API(apiKey, this.chainId)
+    this.API = new API(apiKey, this.chainId, baseUrl)
     this.provider = new StaticJsonRpcProvider(
       rpcUrl ? rpcUrl : networks[this.chainId].RPCUrl
     )
