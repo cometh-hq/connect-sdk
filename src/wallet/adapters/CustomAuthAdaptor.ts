@@ -39,7 +39,7 @@ export class CustomAuthAdaptor implements AUTHAdapter {
 
     if (!isWebAuthnCompatible) {
       try {
-        this.createOrGetBurnerWallet(walletAddress)
+        await this.createOrGetBurnerWallet(walletAddress)
       } catch (err) {
         console.log(err)
         return
