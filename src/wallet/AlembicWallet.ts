@@ -346,9 +346,9 @@ export class AlembicWallet {
     if (!this.walletAddress) throw new Error('no wallet Address')
 
     if (!(this.authAdapter instanceof CustomAuthAdaptor))
-      throw new Error('not possible with this authAdapter')
+      throw new Error('method not allowed for this authAdapter')
 
-    await this.authAdapter.createNewSignerRequest()
+    await this.authAdapter.createNewSignerRequest(this.walletAddress)
   }
 
   public async validateNewSignerRequest(
@@ -357,16 +357,14 @@ export class AlembicWallet {
     if (!this.walletAddress) throw new Error('no wallet Address')
 
     if (!(this.authAdapter instanceof CustomAuthAdaptor))
-      throw new Error('not possible with this authAdapter')
+      throw new Error('method not allowed for this authAdapter')
 
     const addOwnerTxData = await safeService.prepareAddOwnerTx(
-      this.getAddress(),
+      this.walletAddress,
       signerAddress
     )
-
     const addOwnerTxSignature = await this.signTransaction(addOwnerTxData)
-
-    const nonce = await safeService.getNonce(this.getAddress(), this.provider)
+    const nonce = await safeService.getNonce(this.walletAddress, this.provider)
 
     const tx = await this.authAdapter.validateNewSignerRequest({
       signerAddress,
@@ -382,7 +380,7 @@ export class AlembicWallet {
     if (!this.walletAddress) throw new Error('no wallet Address')
 
     if (!(this.authAdapter instanceof CustomAuthAdaptor))
-      throw new Error('not possible with this authAdapter')
+      throw new Error('method not allowed for this authAdapter')
 
     return await this.authAdapter.getNewSignerRequestByUser()
   }
@@ -391,7 +389,7 @@ export class AlembicWallet {
     if (!this.walletAddress) throw new Error('no wallet Address')
 
     if (!(this.authAdapter instanceof CustomAuthAdaptor))
-      throw new Error('not possible with this authAdapter')
+      throw new Error('method not allowed for this authAdapter')
 
     await this.authAdapter.deleteNewSignerRequest(signerAddress)
   }

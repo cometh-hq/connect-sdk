@@ -122,15 +122,16 @@ export class CustomAuthAdaptor implements AUTHAdapter {
     }
   }
 
-  public async createNewSignerRequest(): Promise<void> {
+  public async createNewSignerRequest(walletAddress: string): Promise<void> {
     let addNewSignerRequest
+
     if (this.signer instanceof WebAuthnSigner) {
       const { publicKeyX, publicKeyY, publicKeyId, signerAddress, deviceData } =
         await webAuthnService.createWebAuthnSigner(+this.chainId)
 
       addNewSignerRequest = {
         token: this.jwtToken,
-        walletAddress: await this.getWalletAddress(),
+        walletAddress,
         signerAddress,
         deviceData,
         type: NewSignerRequestType.WEBAUTHN,
@@ -139,9 +140,15 @@ export class CustomAuthAdaptor implements AUTHAdapter {
         publicKeyY
       }
     } else {
+      /*   if (window.localStorage.getItem('custom-auth-connect'))
+        throw new Error('Device has already been added as signer.') */
+
+      this.signer = ethers.Wallet.createRandom()
+      window.localStorage.setItem('custom-auth-connect', this.signer.privateKey)
+
       addNewSignerRequest = {
         token: this.jwtToken,
-        walletAddress: await this.getWalletAddress(),
+        walletAddress,
         signerAddress: this.signer?.address,
         deviceData: deviceService.getDeviceData(),
         type: NewSignerRequestType.BURNER_WALLET
@@ -180,7 +187,6 @@ export class CustomAuthAdaptor implements AUTHAdapter {
       nonce,
       addOwnerTxSignature
     })
-    console.log(safeTxHash)
 
     return { safeTxHash }
   }
@@ -201,10 +207,7 @@ export class CustomAuthAdaptor implements AUTHAdapter {
   }
 
   async getWalletAddress(): Promise<string> {
-    const ownerAddress = await this.getAccount()
-    if (!ownerAddress) throw new Error('No owner address found')
-    const walletAddress = await this.API.getWalletAddress(ownerAddress)
-    return walletAddress
+    return await this.API.getWalletAddressFromUserID(this.jwtToken)
   }
 
   async getUserInfos(): Promise<Partial<UserInfos>> {

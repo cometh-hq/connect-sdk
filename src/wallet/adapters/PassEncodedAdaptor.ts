@@ -42,9 +42,7 @@ export class PassEncodedAdaptor
   }
 
   async getWalletAddress(): Promise<string> {
-    const ownerAddress = await this.getAccount()
-    if (!ownerAddress) throw new Error('No owner address found')
-    return await this.API.getWalletAddress(ownerAddress)
+    return await this.API.getWalletAddressFromUserID(this.jwtToken)
   }
 
   async getUserInfos(): Promise<Partial<UserInfos>> {
