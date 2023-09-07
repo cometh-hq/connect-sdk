@@ -343,12 +343,10 @@ export class AlembicWallet {
    */
 
   public async createNewSignerRequest(): Promise<void> {
-    if (!this.walletAddress) throw new Error('no wallet Address')
-
     if (!(this.authAdapter instanceof CustomAuthAdaptor))
       throw new Error('method not allowed for this authAdapter')
 
-    await this.authAdapter.createNewSignerRequest(this.walletAddress)
+    await this.authAdapter.createNewSignerRequest()
   }
 
   public async validateNewSignerRequest(

@@ -84,48 +84,37 @@ export class CustomAuthAdaptor implements AUTHAdapter {
       return
     }
 
-    if (currentPrivateKey) {
-      const storageSigner = new ethers.Wallet(currentPrivateKey)
-
-      const isDeployed = await safeService.isDeployed(
-        walletAddress,
-        this.provider
-      )
-
-      if (isDeployed) {
-        const isSafeOwner = await safeService.isSafeOwner(
-          walletAddress,
-          storageSigner.address,
-          this.provider
-        )
-
-        if (!isSafeOwner)
-          throw new Error(
-            'New Domain detected. You need to add that domain as signer'
-          )
-      } else {
-        const predictedWalletAddress = await this.API.getWalletAddress(
-          storageSigner.address
-        )
-        if (predictedWalletAddress !== walletAddress)
-          throw new Error(
-            'New Domain detected. You need to add that domain as signer'
-          )
-      }
-
-      this.signer = storageSigner
-      return
-    } else {
+    if (!currentPrivateKey)
       throw new Error(
         'New Domain detected. You need to add that domain as signer'
       )
-    }
+
+    const storageSigner = new ethers.Wallet(currentPrivateKey)
+
+    const isSignerOfSafe = await safeService.isSigner(
+      storageSigner.address,
+      walletAddress,
+      this.provider,
+      this.API
+    )
+
+    if (!isSignerOfSafe)
+      throw new Error(
+        'New Domain detected. You need to add that domain as signer'
+      )
+
+    this.signer = storageSigner
   }
 
-  public async createNewSignerRequest(walletAddress: string): Promise<void> {
+  public async createNewSignerRequest(): Promise<void> {
+    const walletAddress = await this.API.getWalletAddressFromUserID(
+      this.jwtToken
+    )
+    const isWebAuthnCompatible = await webAuthnService.isWebAuthnCompatible()
+
     let addNewSignerRequest
 
-    if (this.signer instanceof WebAuthnSigner) {
+    if (isWebAuthnCompatible) {
       const { publicKeyX, publicKeyY, publicKeyId, signerAddress, deviceData } =
         await webAuthnService.createWebAuthnSigner(+this.chainId)
 
@@ -140,9 +129,6 @@ export class CustomAuthAdaptor implements AUTHAdapter {
         publicKeyY
       }
     } else {
-      /*   if (window.localStorage.getItem('custom-auth-connect'))
-        throw new Error('Device has already been added as signer.') */
-
       this.signer = ethers.Wallet.createRandom()
       window.localStorage.setItem('custom-auth-connect', this.signer.privateKey)
 

@@ -9,6 +9,7 @@ import {
   MetaTransactionData,
   SafeTransactionDataPartial
 } from '../wallet/types'
+import { API } from './API'
 
 const SafeInterface: SafeInterface = Safe__factory.createInterface()
 
@@ -139,6 +140,26 @@ const getTransactionsTotalValue = async (
   return txValue.toString()
 }
 
+const isSigner = async (
+  signerAddress: string,
+  walletAddress: string,
+  provider: StaticJsonRpcProvider,
+  API: API
+): Promise<boolean> => {
+  const deployed = await isDeployed(walletAddress, provider)
+
+  if (deployed) {
+    const owner = await isSafeOwner(walletAddress, signerAddress, provider)
+
+    if (!owner) return false
+  } else {
+    const predictedWalletAddress = await API.getWalletAddress(signerAddress)
+    if (predictedWalletAddress !== walletAddress) return false
+  }
+
+  return true
+}
+
 export default {
   isDeployed,
   getNonce,
@@ -148,5 +169,6 @@ export default {
   prepareAddOwnerTx,
   formatWebAuthnSignatureForSafe,
   getSafeTransactionHash,
-  getTransactionsTotalValue
+  getTransactionsTotalValue,
+  isSigner
 }
