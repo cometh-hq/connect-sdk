@@ -32,8 +32,8 @@ const createCredential = async (): Promise<{
   const webAuthnCredentials: any = await navigator.credentials.create({
     publicKey: {
       rp: {
-        name: 'test'
-        /*         id: psl.parse(window.location.host).domain */
+        name: psl.parse(window.location.host).domain,
+        id: psl.parse(window.location.host).domain
       },
       user: {
         id: new TextEncoder().encode(v4()),
@@ -101,7 +101,7 @@ const sign = async (
   const assertionPayload: any = await navigator.credentials.get({
     publicKey: {
       challenge,
-      /*   rpId: psl.parse(window.location.host).domain, */
+      rpId: psl.parse(window.location.host).domain,
       allowCredentials: publicKeyCredential
     }
   })
