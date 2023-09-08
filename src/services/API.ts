@@ -7,7 +7,6 @@ import {
   DeviceData,
   EncryptedEncryptionKeyParams,
   EncryptedWalletParams,
-  MetaTransactionData,
   NewSignerRequest,
   NewSignerRequestType,
   RelayTransactionType,
@@ -90,6 +89,42 @@ export class API {
     return response.data?.safeTxHash
   }
 
+  async deployWebAuthnSigner({
+    token,
+    walletAddress,
+    publicKeyId,
+    publicKeyX,
+    publicKeyY,
+    deviceData
+  }: {
+    token: string
+    walletAddress: string
+    publicKeyId: string
+    publicKeyX: string
+    publicKeyY: string
+    deviceData: DeviceData
+  }): Promise<string> {
+    const config = {
+      headers: {
+        token
+      }
+    }
+
+    const body = {
+      publicKeyId,
+      publicKeyX,
+      publicKeyY,
+      deviceData
+    }
+
+    const response = await this.api.post(
+      `/wallets/${walletAddress}/deploy-webauthn-signer`,
+      body,
+      config
+    )
+    return response.data?.signerAddress
+  }
+
   /**
    * Custom Auth Section
    */
@@ -129,7 +164,7 @@ export class API {
    * WebAuthn Section
    */
 
-  async connectWithWebAuthn({
+  async deployWalletWithWebAuthnSigner({
     token,
     walletAddress,
     publicKeyId,
@@ -157,7 +192,7 @@ export class API {
       deviceData
     }
 
-    await this.api.post(`/custom-auth/connect-with-webAuthn`, body, config)
+    await this.api.post(`/wallets/deploy-with-webauthn-signer`, body, config)
   }
 
   async getWebAuthnOwnerByPublicKeyId(
@@ -235,42 +270,7 @@ export class API {
       publicKeyY,
       publicKeyId
     }
-    await this.api.post(`/custom-auth/new-signer-request`, body, config)
-  }
-
-  async validateNewSignerRequest({
-    token,
-    signerAddress,
-    addOwnerTxData,
-    nonce,
-    addOwnerTxSignature
-  }: {
-    token: string
-    signerAddress: string
-    addOwnerTxData: MetaTransactionData
-    nonce: number
-    addOwnerTxSignature: string
-  }): Promise<string> {
-    const config = {
-      headers: {
-        token
-      }
-    }
-
-    const body = {
-      signerAddress,
-      addOwnerTxData,
-      nonce,
-      addOwnerTxSignature
-    }
-
-    const response = await this.api.post(
-      `/custom-auth/new-signer-request/validate`,
-      body,
-      config
-    )
-
-    return response.data?.safeTxHash
+    await this.api.post(`/signer-request`, body, config)
   }
 
   async getNewSignerRequestByUser(
@@ -282,12 +282,9 @@ export class API {
       }
     }
 
-    const response = await this.api.get(
-      `/custom-auth/new-signer-request`,
-      config
-    )
+    const response = await this.api.get(`/signer-request`, config)
 
-    return response.data.newSignerRequests
+    return response.data.signerRequests
   }
 
   async deleteNewSignerRequest({
@@ -303,10 +300,7 @@ export class API {
       }
     }
 
-    await this.api.delete(
-      `/custom-auth/new-signer-request/${signerAddress}`,
-      config
-    )
+    await this.api.delete(`/signer-request/${signerAddress}`, config)
   }
 
   /**

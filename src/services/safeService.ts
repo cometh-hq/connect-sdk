@@ -79,6 +79,14 @@ const isSafeOwner = async (
   return await safeInstance.isOwner(signerAddress)
 }
 
+const getOwners = async (
+  walletAddress: string,
+  provider: StaticJsonRpcProvider
+): Promise<string[]> => {
+  const safeInstance = await Safe__factory.connect(walletAddress, provider)
+  return await safeInstance.getOwners()
+}
+
 const prepareAddOwnerTx = async (
   walletAddress: string,
   newOwner: string
@@ -166,6 +174,7 @@ export default {
   getSuccessExecTransactionEvent,
   getFailedExecTransactionEvent,
   isSafeOwner,
+  getOwners,
   prepareAddOwnerTx,
   formatWebAuthnSignatureForSafe,
   getSafeTransactionHash,

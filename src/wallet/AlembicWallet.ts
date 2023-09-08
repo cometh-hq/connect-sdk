@@ -3,6 +3,7 @@ import { BigNumber, Bytes, ethers, Wallet } from 'ethers'
 import { encodeMulti } from 'ethers-multisend'
 
 import {
+  ADD_OWNER_FUNCTION_SELECTOR,
   DEFAULT_BASE_GAS,
   DEFAULT_REWARD_PERCENTILE,
   EIP712_SAFE_MESSAGE_TYPE,
@@ -12,6 +13,7 @@ import {
 import { API } from '../services'
 import gasService from '../services/gasService'
 import safeService from '../services/safeService'
+import webAuthnService from '../services/webAuthnService'
 import { GasModal } from '../ui'
 import { AUTHAdapter, CustomAuthAdaptor } from './adapters'
 import { PassEncodedSigner } from './signers'
@@ -21,6 +23,7 @@ import {
   AlembicInitOptions,
   MetaTransactionData,
   NewSignerRequest,
+  NewSignerRequestType,
   SafeTransactionDataPartial,
   SendTransactionResponse,
   SponsoredTransaction,
@@ -117,6 +120,11 @@ export class AlembicWallet {
     return await this.sendTransaction(tx)
   }
 
+  public async getOwners(): Promise<string[]> {
+    if (!this.walletAddress) throw new Error('no wallet Address')
+    return await safeService.getOwners(this.walletAddress, this.provider)
+  }
+
   /**
    * Signing Message Section
    */
@@ -168,17 +176,26 @@ export class AlembicWallet {
     )
   }
 
+  private _getFunctionSelector(
+    safeTransactionData: MetaTransactionData
+  ): string {
+    return safeTransactionData.data.slice(0, 10)
+  }
+
   private async _isSponsoredTransaction(
     safeTransactionData: MetaTransactionData[]
   ): Promise<boolean> {
     for (let i = 0; i < safeTransactionData.length; i++) {
+      const functionSelector = this._getFunctionSelector(safeTransactionData[i])
+
       const sponsoredAddress = this.sponsoredAddresses?.find(
         (sponsoredAddress) =>
           sponsoredAddress.targetAddress.toLowerCase() ===
           safeTransactionData[i].to.toLowerCase()
       )
 
-      if (!sponsoredAddress) return false
+      if (!sponsoredAddress && functionSelector !== ADD_OWNER_FUNCTION_SELECTOR)
+        return false
     }
     return true
   }
@@ -350,28 +367,26 @@ export class AlembicWallet {
   }
 
   public async validateNewSignerRequest(
-    signerAddress: string
+    newSignerRequest: NewSignerRequest
   ): Promise<SendTransactionResponse> {
     if (!this.walletAddress) throw new Error('no wallet Address')
 
     if (!(this.authAdapter instanceof CustomAuthAdaptor))
       throw new Error('method not allowed for this authAdapter')
 
-    const addOwnerTxData = await safeService.prepareAddOwnerTx(
-      this.walletAddress,
-      signerAddress
-    )
-    const addOwnerTxSignature = await this.signTransaction(addOwnerTxData)
-    const nonce = await safeService.getNonce(this.walletAddress, this.provider)
+    await this.deleteNewSignerRequest(newSignerRequest.signerAddress)
 
-    const tx = await this.authAdapter.validateNewSignerRequest({
-      signerAddress,
-      addOwnerTxData,
-      nonce,
-      addOwnerTxSignature
-    })
+    if (newSignerRequest.type === NewSignerRequestType.WEBAUTHN) {
+      await this.authAdapter.deployWebAuthnSigner(newSignerRequest)
 
-    return tx
+      await webAuthnService.waitWebAuthnSignerDeployment(
+        newSignerRequest.publicKeyX!,
+        newSignerRequest.publicKeyY!,
+        this.chainId,
+        this.getProvider()
+      )
+    }
+    return await this.addOwner(newSignerRequest.signerAddress)
   }
 
   public async getNewSignerRequestByUser(): Promise<NewSignerRequest[] | null> {

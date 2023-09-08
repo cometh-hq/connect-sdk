@@ -110,11 +110,10 @@ export class CustomAuthAdaptor implements AUTHAdapter {
     const walletAddress = await this.API.getWalletAddressFromUserID(
       this.jwtToken
     )
-    const isWebAuthnCompatible = await webAuthnService.isWebAuthnCompatible()
 
     let addNewSignerRequest
 
-    if (isWebAuthnCompatible) {
+    if (await webAuthnService.isWebAuthnCompatible()) {
       const { publicKeyX, publicKeyY, publicKeyId, signerAddress, deviceData } =
         await webAuthnService.createWebAuthnSigner(+this.chainId)
 
@@ -155,26 +154,17 @@ export class CustomAuthAdaptor implements AUTHAdapter {
     })
   }
 
-  public async validateNewSignerRequest({
-    signerAddress,
-    addOwnerTxData,
-    nonce,
-    addOwnerTxSignature
-  }: {
-    signerAddress: string
-    addOwnerTxData: MetaTransactionData
-    nonce: number
-    addOwnerTxSignature: string
-  }): Promise<SendTransactionResponse> {
-    const safeTxHash = await this.API.validateNewSignerRequest({
+  public async deployWebAuthnSigner(
+    newSignerRequest: NewSignerRequest
+  ): Promise<string> {
+    return await this.API.deployWebAuthnSigner({
       token: this.jwtToken,
-      signerAddress,
-      addOwnerTxData,
-      nonce,
-      addOwnerTxSignature
+      walletAddress: newSignerRequest.walletAddress,
+      publicKeyId: newSignerRequest.publicKeyId!,
+      publicKeyX: newSignerRequest.publicKeyX!,
+      publicKeyY: newSignerRequest.publicKeyY!,
+      deviceData: newSignerRequest.deviceData
     })
-
-    return { safeTxHash }
   }
 
   async logout(): Promise<void> {
