@@ -168,6 +168,9 @@ const isSigner = async (
   return true
 }
 
+const getFunctionSelector = (transactionData: MetaTransactionData): string => {
+  return transactionData.data.toString().slice(0, 10)
+}
 export default {
   isDeployed,
   getNonce,
@@ -179,5 +182,6 @@ export default {
   formatWebAuthnSignatureForSafe,
   getSafeTransactionHash,
   getTransactionsTotalValue,
-  isSigner
+  isSigner,
+  getFunctionSelector
 }

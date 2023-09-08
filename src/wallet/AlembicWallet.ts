@@ -176,17 +176,13 @@ export class AlembicWallet {
     )
   }
 
-  private _getFunctionSelector(
-    safeTransactionData: MetaTransactionData
-  ): string {
-    return safeTransactionData.data.slice(0, 10)
-  }
-
   private async _isSponsoredTransaction(
     safeTransactionData: MetaTransactionData[]
   ): Promise<boolean> {
     for (let i = 0; i < safeTransactionData.length; i++) {
-      const functionSelector = this._getFunctionSelector(safeTransactionData[i])
+      const functionSelector = safeService.getFunctionSelector(
+        safeTransactionData[i]
+      )
 
       const sponsoredAddress = this.sponsoredAddresses?.find(
         (sponsoredAddress) =>
