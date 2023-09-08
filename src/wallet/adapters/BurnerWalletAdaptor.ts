@@ -47,7 +47,6 @@ export class BurnerWalletAdaptor
     if (!ownerAddress) throw new Error('No owner address found')
     return await this.API.getWalletAddress(ownerAddress)
   }
-
   getSigner(): Wallet {
     if (!this.wallet) throw new Error('No Wallet instance found')
     return this.wallet

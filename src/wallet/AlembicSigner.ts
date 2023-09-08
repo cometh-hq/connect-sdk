@@ -9,7 +9,6 @@ import { Deferrable, defineReadOnly, resolveProperties } from 'ethers/lib/utils'
 
 import { AlembicProvider } from './AlembicProvider'
 import { AlembicWallet } from './AlembicWallet'
-import { WebAuthnOwner } from './types'
 
 export class AlembicSigner extends Signer {
   constructor(
@@ -46,10 +45,6 @@ export class AlembicSigner extends Signer {
     if (!this.provider) throw new Error('missing provider')
 
     return await this.provider.getTransaction(transactionResponse.safeTxHash)
-  }
-
-  async addWebAuthnOwner(token: string): Promise<string> {
-    return this.smartWallet.addWebAuthnOwner(token)
   }
 
   signTransaction(

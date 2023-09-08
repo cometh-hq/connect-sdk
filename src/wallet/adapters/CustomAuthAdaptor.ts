@@ -3,10 +3,17 @@ import { ethers, Wallet } from 'ethers'
 
 import { networks } from '../../constants'
 import { API } from '../../services'
+import deviceService from '../../services/deviceService'
 import safeService from '../../services/safeService'
 import webAuthnService from '../../services/webAuthnService'
 import { WebAuthnSigner } from '../signers/WebAuthnSigner'
-import { UserInfos } from '../types'
+import {
+  MetaTransactionData,
+  NewSignerRequest,
+  NewSignerRequestType,
+  SendTransactionResponse,
+  UserInfos
+} from '../types'
 import { AUTHAdapter } from './types'
 
 export class CustomAuthAdaptor implements AUTHAdapter {
@@ -77,43 +84,87 @@ export class CustomAuthAdaptor implements AUTHAdapter {
       return
     }
 
-    if (currentPrivateKey) {
-      const storageSigner = new ethers.Wallet(currentPrivateKey)
-
-      const isDeployed = await safeService.isDeployed(
-        walletAddress,
-        this.provider
-      )
-
-      if (isDeployed) {
-        const isSafeOwner = await safeService.isSafeOwner(
-          walletAddress,
-          storageSigner.address,
-          this.provider
-        )
-
-        if (!isSafeOwner)
-          throw new Error(
-            'New Domain detected. You need to add that domain as signer'
-          )
-      } else {
-        const predictedWalletAddress = await this.API.getWalletAddress(
-          storageSigner.address
-        )
-
-        if (predictedWalletAddress !== walletAddress)
-          throw new Error(
-            'New Domain detected. You need to add that domain as signer'
-          )
-      }
-
-      this.signer = storageSigner
-      return
-    } else {
+    if (!currentPrivateKey)
       throw new Error(
         'New Domain detected. You need to add that domain as signer'
       )
+
+    const storageSigner = new ethers.Wallet(currentPrivateKey)
+
+    const isSignerOfSafe = await safeService.isSigner(
+      storageSigner.address,
+      walletAddress,
+      this.provider,
+      this.API
+    )
+
+    if (!isSignerOfSafe)
+      throw new Error(
+        'New Domain detected. You need to add that domain as signer'
+      )
+
+    this.signer = storageSigner
+  }
+
+  public async createNewSignerRequest(): Promise<void> {
+    const walletAddress = await this.API.getWalletAddressFromUserID(
+      this.jwtToken
+    )
+
+    let addNewSignerRequest
+
+    if (await webAuthnService.isWebAuthnCompatible()) {
+      const { publicKeyX, publicKeyY, publicKeyId, signerAddress, deviceData } =
+        await webAuthnService.createWebAuthnSigner(+this.chainId)
+
+      addNewSignerRequest = {
+        token: this.jwtToken,
+        walletAddress,
+        signerAddress,
+        deviceData,
+        type: NewSignerRequestType.WEBAUTHN,
+        publicKeyId,
+        publicKeyX,
+        publicKeyY
+      }
+    } else {
+      this.signer = ethers.Wallet.createRandom()
+      window.localStorage.setItem('custom-auth-connect', this.signer.privateKey)
+
+      addNewSignerRequest = {
+        token: this.jwtToken,
+        walletAddress,
+        signerAddress: this.signer?.address,
+        deviceData: deviceService.getDeviceData(),
+        type: NewSignerRequestType.BURNER_WALLET
+      }
     }
+
+    await this.API.createNewSignerRequest(addNewSignerRequest)
+  }
+
+  public async getNewSignerRequestByUser(): Promise<NewSignerRequest[] | null> {
+    return await this.API.getNewSignerRequestByUser(this.jwtToken)
+  }
+
+  public async deleteNewSignerRequest(signerAddress: string): Promise<void> {
+    return await this.API.deleteNewSignerRequest({
+      token: this.jwtToken,
+      signerAddress
+    })
+  }
+
+  public async deployWebAuthnSigner(
+    newSignerRequest: NewSignerRequest
+  ): Promise<string> {
+    return await this.API.deployWebAuthnSigner({
+      token: this.jwtToken,
+      walletAddress: newSignerRequest.walletAddress,
+      publicKeyId: newSignerRequest.publicKeyId!,
+      publicKeyX: newSignerRequest.publicKeyX!,
+      publicKeyY: newSignerRequest.publicKeyY!,
+      deviceData: newSignerRequest.deviceData
+    })
   }
 
   async logout(): Promise<void> {
@@ -132,10 +183,7 @@ export class CustomAuthAdaptor implements AUTHAdapter {
   }
 
   async getWalletAddress(): Promise<string> {
-    const ownerAddress = await this.getAccount()
-    if (!ownerAddress) throw new Error('No owner address found')
-    const walletAddress = await this.API.getWalletAddress(ownerAddress)
-    return walletAddress
+    return await this.API.getWalletAddressFromUserID(this.jwtToken)
   }
 
   async getUserInfos(): Promise<Partial<UserInfos>> {

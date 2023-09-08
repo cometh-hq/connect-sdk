@@ -9,6 +9,7 @@ import {
   MetaTransactionData,
   SafeTransactionDataPartial
 } from '../wallet/types'
+import { API } from './API'
 
 const SafeInterface: SafeInterface = Safe__factory.createInterface()
 
@@ -78,6 +79,14 @@ const isSafeOwner = async (
   return await safeInstance.isOwner(signerAddress)
 }
 
+const getOwners = async (
+  walletAddress: string,
+  provider: StaticJsonRpcProvider
+): Promise<string[]> => {
+  const safeInstance = await Safe__factory.connect(walletAddress, provider)
+  return await safeInstance.getOwners()
+}
+
 const prepareAddOwnerTx = async (
   walletAddress: string,
   newOwner: string
@@ -139,14 +148,40 @@ const getTransactionsTotalValue = async (
   return txValue.toString()
 }
 
+const isSigner = async (
+  signerAddress: string,
+  walletAddress: string,
+  provider: StaticJsonRpcProvider,
+  API: API
+): Promise<boolean> => {
+  const deployed = await isDeployed(walletAddress, provider)
+
+  if (deployed) {
+    const owner = await isSafeOwner(walletAddress, signerAddress, provider)
+
+    if (!owner) return false
+  } else {
+    const predictedWalletAddress = await API.getWalletAddress(signerAddress)
+    if (predictedWalletAddress !== walletAddress) return false
+  }
+
+  return true
+}
+
+const getFunctionSelector = (transactionData: MetaTransactionData): string => {
+  return transactionData.data.toString().slice(0, 10)
+}
 export default {
   isDeployed,
   getNonce,
   getSuccessExecTransactionEvent,
   getFailedExecTransactionEvent,
   isSafeOwner,
+  getOwners,
   prepareAddOwnerTx,
   formatWebAuthnSignatureForSafe,
   getSafeTransactionHash,
-  getTransactionsTotalValue
+  getTransactionsTotalValue,
+  isSigner,
+  getFunctionSelector
 }

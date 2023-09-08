@@ -3,6 +3,7 @@ import { BigNumber, Bytes, ethers, Wallet } from 'ethers'
 import { encodeMulti } from 'ethers-multisend'
 
 import {
+  ADD_OWNER_FUNCTION_SELECTOR,
   DEFAULT_BASE_GAS,
   DEFAULT_REWARD_PERCENTILE,
   EIP712_SAFE_MESSAGE_TYPE,
@@ -14,13 +15,15 @@ import gasService from '../services/gasService'
 import safeService from '../services/safeService'
 import webAuthnService from '../services/webAuthnService'
 import { GasModal } from '../ui'
-import { AUTHAdapter } from './adapters'
+import { AUTHAdapter, CustomAuthAdaptor } from './adapters'
 import { PassEncodedSigner } from './signers'
 import { AlembicAuthSigner } from './signers/AlembicAuthSigner'
 import { WebAuthnSigner } from './signers/WebAuthnSigner'
 import {
   AlembicInitOptions,
   MetaTransactionData,
+  NewSignerRequest,
+  NewSignerRequestType,
   SafeTransactionDataPartial,
   SendTransactionResponse,
   SponsoredTransaction,
@@ -117,6 +120,11 @@ export class AlembicWallet {
     return await this.sendTransaction(tx)
   }
 
+  public async getOwners(): Promise<string[]> {
+    if (!this.walletAddress) throw new Error('no wallet Address')
+    return await safeService.getOwners(this.walletAddress, this.provider)
+  }
+
   /**
    * Signing Message Section
    */
@@ -172,13 +180,18 @@ export class AlembicWallet {
     safeTransactionData: MetaTransactionData[]
   ): Promise<boolean> {
     for (let i = 0; i < safeTransactionData.length; i++) {
+      const functionSelector = safeService.getFunctionSelector(
+        safeTransactionData[i]
+      )
+
       const sponsoredAddress = this.sponsoredAddresses?.find(
         (sponsoredAddress) =>
           sponsoredAddress.targetAddress.toLowerCase() ===
           safeTransactionData[i].to.toLowerCase()
       )
 
-      if (!sponsoredAddress) return false
+      if (!sponsoredAddress && functionSelector !== ADD_OWNER_FUNCTION_SELECTOR)
+        return false
     }
     return true
   }
@@ -339,66 +352,54 @@ export class AlembicWallet {
   }
 
   /**
-   * WebAuthn Section
+   * New Signer Request Section
    */
 
-  public async addWebAuthnOwner(token: string): Promise<string> {
-    if (!(this.signer instanceof WebAuthnSigner))
-      throw new Error('This fuction needs a webAuthn adaptor to be used')
+  public async createNewSignerRequest(): Promise<void> {
+    if (!(this.authAdapter instanceof CustomAuthAdaptor))
+      throw new Error('method not allowed for this authAdapter')
 
-    if (!this.walletAddress) throw new Error('no wallet Address')
-
-    const { publicKeyX, publicKeyY, publicKeyId, signerAddress, deviceData } =
-      await webAuthnService.createWebAuthnSigner(this.chainId)
-
-    const addOwnerTxData = await safeService.prepareAddOwnerTx(
-      this.getAddress(),
-      signerAddress
-    )
-
-    const addOwnerTxSignature = await this.signTransaction(addOwnerTxData)
-
-    await this.API.addWebAuthnOwner({
-      token,
-      walletAddress: this.getAddress(),
-      publicKeyId,
-      publicKeyX,
-      publicKeyY,
-      addOwnerTxData: JSON.stringify(addOwnerTxData),
-      addOwnerTxSignature,
-      deviceData
-    })
-
-    await webAuthnService.waitWebAuthnSignerDeployment(
-      publicKeyX,
-      publicKeyY,
-      this.chainId,
-      this.getProvider()
-    )
-
-    this.signer = new WebAuthnSigner(publicKeyId, signerAddress)
-
-    return signerAddress
+    await this.authAdapter.createNewSignerRequest()
   }
 
-  public async createAddDeviceRequest(token: string): Promise<void> {
+  public async validateNewSignerRequest(
+    newSignerRequest: NewSignerRequest
+  ): Promise<SendTransactionResponse> {
     if (!this.walletAddress) throw new Error('no wallet Address')
 
-    const { publicKeyX, publicKeyY, publicKeyId, signerAddress, deviceData } =
-      await webAuthnService.createWebAuthnSigner(this.chainId)
+    if (!(this.authAdapter instanceof CustomAuthAdaptor))
+      throw new Error('method not allowed for this authAdapter')
 
-    const addDeviceRequest = {
-      token,
-      walletAddress: this.walletAddress,
-      publicKeyX,
-      publicKeyY,
-      publicKeyId,
-      signerAddress,
-      deviceData
+    await this.deleteNewSignerRequest(newSignerRequest.signerAddress)
+
+    if (newSignerRequest.type === NewSignerRequestType.WEBAUTHN) {
+      await this.authAdapter.deployWebAuthnSigner(newSignerRequest)
+
+      await webAuthnService.waitWebAuthnSignerDeployment(
+        newSignerRequest.publicKeyX!,
+        newSignerRequest.publicKeyY!,
+        this.chainId,
+        this.getProvider()
+      )
     }
+    return await this.addOwner(newSignerRequest.signerAddress)
+  }
 
-    await this.API.createAddDeviceRequest(addDeviceRequest)
+  public async getNewSignerRequestByUser(): Promise<NewSignerRequest[] | null> {
+    if (!this.walletAddress) throw new Error('no wallet Address')
 
-    return
+    if (!(this.authAdapter instanceof CustomAuthAdaptor))
+      throw new Error('method not allowed for this authAdapter')
+
+    return await this.authAdapter.getNewSignerRequestByUser()
+  }
+
+  public async deleteNewSignerRequest(signerAddress: string): Promise<void> {
+    if (!this.walletAddress) throw new Error('no wallet Address')
+
+    if (!(this.authAdapter instanceof CustomAuthAdaptor))
+      throw new Error('method not allowed for this authAdapter')
+
+    await this.authAdapter.deleteNewSignerRequest(signerAddress)
   }
 }

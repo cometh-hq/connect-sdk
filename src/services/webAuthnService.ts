@@ -40,6 +40,7 @@ const createCredential = async (): Promise<{
         name: 'Cometh Connect',
         displayName: 'Cometh Connect'
       },
+      authenticatorSelection: { authenticatorAttachment: 'platform' },
       challenge,
       pubKeyCredParams: [{ alg: -7, type: 'public-key' }]
     }
@@ -250,7 +251,7 @@ const createOrGetWebAuthnOwner = async (
     const { publicKeyX, publicKeyY, publicKeyId, signerAddress, deviceData } =
       await createWebAuthnSigner(+chainId)
 
-    await API.connectWithWebAuthn({
+    await API.deployWalletWithWebAuthnSigner({
       token,
       walletAddress: await API.getWalletAddress(signerAddress),
       publicKeyId,

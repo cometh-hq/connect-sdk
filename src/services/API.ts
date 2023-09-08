@@ -7,6 +7,8 @@ import {
   DeviceData,
   EncryptedEncryptionKeyParams,
   EncryptedWalletParams,
+  NewSignerRequest,
+  NewSignerRequestType,
   RelayTransactionType,
   SponsoredTransaction,
   UserNonceType,
@@ -87,6 +89,42 @@ export class API {
     return response.data?.safeTxHash
   }
 
+  async deployWebAuthnSigner({
+    token,
+    walletAddress,
+    publicKeyId,
+    publicKeyX,
+    publicKeyY,
+    deviceData
+  }: {
+    token: string
+    walletAddress: string
+    publicKeyId: string
+    publicKeyX: string
+    publicKeyY: string
+    deviceData: DeviceData
+  }): Promise<string> {
+    const config = {
+      headers: {
+        token
+      }
+    }
+
+    const body = {
+      publicKeyId,
+      publicKeyX,
+      publicKeyY,
+      deviceData
+    }
+
+    const response = await this.api.post(
+      `/wallets/${walletAddress}/deploy-webauthn-signer`,
+      body,
+      config
+    )
+    return response.data?.signerAddress
+  }
+
   /**
    * Custom Auth Section
    */
@@ -126,7 +164,7 @@ export class API {
    * WebAuthn Section
    */
 
-  async connectWithWebAuthn({
+  async deployWalletWithWebAuthnSigner({
     token,
     walletAddress,
     publicKeyId,
@@ -154,49 +192,7 @@ export class API {
       deviceData
     }
 
-    await this.api.post(`/custom-auth/connect-with-webAuthn`, body, config)
-  }
-
-  async addWebAuthnOwner({
-    token,
-    walletAddress,
-    publicKeyId,
-    publicKeyX,
-    publicKeyY,
-    addOwnerTxData,
-    addOwnerTxSignature,
-    deviceData
-  }: {
-    token: string
-    walletAddress: string
-    publicKeyId: string
-    publicKeyX: string
-    publicKeyY: string
-    addOwnerTxData: any
-    addOwnerTxSignature: string
-    deviceData: DeviceData
-  }): Promise<WebAuthnOwner> {
-    const config = {
-      headers: {
-        token
-      }
-    }
-
-    const body = {
-      publicKeyId,
-      publicKeyX,
-      publicKeyY,
-      addOwnerTxData,
-      addOwnerTxSignature,
-      deviceData
-    }
-
-    const response = await this.api.post(
-      `/custom-auth/${walletAddress}/webauthn-owner`,
-      body,
-      config
-    )
-    return response.data?.webAuthnOwner
+    await this.api.post(`/wallets/deploy-with-webauthn-signer`, body, config)
   }
 
   async getWebAuthnOwnerByPublicKeyId(
@@ -241,22 +237,24 @@ export class API {
     return response?.data?.webAuthnOwners
   }
 
-  async createAddDeviceRequest({
+  async createNewSignerRequest({
     token,
     walletAddress,
+    signerAddress,
+    deviceData,
+    type,
     publicKeyX,
     publicKeyY,
-    publicKeyId,
-    signerAddress,
-    deviceData
+    publicKeyId
   }: {
     token: string
     walletAddress: string
-    publicKeyX: string
-    publicKeyY: string
-    publicKeyId: string
     signerAddress: string
     deviceData: DeviceData
+    type: NewSignerRequestType
+    publicKeyId: string
+    publicKeyX: string
+    publicKeyY: string
   }): Promise<void> {
     const config = {
       headers: {
@@ -265,13 +263,44 @@ export class API {
     }
     const body = {
       walletAddress,
+      signerAddress,
+      deviceData,
+      type,
       publicKeyX,
       publicKeyY,
-      publicKeyId,
-      signerAddress,
-      deviceData
+      publicKeyId
     }
-    await this.api.post(`/webauthn-owners`, body, config)
+    await this.api.post(`/signer-request`, body, config)
+  }
+
+  async getNewSignerRequestByUser(
+    token: string
+  ): Promise<NewSignerRequest[] | null> {
+    const config = {
+      headers: {
+        token
+      }
+    }
+
+    const response = await this.api.get(`/signer-request`, config)
+
+    return response.data.signerRequests
+  }
+
+  async deleteNewSignerRequest({
+    token,
+    signerAddress
+  }: {
+    token: string
+    signerAddress: string
+  }): Promise<void> {
+    const config = {
+      headers: {
+        token
+      }
+    }
+
+    await this.api.delete(`/signer-request/${signerAddress}`, config)
   }
 
   /**
