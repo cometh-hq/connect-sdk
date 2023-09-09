@@ -32,8 +32,8 @@ const createCredential = async (): Promise<{
   const webAuthnCredentials: any = await navigator.credentials.create({
     publicKey: {
       rp: {
-        name: psl.parse(window.location.host).domain,
-        id: psl.parse(window.location.host).domain
+        name: 'test' /* psl.parse(window.location.host).domain,
+        id: psl.parse(window.location.host).domain */
       },
       user: {
         id: new TextEncoder().encode(v4()),
@@ -41,6 +41,7 @@ const createCredential = async (): Promise<{
         displayName: 'Cometh Connect'
       },
       authenticatorSelection: { authenticatorAttachment: 'platform' },
+      timeout: 10000,
       challenge,
       pubKeyCredParams: [{ alg: -7, type: 'public-key' }]
     }
@@ -101,8 +102,9 @@ const sign = async (
   const assertionPayload: any = await navigator.credentials.get({
     publicKey: {
       challenge,
-      rpId: psl.parse(window.location.host).domain,
-      allowCredentials: publicKeyCredential
+      /*    rpId: psl.parse(window.location.host).domain, */
+      allowCredentials: publicKeyCredential,
+      timeout: 10000
     }
   })
 

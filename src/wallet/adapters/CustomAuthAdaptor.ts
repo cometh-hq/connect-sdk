@@ -3,17 +3,11 @@ import { ethers, Wallet } from 'ethers'
 
 import { networks } from '../../constants'
 import { API } from '../../services'
+import burnerWalletService from '../../services/burnerWalletService'
 import deviceService from '../../services/deviceService'
-import safeService from '../../services/safeService'
 import webAuthnService from '../../services/webAuthnService'
 import { WebAuthnSigner } from '../signers/WebAuthnSigner'
-import {
-  MetaTransactionData,
-  NewSignerRequest,
-  NewSignerRequestType,
-  SendTransactionResponse,
-  UserInfos
-} from '../types'
+import { NewSignerRequest, NewSignerRequestType, UserInfos } from '../types'
 import { AUTHAdapter } from './types'
 
 export class CustomAuthAdaptor implements AUTHAdapter {
@@ -42,11 +36,30 @@ export class CustomAuthAdaptor implements AUTHAdapter {
     const walletAddress = await this.API.getWalletAddressFromUserID(
       this.jwtToken
     )
-    const isWebAuthnCompatible = await webAuthnService.isWebAuthnCompatible()
 
+    await this.initSigner(
+      await webAuthnService.isWebAuthnCompatible(),
+      walletAddress
+    )
+
+    if (!walletAddress) {
+      const ownerAddress = await this.getAccount()
+      if (!ownerAddress) throw new Error('No owner address found')
+      await this.API.initWalletForUserID({ token: this.jwtToken, ownerAddress })
+    }
+  }
+
+  async initSigner(
+    isWebAuthnCompatible: boolean,
+    walletAddress?: string
+  ): Promise<void> {
     if (!isWebAuthnCompatible) {
       try {
-        await this.createOrGetBurnerWallet(walletAddress)
+        this.signer = await burnerWalletService.getSigner(
+          this.provider,
+          this.API,
+          walletAddress
+        )
       } catch (err) {
         console.log(err)
         return
@@ -67,43 +80,6 @@ export class CustomAuthAdaptor implements AUTHAdapter {
         return
       }
     }
-
-    if (!walletAddress) {
-      const ownerAddress = await this.getAccount()
-      if (!ownerAddress) throw new Error('No owner address found')
-      await this.API.initWalletForUserID({ token: this.jwtToken, ownerAddress })
-    }
-  }
-
-  async createOrGetBurnerWallet(walletAddress: string): Promise<void> {
-    const currentPrivateKey = window.localStorage.getItem('custom-auth-connect')
-
-    if (!walletAddress) {
-      this.signer = ethers.Wallet.createRandom()
-      window.localStorage.setItem('custom-auth-connect', this.signer.privateKey)
-      return
-    }
-
-    if (!currentPrivateKey)
-      throw new Error(
-        'New Domain detected. You need to add that domain as signer'
-      )
-
-    const storageSigner = new ethers.Wallet(currentPrivateKey)
-
-    const isSignerOfSafe = await safeService.isSigner(
-      storageSigner.address,
-      walletAddress,
-      this.provider,
-      this.API
-    )
-
-    if (!isSignerOfSafe)
-      throw new Error(
-        'New Domain detected. You need to add that domain as signer'
-      )
-
-    this.signer = storageSigner
   }
 
   public async createNewSignerRequest(): Promise<void> {
@@ -129,7 +105,7 @@ export class CustomAuthAdaptor implements AUTHAdapter {
       }
     } else {
       this.signer = ethers.Wallet.createRandom()
-      window.localStorage.setItem('custom-auth-connect', this.signer.privateKey)
+      window.localStorage.setItem('cometh-connect', this.signer.privateKey)
 
       addNewSignerRequest = {
         token: this.jwtToken,
