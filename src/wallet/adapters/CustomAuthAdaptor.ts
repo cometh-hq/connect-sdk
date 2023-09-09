@@ -56,8 +56,7 @@ export class CustomAuthAdaptor implements AUTHAdapter {
     if (!isWebAuthnCompatible) {
       try {
         this.signer = await burnerWalletService.getSigner(
-          this.provider,
-          this.API,
+          this.jwtToken,
           walletAddress
         )
       } catch {
