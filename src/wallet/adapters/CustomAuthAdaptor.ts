@@ -60,8 +60,7 @@ export class CustomAuthAdaptor implements AUTHAdapter {
           this.API,
           walletAddress
         )
-      } catch (err) {
-        console.log(err)
+      } catch {
         return
       }
     } else {
@@ -75,8 +74,7 @@ export class CustomAuthAdaptor implements AUTHAdapter {
             walletAddress
           )
         this.signer = new WebAuthnSigner(publicKeyId, signerAddress)
-      } catch (err) {
-        console.log(err)
+      } catch {
         return
       }
     }
