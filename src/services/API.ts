@@ -46,6 +46,7 @@ export class API {
 
   async getSponsoredAddresses(): Promise<SponsoredTransaction[]> {
     const response = await this.api.get(`/sponsored-address`)
+
     return response?.data?.sponsoredAddresses
   }
 

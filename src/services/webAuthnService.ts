@@ -41,6 +41,7 @@ const createCredential = async (): Promise<{
         displayName: 'Cometh Connect'
       },
       authenticatorSelection: { authenticatorAttachment: 'platform' },
+      timeout: 20000,
       challenge,
       pubKeyCredParams: [{ alg: -7, type: 'public-key' }]
     }
