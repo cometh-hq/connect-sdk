@@ -25,6 +25,7 @@ const getSigner = async (
   } else {
     signer = _getNewSigner(userId, walletAddress)
   }
+
   return signer
 }
 

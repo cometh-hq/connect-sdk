@@ -228,13 +228,19 @@ export class API {
     return response?.data?.webAuthnOwners
   }
 
-  async getWebAuthnOwnersByUser(token: string): Promise<WebAuthnOwner[]> {
+  async getWebAuthnOwnersByUser(
+    token: string,
+    walletAddress?: string
+  ): Promise<WebAuthnOwner[]> {
     const config = {
       headers: {
         token
       }
     }
-    const response = await this.api.get(`/webauthn-owners`, config)
+    const body = {
+      walletAddress
+    }
+    const response = await this.api.post(`/webauthn-owners`, body, config)
     return response?.data?.webAuthnOwners
   }
 

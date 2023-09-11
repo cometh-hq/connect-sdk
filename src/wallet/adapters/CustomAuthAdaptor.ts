@@ -2,19 +2,21 @@ import { StaticJsonRpcProvider } from '@ethersproject/providers'
 import { ethers, Wallet } from 'ethers'
 
 import { networks } from '../../constants'
-import { API } from '../../services'
 import burnerWalletService from '../../services/burnerWalletService'
 import deviceService from '../../services/deviceService'
 import tokenService from '../../services/tokenService'
 import webAuthnService from '../../services/webAuthnService'
+import { IConnectionSigning } from '../IConnectionSigning'
 import { WebAuthnSigner } from '../signers/WebAuthnSigner'
 import { NewSignerRequest, NewSignerRequestType, UserInfos } from '../types'
 import { AUTHAdapter } from './types'
 
-export class CustomAuthAdaptor implements AUTHAdapter {
+export class CustomAuthAdaptor
+  extends IConnectionSigning
+  implements AUTHAdapter
+{
   private signer?: WebAuthnSigner | Wallet
-  readonly chainId: string
-  private API: API
+
   private jwtToken: string
   private provider: StaticJsonRpcProvider
 
@@ -23,11 +25,10 @@ export class CustomAuthAdaptor implements AUTHAdapter {
     jwtToken: string,
     apiKey: string,
     rpcUrl?: string,
-    baseUrl?: string
+    baseURL?: string
   ) {
-    this.chainId = chainId
+    super(chainId, apiKey, baseURL)
     this.jwtToken = jwtToken
-    this.API = new API(apiKey, +chainId, baseUrl)
     this.provider = new StaticJsonRpcProvider(
       rpcUrl ? rpcUrl : networks[+this.chainId].RPCUrl
     )
@@ -38,27 +39,21 @@ export class CustomAuthAdaptor implements AUTHAdapter {
       this.jwtToken
     )
 
-    await this.initSigner(
-      await webAuthnService.isWebAuthnCompatible(),
-      walletAddress
-    )
+    await this.initSigner(walletAddress)
 
     if (!this.signer)
       throw new Error(
         'New Domain detected. You need to add that domain as signer.'
       )
 
-    if (!walletAddress) {
-      const ownerAddress = await this.getAccount()
-      if (!ownerAddress) throw new Error('No owner address found')
-      await this.API.initWalletForUserID({ token: this.jwtToken, ownerAddress })
-    }
+    const ownerAddress = await this.getAccount()
+    if (!ownerAddress) throw new Error('No owner address found')
+    await this.API.initWalletForUserID({ token: this.jwtToken, ownerAddress })
   }
 
-  async initSigner(
-    isWebAuthnCompatible: boolean,
-    walletAddress?: string
-  ): Promise<void> {
+  async initSigner(walletAddress?: string): Promise<void> {
+    const isWebAuthnCompatible = await webAuthnService.isWebAuthnCompatible()
+
     if (!isWebAuthnCompatible) {
       this.signer = await burnerWalletService.getSigner(
         this.jwtToken,

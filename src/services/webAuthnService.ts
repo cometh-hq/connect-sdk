@@ -242,7 +242,7 @@ const createOrGetWebAuthnOwner = async (
   publicKeyId: string
   signerAddress: string
 }> => {
-  const webAuthnOwners = await API.getWebAuthnOwnersByUser(token)
+  const webAuthnOwners = await API.getWebAuthnOwnersByUser(token, walletAddress)
 
   if (webAuthnOwners.length === 0) {
     if (walletAddress)
