@@ -5,6 +5,7 @@ import { networks } from '../../constants'
 import { API } from '../../services'
 import burnerWalletService from '../../services/burnerWalletService'
 import deviceService from '../../services/deviceService'
+import tokenService from '../../services/tokenService'
 import webAuthnService from '../../services/webAuthnService'
 import { WebAuthnSigner } from '../signers/WebAuthnSigner'
 import { NewSignerRequest, NewSignerRequestType, UserInfos } from '../types'
@@ -103,8 +104,13 @@ export class CustomAuthAdaptor implements AUTHAdapter {
         publicKeyY
       }
     } else {
+      const decodedToken = tokenService.decodeToken(this.jwtToken)
+      const userId = decodedToken?.payload.sub
       this.signer = ethers.Wallet.createRandom()
-      window.localStorage.setItem('cometh-connect', this.signer.privateKey)
+      window.localStorage.setItem(
+        `cometh-connect-${userId}`,
+        this.signer.privateKey
+      )
 
       addNewSignerRequest = {
         token: this.jwtToken,
