@@ -242,14 +242,7 @@ const createOrGetWebAuthnOwner = async (
   publicKeyId: string
   signerAddress: string
 }> => {
-  const webAuthnOwners = await API.getWebAuthnOwnersByUser(token, walletAddress)
-
-  if (webAuthnOwners.length === 0) {
-    if (walletAddress)
-      throw new Error(
-        'New Domain detected. You need to add that domain as signer'
-      )
-
+  if (!walletAddress) {
     const { publicKeyX, publicKeyY, publicKeyId, signerAddress, deviceData } =
       await createWebAuthnSigner(+chainId)
 
@@ -271,6 +264,13 @@ const createOrGetWebAuthnOwner = async (
 
     return { publicKeyId, signerAddress }
   } else {
+    const webAuthnOwners = await API.getWebAuthnOwnersByUser(token)
+
+    if (webAuthnOwners.length === 0)
+      throw new Error(
+        'New Domain detected. You need to add that domain as signer'
+      )
+
     let signatureParams
 
     const nonce = await API.getNonce(webAuthnOwners[0].walletAddress)

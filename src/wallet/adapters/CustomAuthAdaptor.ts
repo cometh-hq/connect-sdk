@@ -3,6 +3,7 @@ import { ethers, Wallet } from 'ethers'
 
 import { networks } from '../../constants'
 import { API } from '../../services'
+import burnerWalletService from '../../services/burnerWalletService'
 import deviceService from '../../services/deviceService'
 import tokenService from '../../services/tokenService'
 import webAuthnService from '../../services/webAuthnService'
@@ -40,31 +41,11 @@ export class CustomAuthAdaptor implements AUTHAdapter {
     const isWebAuthnCompatible = await webAuthnService.isWebAuthnCompatible()
 
     if (!isWebAuthnCompatible) {
-      const decodedToken = tokenService.decodeToken(this.jwtToken)
-      const userId = decodedToken?.payload.sub
-      if (!userId) throw new Error('No userId found')
-
-      const storagePrivateKey = window.localStorage.getItem(
-        `cometh-connect-${userId}`
+      this.signer = await burnerWalletService.createOrGetSigner(
+        this.jwtToken,
+        walletAddress,
+        this.API
       )
-
-      if (!walletAddress) {
-        this.signer = ethers.Wallet.createRandom()
-        window.localStorage.setItem(
-          `cometh-connect-${userId}`,
-          this.signer.privateKey
-        )
-      } else {
-        if (!storagePrivateKey)
-          throw new Error(
-            'New Domain detected. You need to add that domain as signer.'
-          )
-        this.signer = new ethers.Wallet(storagePrivateKey)
-      }
-      await this.API.initWalletForUserID({
-        token: this.jwtToken,
-        ownerAddress: this.signer.address
-      })
     } else {
       try {
         const { publicKeyId, signerAddress } =
@@ -88,10 +69,11 @@ export class CustomAuthAdaptor implements AUTHAdapter {
     const walletAddress = await this.API.getWalletAddressFromUserID(
       this.jwtToken
     )
+    const isWebAuthnCompatible = await webAuthnService.isWebAuthnCompatible()
 
     let addNewSignerRequest
 
-    if (await webAuthnService.isWebAuthnCompatible()) {
+    if (isWebAuthnCompatible) {
       const { publicKeyX, publicKeyY, publicKeyId, signerAddress, deviceData } =
         await webAuthnService.createWebAuthnSigner(+this.chainId)
 
