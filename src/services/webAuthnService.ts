@@ -103,7 +103,8 @@ const sign = async (
     publicKey: {
       challenge,
       rpId: psl.parse(window.location.host).domain,
-      allowCredentials: publicKeyCredential
+      allowCredentials: publicKeyCredential,
+      timeout: 20000
     }
   })
 
