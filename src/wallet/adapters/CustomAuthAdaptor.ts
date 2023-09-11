@@ -43,6 +43,11 @@ export class CustomAuthAdaptor implements AUTHAdapter {
       walletAddress
     )
 
+    if (!this.signer)
+      throw new Error(
+        'New Domain detected. You need to add that domain as signer.'
+      )
+
     if (!walletAddress) {
       const ownerAddress = await this.getAccount()
       if (!ownerAddress) throw new Error('No owner address found')
@@ -55,15 +60,10 @@ export class CustomAuthAdaptor implements AUTHAdapter {
     walletAddress?: string
   ): Promise<void> {
     if (!isWebAuthnCompatible) {
-      try {
-        this.signer = await burnerWalletService.getSigner(
-          this.jwtToken,
-          walletAddress
-        )
-      } catch (err) {
-        console.log(err)
-        return
-      }
+      this.signer = await burnerWalletService.getSigner(
+        this.jwtToken,
+        walletAddress
+      )
     } else {
       try {
         const { publicKeyId, signerAddress } =
@@ -75,8 +75,7 @@ export class CustomAuthAdaptor implements AUTHAdapter {
             walletAddress
           )
         this.signer = new WebAuthnSigner(publicKeyId, signerAddress)
-      } catch (err) {
-        console.log(err)
+      } catch {
         return
       }
     }

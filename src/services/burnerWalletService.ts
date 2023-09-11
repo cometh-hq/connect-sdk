@@ -5,8 +5,8 @@ import tokenService from '../services/tokenService'
 const getSigner = async (
   token: string,
   walletAddress?: string
-): Promise<Wallet> => {
-  let signer: Wallet
+): Promise<Wallet | undefined> => {
+  let signer: Wallet | undefined
 
   const decodedToken = tokenService.decodeToken(token)
   const userId = decodedToken?.payload.sub
@@ -45,11 +45,12 @@ const _getSignerFromLocalStorage = async (
   }
 }
 
-const _getNewSigner = (userId: string, walletAddress?: string): Wallet => {
+const _getNewSigner = (
+  userId: string,
+  walletAddress?: string
+): Wallet | undefined => {
   if (walletAddress) {
-    throw new Error(
-      'New Domain detected. You need to add that domain as signer'
-    )
+    return
   } else {
     const newSigner = ethers.Wallet.createRandom()
     window.localStorage.setItem(
