@@ -3,7 +3,6 @@ import { ethers, Wallet } from 'ethers'
 
 import { networks } from '../../constants'
 import { API } from '../../services'
-import burnerWalletService from '../../services/burnerWalletService'
 import deviceService from '../../services/deviceService'
 import tokenService from '../../services/tokenService'
 import webAuthnService from '../../services/webAuthnService'
@@ -38,26 +37,34 @@ export class CustomAuthAdaptor implements AUTHAdapter {
       this.jwtToken
     )
 
-    await this.initSigner(walletAddress)
-
-    if (!this.signer)
-      throw new Error(
-        'New Domain detected. You need to add that domain as signer.'
-      )
-
-    const ownerAddress = await this.getAccount()
-    if (!ownerAddress) throw new Error('No owner address found')
-    await this.API.initWalletForUserID({ token: this.jwtToken, ownerAddress })
-  }
-
-  async initSigner(walletAddress?: string): Promise<void> {
     const isWebAuthnCompatible = await webAuthnService.isWebAuthnCompatible()
 
     if (!isWebAuthnCompatible) {
-      this.signer = await burnerWalletService.getSigner(
-        this.jwtToken,
-        walletAddress
+      const decodedToken = tokenService.decodeToken(this.jwtToken)
+      const userId = decodedToken?.payload.sub
+      if (!userId) throw new Error('No userId found')
+
+      const storagePrivateKey = window.localStorage.getItem(
+        `cometh-connect-${userId}`
       )
+
+      if (!walletAddress) {
+        this.signer = ethers.Wallet.createRandom()
+        window.localStorage.setItem(
+          `cometh-connect-${userId}`,
+          this.signer.privateKey
+        )
+      } else {
+        if (!storagePrivateKey)
+          throw new Error(
+            'New Domain detected. You need to add that domain as signer.'
+          )
+        this.signer = new ethers.Wallet(storagePrivateKey)
+      }
+      await this.API.initWalletForUserID({
+        token: this.jwtToken,
+        ownerAddress: this.signer.address
+      })
     } else {
       try {
         const { publicKeyId, signerAddress } =
@@ -70,7 +77,9 @@ export class CustomAuthAdaptor implements AUTHAdapter {
           )
         this.signer = new WebAuthnSigner(publicKeyId, signerAddress)
       } catch {
-        return
+        throw new Error(
+          'New Domain detected. You need to add that domain as signer.'
+        )
       }
     }
   }
