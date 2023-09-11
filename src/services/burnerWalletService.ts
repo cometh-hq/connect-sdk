@@ -46,19 +46,19 @@ const _getSignerFromLocalStorage = async (
     }
 
     return new ethers.Wallet(signerData.privateKey)
+  } else {
+    const newSigner = ethers.Wallet.createRandom()
+    comethConnectStorageData.push({
+      userId,
+      privateKey: newSigner.privateKey
+    })
+
+    window.localStorage.setItem(
+      'cometh-connect',
+      JSON.stringify(comethConnectStorageData)
+    )
+    return newSigner
   }
-
-  const newSigner = ethers.Wallet.createRandom()
-  comethConnectStorageData.push({
-    userId,
-    privateKey: newSigner.privateKey
-  })
-
-  window.localStorage.setItem(
-    'cometh-connect',
-    JSON.stringify(comethConnectStorageData)
-  )
-  return newSigner
 }
 
 const _getNewSigner = (userId: string, walletAddress?: string): Wallet => {
