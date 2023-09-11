@@ -45,7 +45,6 @@ const _getSignerFromLocalStorage = async (
 }
 
 const _getNewSigner = (userId: string, walletAddress?: string): Wallet => {
-  console.log(walletAddress)
   if (walletAddress) {
     throw new Error(
       'New Domain detected. You need to add that domain as signer'
