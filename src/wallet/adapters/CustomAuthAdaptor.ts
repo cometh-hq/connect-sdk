@@ -2,21 +2,19 @@ import { StaticJsonRpcProvider } from '@ethersproject/providers'
 import { ethers, Wallet } from 'ethers'
 
 import { networks } from '../../constants'
+import { API } from '../../services'
 import burnerWalletService from '../../services/burnerWalletService'
 import deviceService from '../../services/deviceService'
 import tokenService from '../../services/tokenService'
 import webAuthnService from '../../services/webAuthnService'
-import { IConnectionSigning } from '../IConnectionSigning'
 import { WebAuthnSigner } from '../signers/WebAuthnSigner'
 import { NewSignerRequest, NewSignerRequestType, UserInfos } from '../types'
 import { AUTHAdapter } from './types'
 
-export class CustomAuthAdaptor
-  extends IConnectionSigning
-  implements AUTHAdapter
-{
+export class CustomAuthAdaptor implements AUTHAdapter {
   private signer?: WebAuthnSigner | Wallet
-
+  readonly chainId: string
+  private API: API
   private jwtToken: string
   private provider: StaticJsonRpcProvider
 
@@ -27,8 +25,9 @@ export class CustomAuthAdaptor
     rpcUrl?: string,
     baseURL?: string
   ) {
-    super(chainId, apiKey, baseURL)
+    this.chainId = chainId
     this.jwtToken = jwtToken
+    this.API = new API(apiKey, +chainId, baseURL)
     this.provider = new StaticJsonRpcProvider(
       rpcUrl ? rpcUrl : networks[+this.chainId].RPCUrl
     )
