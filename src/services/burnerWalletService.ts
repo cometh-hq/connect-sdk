@@ -10,6 +10,8 @@ const getSigner = async (
 
   const decodedToken = tokenService.decodeToken(token)
   const userId = decodedToken?.payload.sub
+  if (!userId) throw new Error('No userId found')
+
   const storagePrivateKey = window.localStorage.getItem(
     `cometh-connect-${userId}`
   )
@@ -35,7 +37,6 @@ const _getSignerFromLocalStorage = async (
     return new ethers.Wallet(storagePrivateKey)
   } else {
     const newSigner = ethers.Wallet.createRandom()
-
     window.localStorage.setItem(
       `cometh-connect-${userId}`,
       newSigner.privateKey

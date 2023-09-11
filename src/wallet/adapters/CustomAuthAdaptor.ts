@@ -106,6 +106,8 @@ export class CustomAuthAdaptor implements AUTHAdapter {
     } else {
       const decodedToken = tokenService.decodeToken(this.jwtToken)
       const userId = decodedToken?.payload.sub
+      if (!userId) throw new Error('No userId found')
+
       this.signer = ethers.Wallet.createRandom()
       window.localStorage.setItem(
         `cometh-connect-${userId}`,
