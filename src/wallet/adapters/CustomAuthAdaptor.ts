@@ -23,11 +23,11 @@ export class CustomAuthAdaptor implements AUTHAdapter {
     jwtToken: string,
     apiKey: string,
     rpcUrl?: string,
-    baseUrl?: string
+    baseURL?: string
   ) {
     this.chainId = chainId
     this.jwtToken = jwtToken
-    this.API = new API(apiKey, +chainId, baseUrl)
+    this.API = new API(apiKey, +chainId, baseURL)
     this.provider = new StaticJsonRpcProvider(
       rpcUrl ? rpcUrl : networks[+this.chainId].RPCUrl
     )
@@ -38,31 +38,13 @@ export class CustomAuthAdaptor implements AUTHAdapter {
       this.jwtToken
     )
 
-    await this.initSigner(
-      await webAuthnService.isWebAuthnCompatible(),
-      walletAddress
-    )
+    const isWebAuthnCompatible = await webAuthnService.isWebAuthnCompatible()
 
-    if (!this.signer)
-      throw new Error(
-        'New Domain detected. You need to add that domain as signer.'
-      )
-
-    if (!walletAddress) {
-      const ownerAddress = await this.getAccount()
-      if (!ownerAddress) throw new Error('No owner address found')
-      await this.API.initWalletForUserID({ token: this.jwtToken, ownerAddress })
-    }
-  }
-
-  async initSigner(
-    isWebAuthnCompatible: boolean,
-    walletAddress?: string
-  ): Promise<void> {
     if (!isWebAuthnCompatible) {
-      this.signer = await burnerWalletService.getSigner(
+      this.signer = await burnerWalletService.createOrGetSigner(
         this.jwtToken,
-        walletAddress
+        walletAddress,
+        this.API
       )
     } else {
       try {
@@ -76,7 +58,9 @@ export class CustomAuthAdaptor implements AUTHAdapter {
           )
         this.signer = new WebAuthnSigner(publicKeyId, signerAddress)
       } catch {
-        return
+        throw new Error(
+          'New Domain detected. You need to add that domain as signer.'
+        )
       }
     }
   }
@@ -85,10 +69,11 @@ export class CustomAuthAdaptor implements AUTHAdapter {
     const walletAddress = await this.API.getWalletAddressFromUserID(
       this.jwtToken
     )
+    const isWebAuthnCompatible = await webAuthnService.isWebAuthnCompatible()
 
     let addNewSignerRequest
 
-    if (await webAuthnService.isWebAuthnCompatible()) {
+    if (isWebAuthnCompatible) {
       const { publicKeyX, publicKeyY, publicKeyId, signerAddress, deviceData } =
         await webAuthnService.createWebAuthnSigner(+this.chainId)
 

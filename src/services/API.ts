@@ -234,6 +234,7 @@ export class API {
         token
       }
     }
+
     const response = await this.api.get(`/webauthn-owners`, config)
     return response?.data?.webAuthnOwners
   }

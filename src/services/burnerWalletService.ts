@@ -1,13 +1,13 @@
 import { ethers, Wallet } from 'ethers'
 
-import tokenService from '../services/tokenService'
+import { API } from './API'
+import tokenService from './tokenService'
 
-const getSigner = async (
+export const createOrGetSigner = async (
   token: string,
-  walletAddress?: string
-): Promise<Wallet | undefined> => {
-  let signer: Wallet | undefined
-
+  walletAddress: string,
+  API: API
+): Promise<Wallet> => {
   const decodedToken = tokenService.decodeToken(token)
   const userId = decodedToken?.payload.sub
   if (!userId) throw new Error('No userId found')
@@ -16,51 +16,29 @@ const getSigner = async (
     `cometh-connect-${userId}`
   )
 
-  if (storagePrivateKey) {
-    signer = await _getSignerFromLocalStorage(
-      storagePrivateKey,
-      userId,
-      walletAddress
+  if (!walletAddress) {
+    const newSigner = ethers.Wallet.createRandom()
+    window.localStorage.setItem(
+      `cometh-connect-${userId}`,
+      newSigner.privateKey
     )
-  } else {
-    signer = _getNewSigner(userId, walletAddress)
-  }
-  return signer
-}
 
-const _getSignerFromLocalStorage = async (
-  storagePrivateKey: string,
-  userId: string,
-  walletAddress?: string
-): Promise<Wallet> => {
-  if (walletAddress) {
+    await API.initWalletForUserID({
+      token,
+      ownerAddress: newSigner.address
+    })
+
+    return newSigner
+  } else {
+    if (!storagePrivateKey)
+      throw new Error(
+        'New Domain detected. You need to add that domain as signer.'
+      )
+
     return new ethers.Wallet(storagePrivateKey)
-  } else {
-    const newSigner = ethers.Wallet.createRandom()
-    window.localStorage.setItem(
-      `cometh-connect-${userId}`,
-      newSigner.privateKey
-    )
-    return newSigner
-  }
-}
-
-const _getNewSigner = (
-  userId: string,
-  walletAddress?: string
-): Wallet | undefined => {
-  if (walletAddress) {
-    return
-  } else {
-    const newSigner = ethers.Wallet.createRandom()
-    window.localStorage.setItem(
-      `cometh-connect-${userId}`,
-      newSigner.privateKey
-    )
-    return newSigner
   }
 }
 
 export default {
-  getSigner
+  createOrGetSigner
 }
