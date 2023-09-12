@@ -30,9 +30,9 @@ export class API {
     return response?.data?.userNonce
   }
 
-  async getWalletAddress(SignerAddress: string): Promise<string> {
+  async getWalletAddress(ownerAddress: string): Promise<string> {
     const response = await this.api.get(
-      `/wallets/${SignerAddress}/wallet-address`
+      `/wallets/${ownerAddress}/wallet-address`
     )
     return response?.data?.walletAddress
   }
