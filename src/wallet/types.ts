@@ -55,7 +55,7 @@ export interface WalletUiConfig {
   displayValidationModal: boolean
 }
 
-export type WebAuthnOwner = {
+export type WebAuthnSigner = {
   projectId: string
   userId: string
   chainId: string

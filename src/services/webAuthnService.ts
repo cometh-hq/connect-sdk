@@ -16,7 +16,7 @@ import {
 import { P256SignerFactory__factory } from '../contracts/types/factories'
 import { API } from '../services'
 import * as utils from '../utils/utils'
-import { DeviceData, WebAuthnOwner } from '../wallet'
+import { DeviceData, WebAuthnSigner } from '../wallet'
 import { AlembicProvider } from '../wallet/AlembicProvider'
 import deviceService from './deviceService'
 import safeService from './safeService'
@@ -32,8 +32,8 @@ const createCredential = async (): Promise<{
   const webAuthnCredentials: any = await navigator.credentials.create({
     publicKey: {
       rp: {
-        name: psl.parse(window.location.host).domain,
-        id: psl.parse(window.location.host).domain
+        name: 'test' /* psl.parse(window.location.host).domain,
+        id: psl.parse(window.location.host).domain */
       },
       user: {
         id: new TextEncoder().encode(v4()),
@@ -102,7 +102,7 @@ const sign = async (
   const assertionPayload: any = await navigator.credentials.get({
     publicKey: {
       challenge,
-      rpId: psl.parse(window.location.host).domain,
+      /*       rpId: psl.parse(window.location.host).domain, */
       allowCredentials: publicKeyCredential,
       timeout: 20000
     }
@@ -210,16 +210,16 @@ const isWebAuthnCompatible = async (): Promise<boolean> => {
 }
 
 const signWithWebAuthn = async (
-  webAuthnOwners: WebAuthnOwner[],
+  webAuthnSigners: WebAuthnSigner[],
   challenge: string
 ): Promise<{
   encodedSignature: string
   publicKeyId: string
 }> => {
   const publicKeyCredentials: PublicKeyCredentialDescriptor[] =
-    webAuthnOwners.map((webAuthnOwner) => {
+    webAuthnSigners.map((webAuthnSigner) => {
       return {
-        id: utils.parseHex(webAuthnOwner.publicKeyId),
+        id: utils.parseHex(webAuthnSigner.publicKeyId),
         type: 'public-key'
       }
     })
@@ -232,7 +232,7 @@ const signWithWebAuthn = async (
   return { encodedSignature, publicKeyId }
 }
 
-const createOrGetWebAuthnOwner = async (
+const createOrGetWebAuthnSigner = async (
   token: string,
   chainId: string,
   provider: StaticJsonRpcProvider,
@@ -264,25 +264,25 @@ const createOrGetWebAuthnOwner = async (
 
     return { publicKeyId, signerAddress }
   } else {
-    const webAuthnOwners = await API.getWebAuthnOwnersByUser(token)
+    const webAuthnSigners = await API.getWebAuthnSignersByUser(token)
 
-    if (webAuthnOwners.length === 0)
+    if (webAuthnSigners.length === 0)
       throw new Error(
         'New Domain detected. You need to add that domain as signer'
       )
 
     let signatureParams
 
-    const nonce = await API.getNonce(webAuthnOwners[0].walletAddress)
+    const nonce = await API.getNonce(webAuthnSigners[0].walletAddress)
     const message: SiweMessage = siweService.createMessage(
-      webAuthnOwners[0].walletAddress,
+      webAuthnSigners[0].walletAddress,
       nonce,
       +chainId
     )
 
     try {
       signatureParams = await signWithWebAuthn(
-        webAuthnOwners,
+        webAuthnSigners,
         message.prepareMessage()
       )
     } catch {
@@ -291,7 +291,7 @@ const createOrGetWebAuthnOwner = async (
       )
     }
 
-    const currentWebAuthnOwner = await API.getWebAuthnOwnerByPublicKeyId(
+    const currentWebAuthnSigner = await API.getWebAuthnSignerByPublicKeyId(
       token,
       signatureParams.publicKeyId
     )
@@ -299,15 +299,15 @@ const createOrGetWebAuthnOwner = async (
     await API.connectToAlembicWallet({
       message,
       signature: safeService.formatWebAuthnSignatureForSafe(
-        currentWebAuthnOwner.signerAddress,
+        currentWebAuthnSigner.signerAddress,
         signatureParams.encodedSignature
       ),
-      walletAddress: currentWebAuthnOwner.walletAddress
+      walletAddress: currentWebAuthnSigner.walletAddress
     })
 
     return {
-      publicKeyId: currentWebAuthnOwner.publicKeyId,
-      signerAddress: currentWebAuthnOwner.signerAddress
+      publicKeyId: currentWebAuthnSigner.publicKeyId,
+      signerAddress: currentWebAuthnSigner.signerAddress
     }
   }
 }
@@ -321,5 +321,5 @@ export default {
   isWebAuthnCompatible,
   createWebAuthnSigner,
   signWithWebAuthn,
-  createOrGetWebAuthnOwner
+  createOrGetWebAuthnSigner
 }
