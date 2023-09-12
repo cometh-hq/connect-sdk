@@ -31,7 +31,7 @@ export class WebAuthnAdaptor implements AUTHAdapter {
   async connect(): Promise<void> {
     try {
       const { publicKeyId, signerAddress } =
-        await webAuthnService.createOrGetWebAuthnOwner(
+        await webAuthnService.createOrGetWebAuthnSigner(
           this.jwtToken,
           this.chainId,
           this.provider,

@@ -49,7 +49,7 @@ export class CustomAuthAdaptor implements AUTHAdapter {
     } else {
       try {
         const { publicKeyId, signerAddress } =
-          await webAuthnService.createOrGetWebAuthnOwner(
+          await webAuthnService.createOrGetWebAuthnSigner(
             this.jwtToken,
             this.chainId,
             this.provider,
