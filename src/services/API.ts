@@ -206,7 +206,7 @@ export class API {
       }
     }
     const response = await this.api.get(
-      `/webauthn-signers/public-key-id/${publicKeyId}`,
+      `/webauthn-signer/public-key-id/${publicKeyId}`,
       config
     )
     return response?.data?.webAuthnSigner
