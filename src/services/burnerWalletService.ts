@@ -1,12 +1,15 @@
+import { StaticJsonRpcProvider } from '@ethersproject/providers'
 import { ethers, Wallet } from 'ethers'
 
 import { API } from './API'
+import safeService from './safeService'
 import tokenService from './tokenService'
 
 export const createOrGetSigner = async (
   token: string,
   walletAddress: string,
-  API: API
+  API: API,
+  provider: StaticJsonRpcProvider
 ): Promise<Wallet> => {
   const decodedToken = tokenService.decodeToken(token)
   const userId = decodedToken?.payload.sub
@@ -35,7 +38,21 @@ export const createOrGetSigner = async (
         'New Domain detected. You need to add that domain as signer.'
       )
 
-    return new ethers.Wallet(storagePrivateKey)
+    const storageSigner = new ethers.Wallet(storagePrivateKey)
+
+    const isOwner = await safeService.isSigner(
+      storageSigner.address,
+      walletAddress,
+      provider,
+      API
+    )
+
+    if (!isOwner)
+      throw new Error(
+        'New Domain detected. You need to add that domain as signer.'
+      )
+
+    return storageSigner
   }
 }
 

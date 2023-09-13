@@ -44,7 +44,8 @@ export class CustomAuthAdaptor implements AUTHAdapter {
       this.signer = await burnerWalletService.createOrGetSigner(
         this.jwtToken,
         walletAddress,
-        this.API
+        this.API,
+        this.provider
       )
     } else {
       try {

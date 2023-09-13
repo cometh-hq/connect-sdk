@@ -154,14 +154,15 @@ const isSigner = async (
   provider: StaticJsonRpcProvider,
   API: API
 ): Promise<boolean> => {
-  const deployed = await isDeployed(walletAddress, provider)
+  try {
+    await isDeployed(walletAddress, provider)
 
-  if (deployed) {
     const owner = await isSafeOwner(walletAddress, signerAddress, provider)
 
     if (!owner) return false
-  } else {
+  } catch {
     const predictedWalletAddress = await API.getWalletAddress(signerAddress)
+
     if (predictedWalletAddress !== walletAddress) return false
   }
 
