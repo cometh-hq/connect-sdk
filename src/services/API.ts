@@ -25,8 +25,10 @@ export class API {
     this.api.defaults.headers.common['chainId'] = chainId
   }
 
-  async getNonce(account: string): Promise<UserNonceType> {
-    const response = await this.api.get(`/wallets/connection-nonce/${account}`)
+  async getNonce(walletAddress: string): Promise<UserNonceType> {
+    const response = await this.api.get(
+      `/wallets/${walletAddress}/connection-nonce`
+    )
     return response?.data?.userNonce
   }
 
