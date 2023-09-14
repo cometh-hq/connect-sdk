@@ -22,6 +22,22 @@ import deviceService from './deviceService'
 import safeService from './safeService'
 import siweService from './siweService'
 
+const _formatCreatingRpId = (): { name: string; id?: string } => {
+  return psl.parse(window.location.host).domain
+    ? {
+        name: psl.parse(window.location.host).domain,
+        id: psl.parse(window.location.host).domain
+      }
+    : { name: 'test' }
+}
+
+const _formatSigningRpId = (): string | undefined => {
+  return (
+    psl.parse(window.location.host).domain &&
+    psl.parse(window.location.host).domain
+  )
+}
+
 const createCredential = async (): Promise<{
   point: any
   id: string
@@ -31,10 +47,7 @@ const createCredential = async (): Promise<{
 
   const webAuthnCredentials: any = await navigator.credentials.create({
     publicKey: {
-      rp: {
-        name: psl.parse(window.location.host).domain,
-        id: psl.parse(window.location.host).domain
-      },
+      rp: _formatCreatingRpId(),
       user: {
         id: new TextEncoder().encode(v4()),
         name: 'Cometh Connect',
@@ -102,7 +115,7 @@ const sign = async (
   const assertionPayload: any = await navigator.credentials.get({
     publicKey: {
       challenge,
-      rpId: psl.parse(window.location.host).domain,
+      rpId: _formatSigningRpId(),
       allowCredentials: publicKeyCredential,
       timeout: 20000
     }
