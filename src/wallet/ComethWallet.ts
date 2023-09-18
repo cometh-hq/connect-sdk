@@ -15,7 +15,7 @@ import gasService from '../services/gasService'
 import safeService from '../services/safeService'
 import webAuthnService from '../services/webAuthnService'
 import { GasModal } from '../ui'
-import { AUTHAdapter, CustomAuthAdaptor } from './adapters'
+import { AUTHAdapter, ComethConnectAdaptor } from './adapters'
 import { WebAuthnSigner } from './signers/WebAuthnSigner'
 import {
   MetaTransactionData,
@@ -348,7 +348,7 @@ export class ComethWallet {
    */
 
   public async createNewSignerRequest(): Promise<void> {
-    if (!(this.authAdapter instanceof CustomAuthAdaptor))
+    if (!(this.authAdapter instanceof ComethConnectAdaptor))
       throw new Error('method not allowed for this authAdapter')
 
     await this.authAdapter.createNewSignerRequest()
@@ -359,7 +359,7 @@ export class ComethWallet {
   ): Promise<SendTransactionResponse> {
     if (!this.walletAddress) throw new Error('no wallet Address')
 
-    if (!(this.authAdapter instanceof CustomAuthAdaptor))
+    if (!(this.authAdapter instanceof ComethConnectAdaptor))
       throw new Error('method not allowed for this authAdapter')
 
     await this.deleteNewSignerRequest(newSignerRequest.signerAddress)
@@ -380,7 +380,7 @@ export class ComethWallet {
   public async getNewSignerRequestByUser(): Promise<NewSignerRequest[] | null> {
     if (!this.walletAddress) throw new Error('no wallet Address')
 
-    if (!(this.authAdapter instanceof CustomAuthAdaptor))
+    if (!(this.authAdapter instanceof ComethConnectAdaptor))
       throw new Error('method not allowed for this authAdapter')
 
     return await this.authAdapter.getNewSignerRequestByUser()
@@ -389,7 +389,7 @@ export class ComethWallet {
   public async deleteNewSignerRequest(signerAddress: string): Promise<void> {
     if (!this.walletAddress) throw new Error('no wallet Address')
 
-    if (!(this.authAdapter instanceof CustomAuthAdaptor))
+    if (!(this.authAdapter instanceof ComethConnectAdaptor))
       throw new Error('method not allowed for this authAdapter')
 
     await this.authAdapter.deleteNewSignerRequest(signerAddress)
