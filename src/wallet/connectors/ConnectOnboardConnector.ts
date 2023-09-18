@@ -6,7 +6,7 @@ import { ComethProvider } from '../ComethProvider'
 import { ComethWallet } from '../ComethWallet'
 import { WalletUiConfig } from '../types'
 
-export function ComethWalletOnboardConnector({
+export function ConnectOnboardConnector({
   apiKey,
   authAdapter,
   rpcUrl,

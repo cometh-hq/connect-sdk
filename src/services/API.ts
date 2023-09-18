@@ -49,7 +49,7 @@ export class API {
     return response?.data?.sponsoredAddresses
   }
 
-  async connectToCometh({
+  async connect({
     message,
     signature,
     walletAddress

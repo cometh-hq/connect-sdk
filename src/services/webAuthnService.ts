@@ -309,7 +309,7 @@ const createOrGetWebAuthnSigner = async (
       signatureParams.publicKeyId
     )
 
-    await API.connectToCometh({
+    await API.connect({
       message,
       signature: safeService.formatWebAuthnSignatureForSafe(
         currentWebAuthnSigner.signerAddress,

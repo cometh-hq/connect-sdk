@@ -11,7 +11,7 @@ import { WebAuthnSigner } from '../signers/WebAuthnSigner'
 import { NewSignerRequest, NewSignerRequestType, UserInfos } from '../types'
 import { AUTHAdapter } from './types'
 
-export class ComethConnectAdaptor implements AUTHAdapter {
+export class ConnectAdaptor implements AUTHAdapter {
   private signer?: WebAuthnSigner | Wallet
   readonly chainId: string
   private API: API

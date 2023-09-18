@@ -15,7 +15,7 @@ import gasService from '../services/gasService'
 import safeService from '../services/safeService'
 import webAuthnService from '../services/webAuthnService'
 import { GasModal } from '../ui'
-import { AUTHAdapter, ComethConnectAdaptor } from './adapters'
+import { AUTHAdapter, ConnectAdaptor } from './adapters'
 import { WebAuthnSigner } from './signers/WebAuthnSigner'
 import {
   MetaTransactionData,
@@ -28,7 +28,7 @@ import {
   WalletInfos
 } from './types'
 
-export interface ComethWalletConfig {
+export interface WalletConfig {
   authAdapter: AUTHAdapter
   apiKey: string
   rpcUrl?: string
@@ -51,7 +51,7 @@ export class ComethWallet {
     displayValidationModal: true
   }
 
-  constructor({ authAdapter, apiKey, rpcUrl, baseUrl }: ComethWalletConfig) {
+  constructor({ authAdapter, apiKey, rpcUrl, baseUrl }: WalletConfig) {
     this.authAdapter = authAdapter
     this.chainId = +authAdapter.chainId
     this.API = new API(apiKey, this.chainId, baseUrl)
@@ -348,10 +348,7 @@ export class ComethWallet {
    */
 
   public async createNewSignerRequest(): Promise<void> {
-    if (!(this.authAdapter instanceof ComethConnectAdaptor))
-      throw new Error('method not allowed for this authAdapter')
-
-    await this.authAdapter.createNewSignerRequest()
+    await this.authAdapter?.createNewSignerRequest?.()
   }
 
   public async validateNewSignerRequest(
@@ -359,13 +356,10 @@ export class ComethWallet {
   ): Promise<SendTransactionResponse> {
     if (!this.walletAddress) throw new Error('no wallet Address')
 
-    if (!(this.authAdapter instanceof ComethConnectAdaptor))
-      throw new Error('method not allowed for this authAdapter')
-
     await this.deleteNewSignerRequest(newSignerRequest.signerAddress)
 
     if (newSignerRequest.type === NewSignerRequestType.WEBAUTHN) {
-      await this.authAdapter.deployWebAuthnSigner(newSignerRequest)
+      await this.authAdapter?.deployWebAuthnSigner?.(newSignerRequest)
 
       await webAuthnService.waitWebAuthnSignerDeployment(
         newSignerRequest.publicKeyX!,
@@ -380,18 +374,16 @@ export class ComethWallet {
   public async getNewSignerRequestByUser(): Promise<NewSignerRequest[] | null> {
     if (!this.walletAddress) throw new Error('no wallet Address')
 
-    if (!(this.authAdapter instanceof ComethConnectAdaptor))
-      throw new Error('method not allowed for this authAdapter')
+    const newSignerRequest =
+      await this.authAdapter?.getNewSignerRequestByUser?.()
+    if (!newSignerRequest) return null
 
-    return await this.authAdapter.getNewSignerRequestByUser()
+    return newSignerRequest
   }
 
   public async deleteNewSignerRequest(signerAddress: string): Promise<void> {
     if (!this.walletAddress) throw new Error('no wallet Address')
 
-    if (!(this.authAdapter instanceof ComethConnectAdaptor))
-      throw new Error('method not allowed for this authAdapter')
-
-    await this.authAdapter.deleteNewSignerRequest(signerAddress)
+    await this.authAdapter?.deleteNewSignerRequest?.(signerAddress)
   }
 }

@@ -1,1 +1,1 @@
-export * from './ComethWalletOnboardConnector'
+export * from './ConnectOnboardConnector'

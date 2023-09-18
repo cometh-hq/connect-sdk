@@ -1,5 +1,5 @@
 export * from './BurnerWalletAdaptor'
-export * from './ComethConnectAdaptor'
+export * from './ConnectAdaptor'
 export * from './MagicLinkAdapter'
 export * from './types'
 export * from './Web3AuthAdapter'
