@@ -15,7 +15,7 @@ import gasService from '../services/gasService'
 import safeService from '../services/safeService'
 import webAuthnService from '../services/webAuthnService'
 import { GasModal } from '../ui'
-import { AUTHAdapter, ConnectAdaptor } from './adapters'
+import { AUTHAdapter } from './adapters'
 import { WebAuthnSigner } from './signers/WebAuthnSigner'
 import {
   MetaTransactionData,
@@ -348,7 +348,7 @@ export class ComethWallet {
    */
 
   public async createNewSignerRequest(): Promise<void> {
-    await this.authAdapter?.createNewSignerRequest?.()
+    await this.authAdapter.createNewSignerRequest()
   }
 
   public async validateNewSignerRequest(
@@ -359,7 +359,7 @@ export class ComethWallet {
     await this.deleteNewSignerRequest(newSignerRequest.signerAddress)
 
     if (newSignerRequest.type === NewSignerRequestType.WEBAUTHN) {
-      await this.authAdapter?.deployWebAuthnSigner?.(newSignerRequest)
+      await this.authAdapter.deployWebAuthnSigner(newSignerRequest)
 
       await webAuthnService.waitWebAuthnSignerDeployment(
         newSignerRequest.publicKeyX!,
@@ -374,16 +374,12 @@ export class ComethWallet {
   public async getNewSignerRequestByUser(): Promise<NewSignerRequest[] | null> {
     if (!this.walletAddress) throw new Error('no wallet Address')
 
-    const newSignerRequest =
-      await this.authAdapter?.getNewSignerRequestByUser?.()
-    if (!newSignerRequest) return null
-
-    return newSignerRequest
+    return await this.authAdapter.getNewSignerRequestByUser()
   }
 
   public async deleteNewSignerRequest(signerAddress: string): Promise<void> {
     if (!this.walletAddress) throw new Error('no wallet Address')
 
-    await this.authAdapter?.deleteNewSignerRequest?.(signerAddress)
+    await this.authAdapter.deleteNewSignerRequest(signerAddress)
   }
 }

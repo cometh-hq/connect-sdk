@@ -15,7 +15,7 @@ export class ComethProvider extends BaseProvider {
 
   constructor(private wallet: ComethWallet) {
     super({
-      name: 'ERC-4337 Custom Network',
+      name: 'Connect Custom Network',
       chainId: wallet.chainId ?? DEFAULT_CHAIN_ID
     })
     this.signer = new ComethSigner(wallet, this)

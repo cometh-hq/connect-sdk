@@ -1,4 +1,5 @@
-import { Bytes, ethers } from 'ethers'
+import { JsonRpcSigner } from '@ethersproject/providers'
+import { Bytes, ethers, Wallet } from 'ethers'
 import { SiweMessage } from 'siwe'
 
 import { EIP712_SAFE_MESSAGE_TYPE } from '../constants'
@@ -14,7 +15,10 @@ export class IConnectionSigning {
     this.API = new API(apiKey, +chainId, baseUrl)
   }
 
-  async signAndConnect(walletAddress: string, signer: any): Promise<void> {
+  async signAndConnect(
+    walletAddress: string,
+    signer: JsonRpcSigner | Wallet
+  ): Promise<void> {
     const nonce = await this.API.getNonce(walletAddress)
 
     const message: SiweMessage = siweService.createMessage(
@@ -39,7 +43,7 @@ export class IConnectionSigning {
   private async signMessage(
     walletAddress: string,
     messageToSign: string | Bytes,
-    signer: any
+    signer: JsonRpcSigner | Wallet
   ): Promise<string> {
     if (typeof messageToSign === 'string') {
       messageToSign = ethers.utils.hashMessage(messageToSign)

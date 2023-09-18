@@ -47,9 +47,9 @@ export class ComethSigner extends Signer {
   signTransaction(
     transaction: Deferrable<TransactionRequest>
   ): Promise<string> {
-    throw new Error('Method not implemented.')
+    throw new Error('Not authorized method: signTransaction')
   }
   connect(provider: Provider): Signer {
-    throw new Error('changing providers is not supported')
+    throw new Error('Not authorized method: connect')
   }
 }

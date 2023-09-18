@@ -66,6 +66,29 @@ export class ConnectAdaptor implements AUTHAdapter {
     }
   }
 
+  async logout(): Promise<void> {
+    if (!this.signer) throw new Error('No Wallet instance found')
+    this.signer = undefined
+  }
+
+  async getAccount(): Promise<string> {
+    if (!this.signer) throw new Error('No Wallet instance found')
+    return this.signer.getAddress()
+  }
+
+  getSigner(): Wallet | WebAuthnSigner {
+    if (!this.signer) throw new Error('No Wallet instance found')
+    return this.signer
+  }
+
+  async getWalletAddress(): Promise<string> {
+    return await this.API.getWalletAddressFromUserID(this.jwtToken)
+  }
+
+  async getUserInfos(): Promise<Partial<UserInfos>> {
+    return { walletAddress: await this.getAccount() } ?? {}
+  }
+
   public async createNewSignerRequest(): Promise<void> {
     const walletAddress = await this.API.getWalletAddressFromUserID(
       this.jwtToken
@@ -125,36 +148,17 @@ export class ConnectAdaptor implements AUTHAdapter {
   public async deployWebAuthnSigner(
     newSignerRequest: NewSignerRequest
   ): Promise<string> {
+    if (!newSignerRequest.publicKeyId) throw new Error('publicKeyId not valid')
+    if (!newSignerRequest.publicKeyX) throw new Error('publicKeyX not valid')
+    if (!newSignerRequest.publicKeyY) throw new Error('publicKeyY not valid')
+
     return await this.API.deployWebAuthnSigner({
       token: this.jwtToken,
       walletAddress: newSignerRequest.walletAddress,
-      publicKeyId: newSignerRequest.publicKeyId!,
-      publicKeyX: newSignerRequest.publicKeyX!,
-      publicKeyY: newSignerRequest.publicKeyY!,
+      publicKeyId: newSignerRequest.publicKeyId,
+      publicKeyX: newSignerRequest.publicKeyX,
+      publicKeyY: newSignerRequest.publicKeyY,
       deviceData: newSignerRequest.deviceData
     })
-  }
-
-  async logout(): Promise<void> {
-    if (!this.signer) throw new Error('No Wallet instance found')
-    this.signer = undefined
-  }
-
-  async getAccount(): Promise<string> {
-    if (!this.signer) throw new Error('No Wallet instance found')
-    return this.signer.getAddress()
-  }
-
-  getSigner(): Wallet | WebAuthnSigner {
-    if (!this.signer) throw new Error('No Wallet instance found')
-    return this.signer
-  }
-
-  async getWalletAddress(): Promise<string> {
-    return await this.API.getWalletAddressFromUserID(this.jwtToken)
-  }
-
-  async getUserInfos(): Promise<Partial<UserInfos>> {
-    return { walletAddress: await this.getAccount() } ?? {}
   }
 }

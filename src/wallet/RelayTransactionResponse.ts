@@ -37,7 +37,7 @@ export class RelayTransactionResponse implements TransactionResponse {
     private provider: ComethProvider,
     private wallet: ComethWallet
   ) {
-    this.hash = '0x0'
+    this.hash = '0x0000000000000000000000000000000000000000'
     this.confirmations = 0
     this.from = this.wallet.getAddress()
     this.nonce = 0

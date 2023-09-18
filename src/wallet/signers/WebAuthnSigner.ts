@@ -59,14 +59,14 @@ export class WebAuthnSigner extends Signer {
   async signTransaction(
     safeTxDataTyped: SafeTransactionDataPartial
   ): Promise<string> {
-    throw new Error('sign Transaction not supported')
+    throw new Error('Not authorized method: signTransaction')
   }
 
   async signMessage(messageToSign: string | Bytes): Promise<string> {
-    throw new Error('sign Message not supported')
+    throw new Error('Not authorized method: signMessage')
   }
 
   connect(provider: Provider): Signer {
-    throw new Error('changing providers is not supported')
+    throw new Error('Not authorized method: connect')
   }
 }
