@@ -17,7 +17,7 @@ import { P256SignerFactory__factory } from '../contracts/types/factories'
 import { API } from '../services'
 import * as utils from '../utils/utils'
 import { DeviceData, WebAuthnSigner } from '../wallet'
-import { AlembicProvider } from '../wallet/AlembicProvider'
+import { ComethProvider } from '../wallet/ComethProvider'
 import deviceService from './deviceService'
 import safeService from './safeService'
 import siweService from './siweService'
@@ -191,7 +191,7 @@ const waitWebAuthnSignerDeployment = async (
   publicKey_X: string,
   publicKey_Y: string,
   chainId: number,
-  provider: StaticJsonRpcProvider | AlembicProvider
+  provider: StaticJsonRpcProvider | ComethProvider
 ): Promise<string> => {
   const P256FactoryInstance = await P256SignerFactory__factory.connect(
     networks[chainId].P256FactoryContractAddress,
@@ -309,7 +309,7 @@ const createOrGetWebAuthnSigner = async (
       signatureParams.publicKeyId
     )
 
-    await API.connectToAlembicWallet({
+    await API.connectToCometh({
       message,
       signature: safeService.formatWebAuthnSignatureForSafe(
         currentWebAuthnSigner.signerAddress,

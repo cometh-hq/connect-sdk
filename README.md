@@ -1,16 +1,15 @@
 # Account Abstraction SDK
 
-Alembic Account Abstraction SDK allows developers to onboard their users with a seedless, gasless experience familiar to Web2.
+Cometh Connect SDK allows developers to onboard their users with a seedless, gasless experience familiar to Web2.
 
 Account Abstraction (AA) improves transaction user experience by using smart contract wallets as primary accounts.
-Our solution is compatible with EIP-4337.
 
 ## Instanciate Wallet
 
 ```javascript
-import { AlembicWallet, UserInfos } from "@alembic/account-abstraction-sdk";
+import { ComethWallet, UserInfos } from "@cometh/connect-sdk";
 
-const wallet = new AlembicWallet({
+const wallet = new ComethWallet({
       chainId: CHAIN_ID
       rpcTarget: RPC_URL
       apiKey: API_KEY,

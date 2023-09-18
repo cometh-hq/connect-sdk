@@ -2,44 +2,37 @@ import { WalletInit, WalletInterface, WalletModule } from '@web3-onboard/common'
 import { ethers } from 'ethers'
 
 import { AUTHAdapter } from '../adapters'
-import { AlembicProvider } from '../AlembicProvider'
-import { AlembicWallet } from '../AlembicWallet'
+import { ComethProvider } from '../ComethProvider'
+import { ComethWallet } from '../ComethWallet'
 import { WalletUiConfig } from '../types'
 
-export function AlembicWalletOnboardConnector({
+export function ComethWalletOnboardConnector({
   apiKey,
   authAdapter,
-  userId,
-  password,
   rpcUrl,
   uiConfig
 }: {
   apiKey: string
   authAdapter: AUTHAdapter
-  userId?: string
-  password?: string
   rpcUrl?: string
   uiConfig?: WalletUiConfig
 }): WalletInit {
   return (): WalletModule => {
     return {
-      label: 'Alembic Connect',
+      label: 'Cometh Connect',
       getIcon: async () =>
-        (await import('../../ui/images/alembicLogoDark')).default,
+        (await import('../../ui/images/comethLogoDark')).default,
       getInterface: async (): Promise<WalletInterface> => {
         const { createEIP1193Provider } = await import('@web3-onboard/common')
-        const alembicInitOptions = {
-          password
-        }
 
-        const instance = new AlembicWallet({
+        const instance = new ComethWallet({
           authAdapter,
           apiKey,
           rpcUrl,
           ...(uiConfig ?? { uiConfig })
         })
-        const instanceProvider = new AlembicProvider(instance)
-        await instance.connect(alembicInitOptions)
+        const instanceProvider = new ComethProvider(instance)
+        await instance.connect()
 
         const provider = createEIP1193Provider(instanceProvider, {
           eth_requestAccounts: async () => {

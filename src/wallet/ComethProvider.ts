@@ -6,22 +6,22 @@ import {
 } from '@ethersproject/providers'
 
 import { DEFAULT_CHAIN_ID } from '../constants'
-import { AlembicSigner } from './AlembicSigner'
-import { AlembicWallet } from './AlembicWallet'
+import { ComethSigner } from './ComethSigner'
+import { ComethWallet } from './ComethWallet'
 import { RelayTransactionResponse } from './RelayTransactionResponse'
 
-export class AlembicProvider extends BaseProvider {
-  readonly signer: AlembicSigner
+export class ComethProvider extends BaseProvider {
+  readonly signer: ComethSigner
 
-  constructor(private alembicWallet: AlembicWallet) {
+  constructor(private wallet: ComethWallet) {
     super({
       name: 'ERC-4337 Custom Network',
-      chainId: alembicWallet.chainId ?? DEFAULT_CHAIN_ID
+      chainId: wallet.chainId ?? DEFAULT_CHAIN_ID
     })
-    this.signer = new AlembicSigner(alembicWallet, this)
+    this.signer = new ComethSigner(wallet, this)
   }
 
-  getSigner(): AlembicSigner {
+  getSigner(): ComethSigner {
     return this.signer
   }
 
@@ -29,15 +29,15 @@ export class AlembicProvider extends BaseProvider {
     if (method === 'sendTransaction') {
       throw new Error('Not authorized method: sendTransaction')
     }
-    return await this.alembicWallet.getProvider().perform(method, params)
+    return await this.wallet.getProvider().perform(method, params)
   }
 
   async send(method: string, params: any): Promise<any> {
-    return await this.alembicWallet.getProvider().send(method, params)
+    return await this.wallet.getProvider().send(method, params)
   }
 
   async getTransaction(safeTxHash: string): Promise<TransactionResponse> {
-    return new RelayTransactionResponse(safeTxHash, this, this.alembicWallet)
+    return new RelayTransactionResponse(safeTxHash, this, this.wallet)
   }
 
   async getTransactionReceipt(
@@ -55,10 +55,10 @@ export class AlembicProvider extends BaseProvider {
   }
 
   async detectNetwork(): Promise<Network> {
-    return this.alembicWallet.getProvider().detectNetwork()
+    return this.wallet.getProvider().detectNetwork()
   }
 
   eth_accounts(): string[] {
-    return [this.alembicWallet.getAddress()]
+    return [this.wallet.getAddress()]
   }
 }

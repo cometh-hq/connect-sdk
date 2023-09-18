@@ -6,8 +6,8 @@ import { BigNumber } from 'ethers'
 import { AccessList } from 'ethers/lib/utils'
 
 import safeService from '../services/safeService'
-import { AlembicProvider } from './AlembicProvider'
-import { AlembicWallet } from './AlembicWallet'
+import { ComethProvider } from './ComethProvider'
+import { ComethWallet } from './ComethWallet'
 
 export class RelayTransactionResponse implements TransactionResponse {
   hash: string
@@ -34,12 +34,12 @@ export class RelayTransactionResponse implements TransactionResponse {
 
   constructor(
     private safeTxHash: string,
-    private provider: AlembicProvider,
-    private alembicWallet: AlembicWallet
+    private provider: ComethProvider,
+    private wallet: ComethWallet
   ) {
     this.hash = '0x0'
     this.confirmations = 0
-    this.from = this.alembicWallet.getAddress()
+    this.from = this.wallet.getAddress()
     this.nonce = 0
     this.gasLimit = BigNumber.from(0)
     this.value = BigNumber.from(0)

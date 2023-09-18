@@ -4,7 +4,7 @@ import { ethers } from 'ethers'
 import { BLOCK_EVENT_GAP, EIP712_SAFE_TX_TYPES } from '../constants'
 import { Safe__factory } from '../contracts/types/factories'
 import { SafeInterface } from '../contracts/types/Safe'
-import { AlembicProvider } from '../wallet/AlembicProvider'
+import { ComethProvider } from '../wallet/ComethProvider'
 import {
   MetaTransactionData,
   SafeTransactionDataPartial
@@ -15,7 +15,7 @@ const SafeInterface: SafeInterface = Safe__factory.createInterface()
 
 const isDeployed = async (
   walletAddress: string,
-  provider: StaticJsonRpcProvider | AlembicProvider
+  provider: StaticJsonRpcProvider | ComethProvider
 ): Promise<boolean> => {
   try {
     await Safe__factory.connect(walletAddress, provider).deployed()
@@ -27,7 +27,7 @@ const isDeployed = async (
 
 const getNonce = async (
   walletAddress: string,
-  provider: StaticJsonRpcProvider | AlembicProvider
+  provider: StaticJsonRpcProvider | ComethProvider
 ): Promise<number> => {
   return (await isDeployed(walletAddress, provider))
     ? (await Safe__factory.connect(walletAddress, provider).nonce()).toNumber()
@@ -37,7 +37,7 @@ const getNonce = async (
 const getSuccessExecTransactionEvent = async (
   safeTxHash: string,
   walletAddress: string,
-  provider: StaticJsonRpcProvider | AlembicProvider
+  provider: StaticJsonRpcProvider | ComethProvider
 ): Promise<any> => {
   const safeInstance = await Safe__factory.connect(walletAddress, provider)
 
@@ -55,7 +55,7 @@ const getSuccessExecTransactionEvent = async (
 const getFailedExecTransactionEvent = async (
   safeTxHash: string,
   walletAddress: string,
-  provider: StaticJsonRpcProvider | AlembicProvider
+  provider: StaticJsonRpcProvider | ComethProvider
 ): Promise<any> => {
   const safeInstance = await Safe__factory.connect(walletAddress, provider)
 

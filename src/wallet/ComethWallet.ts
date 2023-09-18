@@ -16,11 +16,8 @@ import safeService from '../services/safeService'
 import webAuthnService from '../services/webAuthnService'
 import { GasModal } from '../ui'
 import { AUTHAdapter, CustomAuthAdaptor } from './adapters'
-import { PassEncodedSigner } from './signers'
-import { AlembicAuthSigner } from './signers/AlembicAuthSigner'
 import { WebAuthnSigner } from './signers/WebAuthnSigner'
 import {
-  AlembicInitOptions,
   MetaTransactionData,
   NewSignerRequest,
   NewSignerRequestType,
@@ -31,14 +28,14 @@ import {
   WalletInfos
 } from './types'
 
-export interface AlembicWalletConfig {
+export interface ComethWalletConfig {
   authAdapter: AUTHAdapter
   apiKey: string
   rpcUrl?: string
   uiConfig?: UIConfig
   baseUrl?: string
 }
-export class AlembicWallet {
+export class ComethWallet {
   public authAdapter: AUTHAdapter
   readonly chainId: number
   private connected = false
@@ -48,18 +45,13 @@ export class AlembicWallet {
   private provider: StaticJsonRpcProvider
   private sponsoredAddresses?: SponsoredTransaction[]
   private walletAddress?: string
-  private signer?:
-    | JsonRpcSigner
-    | Wallet
-    | WebAuthnSigner
-    | AlembicAuthSigner
-    | PassEncodedSigner
+  private signer?: JsonRpcSigner | Wallet | WebAuthnSigner
 
   private uiConfig: UIConfig = {
     displayValidationModal: true
   }
 
-  constructor({ authAdapter, apiKey, rpcUrl, baseUrl }: AlembicWalletConfig) {
+  constructor({ authAdapter, apiKey, rpcUrl, baseUrl }: ComethWalletConfig) {
     this.authAdapter = authAdapter
     this.chainId = +authAdapter.chainId
     this.API = new API(apiKey, this.chainId, baseUrl)
@@ -74,12 +66,12 @@ export class AlembicWallet {
    * Connection Section
    */
 
-  public async connect(alembicInitOptions?: AlembicInitOptions): Promise<void> {
+  public async connect(): Promise<void> {
     if (!networks[this.chainId])
       throw new Error('This network is not supported')
 
     if (!this.authAdapter) throw new Error('No EOA adapter found')
-    await this.authAdapter.connect(alembicInitOptions)
+    await this.authAdapter.connect()
 
     this.signer = this.authAdapter.getSigner()
     this.walletAddress = await this.authAdapter.getWalletAddress()

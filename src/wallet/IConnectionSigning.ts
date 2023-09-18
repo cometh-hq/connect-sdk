@@ -29,7 +29,7 @@ export class IConnectionSigning {
       signer
     )
 
-    await this.API.connectToAlembicWallet({
+    await this.API.connectToCometh({
       message,
       signature,
       walletAddress

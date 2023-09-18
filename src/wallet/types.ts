@@ -85,19 +85,6 @@ export type DeviceData = {
   platform: string
 }
 
-export type AlembicInitOptions = {
-  password?: string
-}
-
-export type EncryptedEncryptionKeyParams = {
-  encryptedEncryptionKey: ArrayBuffer
-  encryptedEncryptionKeyIV: ArrayBuffer
-}
-export type EncryptedWalletParams = {
-  encryptedMnemonic: ArrayBuffer
-  encryptedMnemonicIV: ArrayBuffer
-}
-
 export enum NewSignerRequestType {
   WEBAUTHN = 'WEBAUTHN',
   BURNER_WALLET = 'BURNER_WALLET'
