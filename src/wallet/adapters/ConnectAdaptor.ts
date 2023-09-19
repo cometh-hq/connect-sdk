@@ -23,9 +23,9 @@ export class ConnectAdaptor implements AUTHAdapter {
     chainId: string,
     jwtToken: string,
     apiKey: string,
+    userName?: string,
     rpcUrl?: string,
-    baseUrl?: string,
-    userName?: string
+    baseUrl?: string
   ) {
     this.chainId = chainId
     this.jwtToken = jwtToken
