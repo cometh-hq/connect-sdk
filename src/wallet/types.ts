@@ -102,7 +102,3 @@ export type NewSignerRequest = {
   publicKeyX?: string
   publicKeyY?: string
 }
-
-export type ConnectInitOptions = {
-  userName: string
-}

@@ -18,7 +18,6 @@ import { GasModal } from '../ui'
 import { AUTHAdapter } from './adapters'
 import { WebAuthnSigner } from './signers/WebAuthnSigner'
 import {
-  ConnectInitOptions,
   MetaTransactionData,
   NewSignerRequest,
   NewSignerRequestType,
@@ -67,12 +66,12 @@ export class ComethWallet {
    * Connection Section
    */
 
-  public async connect(connectInitOptions?: ConnectInitOptions): Promise<void> {
+  public async connect(): Promise<void> {
     if (!networks[this.chainId])
       throw new Error('This network is not supported')
 
     if (!this.authAdapter) throw new Error('No EOA adapter found')
-    await this.authAdapter.connect(connectInitOptions)
+    await this.authAdapter.connect()
 
     this.signer = this.authAdapter.getSigner()
     this.walletAddress = await this.authAdapter.getWalletAddress()

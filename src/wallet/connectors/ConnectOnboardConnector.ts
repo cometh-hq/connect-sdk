@@ -4,18 +4,16 @@ import { ethers } from 'ethers'
 import { AUTHAdapter } from '../adapters'
 import { ComethProvider } from '../ComethProvider'
 import { ComethWallet } from '../ComethWallet'
-import { ConnectInitOptions, WalletUiConfig } from '../types'
+import { WalletUiConfig } from '../types'
 
 export function ConnectOnboardConnector({
   apiKey,
   authAdapter,
-  connectInitOptions,
   rpcUrl,
   uiConfig
 }: {
   apiKey: string
   authAdapter: AUTHAdapter
-  connectInitOptions?: ConnectInitOptions
   rpcUrl?: string
   uiConfig?: WalletUiConfig
 }): WalletInit {
@@ -34,7 +32,7 @@ export function ConnectOnboardConnector({
           ...(uiConfig ?? { uiConfig })
         })
         const instanceProvider = new ComethProvider(instance)
-        await instance.connect(connectInitOptions)
+        await instance.connect()
 
         const provider = createEIP1193Provider(instanceProvider, {
           eth_requestAccounts: async () => {
