@@ -8,7 +8,12 @@ import deviceService from '../../services/deviceService'
 import tokenService from '../../services/tokenService'
 import webAuthnService from '../../services/webAuthnService'
 import { WebAuthnSigner } from '../signers/WebAuthnSigner'
-import { NewSignerRequest, NewSignerRequestType, UserInfos } from '../types'
+import {
+  ConnectInitOptions,
+  NewSignerRequest,
+  NewSignerRequestType,
+  UserInfos
+} from '../types'
 import { AUTHAdapter } from './types'
 
 export class ConnectAdaptor implements AUTHAdapter {
@@ -23,17 +28,17 @@ export class ConnectAdaptor implements AUTHAdapter {
     jwtToken: string,
     apiKey: string,
     rpcUrl?: string,
-    baseURL?: string
+    baseUrl?: string
   ) {
     this.chainId = chainId
     this.jwtToken = jwtToken
-    this.API = new API(apiKey, +chainId, baseURL)
+    this.API = new API(apiKey, +chainId, baseUrl)
     this.provider = new StaticJsonRpcProvider(
       rpcUrl ? rpcUrl : networks[+this.chainId].RPCUrl
     )
   }
 
-  async connect(): Promise<void> {
+  async connect(connectInitOptions?: ConnectInitOptions): Promise<void> {
     const walletAddress = await this.API.getWalletAddressFromUserID(
       this.jwtToken
     )
@@ -55,7 +60,8 @@ export class ConnectAdaptor implements AUTHAdapter {
             this.chainId,
             this.provider,
             this.API,
-            walletAddress
+            walletAddress,
+            connectInitOptions?.userName
           )
         this.signer = new WebAuthnSigner(publicKeyId, signerAddress)
       } catch {

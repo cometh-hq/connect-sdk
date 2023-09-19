@@ -38,7 +38,9 @@ const _formatSigningRpId = (): string | undefined => {
   )
 }
 
-const createCredential = async (): Promise<{
+const createCredential = async (
+  userName?: string
+): Promise<{
   point: any
   id: string
 }> => {
@@ -50,8 +52,8 @@ const createCredential = async (): Promise<{
       rp: _formatCreatingRpId(),
       user: {
         id: new TextEncoder().encode(v4()),
-        name: 'Cometh Connect',
-        displayName: 'Cometh Connect'
+        name: userName ? userName : 'Cometh Connect',
+        displayName: userName ? userName : 'Cometh Connect'
       },
       authenticatorSelection: { authenticatorAttachment: 'platform' },
       timeout: 20000,
@@ -79,7 +81,8 @@ const createCredential = async (): Promise<{
 }
 
 const createWebAuthnSigner = async (
-  chainId: number
+  chainId: number,
+  userName?: string
 ): Promise<{
   publicKeyX: string
   publicKeyY: string
@@ -87,7 +90,7 @@ const createWebAuthnSigner = async (
   signerAddress: string
   deviceData: DeviceData
 }> => {
-  const webAuthnCredentials = await createCredential()
+  const webAuthnCredentials = await createCredential(userName)
 
   const publicKeyX = `0x${webAuthnCredentials.point.getX().toString(16)}`
   const publicKeyY = `0x${webAuthnCredentials.point.getY().toString(16)}`
@@ -250,14 +253,15 @@ const createOrGetWebAuthnSigner = async (
   chainId: string,
   provider: StaticJsonRpcProvider,
   API: API,
-  walletAddress: string | undefined
+  walletAddress?: string,
+  userName?: string
 ): Promise<{
   publicKeyId: string
   signerAddress: string
 }> => {
   if (!walletAddress) {
     const { publicKeyX, publicKeyY, publicKeyId, signerAddress, deviceData } =
-      await createWebAuthnSigner(+chainId)
+      await createWebAuthnSigner(+chainId, userName)
 
     await API.deployWalletWithWebAuthnSigner({
       token,
