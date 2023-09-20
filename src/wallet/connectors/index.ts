@@ -1,1 +1,1 @@
-export * from './AlembicWalletOnboardConnector'
+export * from './ConnectOnboardConnector'

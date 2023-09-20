@@ -1,12 +1,9 @@
 import axios, { AxiosInstance } from 'axios'
-import { TypedDataDomain, TypedDataField } from 'ethers'
 import { SiweMessage } from 'siwe'
 
 import { API_URL } from '../constants'
 import {
   DeviceData,
-  EncryptedEncryptionKeyParams,
-  EncryptedWalletParams,
   NewSignerRequest,
   NewSignerRequestType,
   RelayTransactionType,
@@ -52,7 +49,7 @@ export class API {
     return response?.data?.sponsoredAddresses
   }
 
-  async connectToAlembicWallet({
+  async connect({
     message,
     signature,
     walletAddress
@@ -289,159 +286,5 @@ export class API {
     }
 
     await this.api.delete(`/new-signer-request/${signerAddress}`, config)
-  }
-
-  /**
-   * Alembic Auth Section
-   */
-
-  async connectToAlembicAuth(token: string): Promise<string> {
-    const config = {
-      headers: {
-        token
-      }
-    }
-
-    const response = await this.api.post(`/key-store/connect`, {}, config)
-    return response?.data?.address
-  }
-
-  async signTypedDataWithAlembicAuth(
-    token: string,
-    domain: TypedDataDomain,
-    types: Record<string, TypedDataField[]>,
-    value: Record<string, any>
-  ): Promise<string> {
-    const config = {
-      headers: {
-        token
-      }
-    }
-    const body = {
-      domain,
-      types,
-      value
-    }
-    const response = await this.api.post(
-      `/key-store/signTypedData`,
-      body,
-      config
-    )
-    return response?.data?.signature
-  }
-
-  async verifyEncryptionKey(
-    token: string
-  ): Promise<{ exists: boolean; userId: string }> {
-    const config = {
-      headers: {
-        token
-      }
-    }
-
-    const response = await this.api.get(
-      `/encrypted-account/encryption-key/verify`,
-      config
-    )
-    const exists = response?.data.exists
-    const userId = response?.data.userId
-
-    return { exists, userId }
-  }
-
-  async getEncryptionKey(
-    token: string,
-    passwordHash: string
-  ): Promise<EncryptedEncryptionKeyParams> {
-    const config = {
-      headers: {
-        token
-      }
-    }
-
-    const response = await this.api.get(
-      `/encrypted-account/${passwordHash}/encryption-key`,
-      config
-    )
-    const encryptedEncryptionKey = response?.data.encryptedEncryptionKey
-    const encryptedEncryptionKeyIV = response?.data.encryptedEncryptionKeyIV
-    return { encryptedEncryptionKey, encryptedEncryptionKeyIV }
-  }
-
-  async getEncryptedWallet(
-    token: string,
-    passwordHash: string
-  ): Promise<EncryptedWalletParams> {
-    const config = {
-      headers: {
-        token
-      }
-    }
-
-    const response = await this.api.get(
-      `/encrypted-account/${passwordHash}/encryption-wallet`,
-      config
-    )
-
-    const encryptedMnemonic = response?.data.encryptedMnemonic
-    const encryptedMnemonicIV = response?.data.encryptedMnemonicIV
-    return { encryptedMnemonic, encryptedMnemonicIV }
-  }
-
-  async createEncryptedAccount({
-    token,
-    iterations,
-    passwordHash,
-    passwordDerivedKeyHash,
-    encryptedEncryptionKey,
-    encryptedEncryptionKeyIV
-  }: {
-    token: string
-    iterations: number
-    passwordHash: string
-    passwordDerivedKeyHash: ArrayBuffer
-    encryptedEncryptionKey: ArrayBuffer
-    encryptedEncryptionKeyIV: ArrayBuffer
-  }): Promise<void> {
-    const config = {
-      headers: {
-        token
-      }
-    }
-
-    const body = {
-      iterations,
-      passwordHash,
-      passwordDerivedKeyHash: Buffer.from(passwordDerivedKeyHash),
-      encryptedEncryptionKey: Buffer.from(encryptedEncryptionKey),
-      encryptedEncryptionKeyIV: Buffer.from(encryptedEncryptionKeyIV)
-    }
-
-    await this.api.post('/encrypted-account/encryption-key', body, config)
-  }
-
-  async createEncryptedWallet({
-    token,
-    passwordHash,
-    encryptedMnemonic,
-    encryptedMnemonicIV
-  }: {
-    token: string
-    passwordHash: string
-    encryptedMnemonic: ArrayBuffer
-    encryptedMnemonicIV: ArrayBuffer
-  }): Promise<void> {
-    const config = {
-      headers: {
-        token
-      }
-    }
-    const body = {
-      passwordHash,
-      encryptedMnemonic: Buffer.from(encryptedMnemonic),
-      encryptedMnemonicIV: Buffer.from(encryptedMnemonicIV)
-    }
-
-    await this.api.post('/encrypted-account/encryption-wallet', body, config)
   }
 }

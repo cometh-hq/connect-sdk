@@ -7,24 +7,21 @@ import { Signer } from '@ethersproject/abstract-signer'
 import { BigNumber, Bytes } from 'ethers'
 import { Deferrable, defineReadOnly, resolveProperties } from 'ethers/lib/utils'
 
-import { AlembicProvider } from './AlembicProvider'
-import { AlembicWallet } from './AlembicWallet'
+import { ComethProvider } from './ComethProvider'
+import { ComethWallet } from './ComethWallet'
 
-export class AlembicSigner extends Signer {
-  constructor(
-    private smartWallet: AlembicWallet,
-    albProvider: AlembicProvider
-  ) {
+export class ComethSigner extends Signer {
+  constructor(private wallet: ComethWallet, provider: ComethProvider) {
     super()
-    defineReadOnly(this, 'provider', albProvider)
+    defineReadOnly(this, 'provider', provider)
   }
 
   getAddress(): Promise<string> {
-    return Promise.resolve(this.smartWallet.getAddress())
+    return Promise.resolve(this.wallet.getAddress())
   }
 
   signMessage(message: string | Bytes): Promise<string> {
-    return this.smartWallet.signMessage(message)
+    return this.wallet.signMessage(message)
   }
 
   async sendTransaction(
@@ -40,7 +37,7 @@ export class AlembicSigner extends Signer {
       data: tx.data?.toString() ?? '0x'
     }
 
-    const transactionResponse = await this.smartWallet.sendTransaction(safeTx)
+    const transactionResponse = await this.wallet.sendTransaction(safeTx)
 
     if (!this.provider) throw new Error('missing provider')
 
@@ -50,9 +47,9 @@ export class AlembicSigner extends Signer {
   signTransaction(
     transaction: Deferrable<TransactionRequest>
   ): Promise<string> {
-    throw new Error('Method not implemented.')
+    throw new Error('Not authorized method: signTransaction')
   }
   connect(provider: Provider): Signer {
-    throw new Error('changing providers is not supported')
+    throw new Error('Not authorized method: connect')
   }
 }
