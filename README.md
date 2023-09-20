@@ -130,3 +130,76 @@ await wallet.deleteNewSignerRequest(signerAddress)
 ```
 
 This function deletes a new signer request.
+
+## Go further
+
+### Interact with contract interface
+
+```javascript
+import {
+  ComethWallet,
+  ConnectAdaptor,
+  ComethProvider
+} from '@cometh/connect-sdk'
+
+const walletAdaptor = new ConnectAdaptor({
+  chainId: CHAIN_ID,
+  jwtToken: TOKEN,
+  apiKey: API_KEY,
+  userName: USERNAME
+})
+
+const wallet = new ComethWallet({
+  authAdapter: walletAdaptor,
+  apiKey: API_KEY,
+  rpcUrl: RPC_URL
+})
+
+const provider = new ComethProvider(wallet)
+
+const nftContract = new ethers.Contract(
+  NFT_CONTRACT_ADDRESS,
+  nftContractAbi,
+  provider.getSigner()
+)
+
+const tx = await nftContract.count()
+const txResponse = await tx.wait()
+```
+
+You can also interact with the interface of a contract, calling directly the contract functions.
+
+### Web3Onboard connector
+
+```javascript
+import { ConnectOnboardConnector } from '@cometh/connect-sdk'
+import injectedModule from '@web3-onboard/injected-wallets'
+import Onboard from '@web3-onboard/core'
+
+const walletAdaptor = new ConnectAdaptor({
+  chainId: CHAIN_ID,
+  jwtToken: TOKEN,
+  apiKey: API_KEY,
+  userName: USERNAME
+})
+
+const connectOnboardConnector = ConnectOnboardConnector({
+  apiKey: process.env.NEXT_PUBLIC_ALEMBIC_API_KEY,
+  authAdapter: walletAdaptor,
+  rpcUrl: RPC_URL
+})
+
+const web3OnboardInstance = Onboard({
+  wallets: [injectedModule(), connectOnboardConnector],
+  chains: [
+    {
+      id: ethers.utils.hexlify(DEFAULT_CHAIN_ID),
+      token: 'MATIC',
+      label: 'Matic Mainnet',
+      rpcUrl: 'https://polygon-rpc.com'
+    }
+  ]
+})
+```
+
+You can also incorporate cometh connect to the web3Onboard wallet modal solution.
