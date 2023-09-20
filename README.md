@@ -202,4 +202,4 @@ const web3OnboardInstance = Onboard({
 })
 ```
 
-You can also incorporate cometh connect to the web3Onboard wallet modal solution.
+You can also incorporate cometh connect to web3Onboard wallet modal solution.

@@ -19,7 +19,7 @@ export function ConnectOnboardConnector({
 }): WalletInit {
   return (): WalletModule => {
     return {
-      label: 'Cometh Connect',
+      label: 'Connect SDK',
       getIcon: async () =>
         (await import('../../ui/images/comethLogoDark')).default,
       getInterface: async (): Promise<WalletInterface> => {
