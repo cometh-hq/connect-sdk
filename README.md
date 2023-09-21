@@ -7,10 +7,14 @@ Account Abstraction (AA) improves transaction user experience by using smart con
 ## Instanciate Wallet
 
 ```javascript
-import { ComethWallet, ConnectAdaptor } from '@cometh/connect-sdk'
+import {
+  ComethWallet,
+  ConnectAdaptor,
+  SupportedNetworks
+} from '@cometh/connect-sdk'
 
 const walletAdaptor = new ConnectAdaptor({
-  chainId: CHAIN_ID,
+  chainId: SupportedNetworks.POLYGON,
   jwtToken: TOKEN,
   apiKey: API_KEY,
   userName: USERNAME
@@ -139,11 +143,12 @@ This function deletes a new signer request.
 import {
   ComethWallet,
   ConnectAdaptor,
-  ComethProvider
+  ComethProvider,
+  SupportedNetworks
 } from '@cometh/connect-sdk'
 
 const walletAdaptor = new ConnectAdaptor({
-  chainId: CHAIN_ID,
+  chainId: SupportedNetworks.POLYGON,
   jwtToken: TOKEN,
   apiKey: API_KEY,
   userName: USERNAME
@@ -172,12 +177,16 @@ You can also interact with the interface of a contract, calling directly the con
 ### Web3Onboard connector
 
 ```javascript
-import { ConnectOnboardConnector } from '@cometh/connect-sdk'
+import {
+  ConnectAdaptor,
+  SupportedNetworks,
+  ConnectOnboardConnector
+} from '@cometh/connect-sdk'
 import injectedModule from '@web3-onboard/injected-wallets'
 import Onboard from '@web3-onboard/core'
 
 const walletAdaptor = new ConnectAdaptor({
-  chainId: CHAIN_ID,
+  chainId: SupportedNetworks.POLYGON,
   jwtToken: TOKEN,
   apiKey: API_KEY,
   userName: USERNAME
