@@ -2,6 +2,11 @@ export enum RelayStatus {
   MINED = 'mined'
 }
 
+export enum SupportedNetworks {
+  POLYGON = '0x89',
+  MUMBAI = '0x13881'
+}
+
 export declare enum OperationType {
   Call = 0,
   DelegateCall = 1
