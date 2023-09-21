@@ -1,7 +1,7 @@
 import { ethers, Wallet } from 'ethers'
 
 import { IConnectionSigning } from '../IConnectionSigning'
-import { NewSignerRequest, UserInfos } from '../types'
+import { NewSignerRequest, SupportedNetworks, UserInfos } from '../types'
 import { AUTHAdapter } from './types'
 
 export class BurnerWalletAdaptor
@@ -10,8 +10,8 @@ export class BurnerWalletAdaptor
 {
   private wallet?: Wallet
 
-  constructor(chainId: string, apiKey: string) {
-    super(chainId, apiKey)
+  constructor(chainId: SupportedNetworks, apiKey: string, baseUrl?: string) {
+    super(chainId, apiKey, baseUrl)
   }
 
   async connect(): Promise<void> {

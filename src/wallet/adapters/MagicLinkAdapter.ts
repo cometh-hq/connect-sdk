@@ -21,8 +21,12 @@ export class MagicLinkAdapter
   private ethProvider: ethers.providers.Web3Provider | null = null
   private magicConfig: MagicLinkAdapterConfig
 
-  constructor(magicConfig: MagicLinkAdapterConfig, apiKey: string) {
-    super(magicConfig.options.chainId, apiKey)
+  constructor(
+    magicConfig: MagicLinkAdapterConfig,
+    apiKey: string,
+    baseUrl?: string
+  ) {
+    super(magicConfig.options.chainId, apiKey, baseUrl)
     this.magicConfig = magicConfig
   }
 

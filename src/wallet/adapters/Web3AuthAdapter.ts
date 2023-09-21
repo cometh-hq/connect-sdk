@@ -4,7 +4,7 @@ import { Web3Auth, Web3AuthOptions } from '@web3auth/modal'
 import { ethers } from 'ethers'
 
 import { IConnectionSigning } from '../IConnectionSigning'
-import { NewSignerRequest, UserInfos } from '../types'
+import { NewSignerRequest, SupportedNetworks, UserInfos } from '../types'
 import { AUTHAdapter } from './types'
 
 export class Web3AuthAdapter extends IConnectionSigning implements AUTHAdapter {
@@ -14,10 +14,11 @@ export class Web3AuthAdapter extends IConnectionSigning implements AUTHAdapter {
 
   constructor(
     web3authConfig: Web3AuthCoreOptions,
-    chainId: string,
-    apiKey: string
+    chainId: SupportedNetworks,
+    apiKey: string,
+    baseUrl?: string
   ) {
-    super(chainId, apiKey)
+    super(chainId, apiKey, baseUrl)
     this.web3authConfig = web3authConfig
   }
 

@@ -8,11 +8,16 @@ import deviceService from '../../services/deviceService'
 import tokenService from '../../services/tokenService'
 import webAuthnService from '../../services/webAuthnService'
 import { WebAuthnSigner } from '../signers/WebAuthnSigner'
-import { NewSignerRequest, NewSignerRequestType, UserInfos } from '../types'
+import {
+  NewSignerRequest,
+  NewSignerRequestType,
+  SupportedNetworks,
+  UserInfos
+} from '../types'
 import { AUTHAdapter } from './types'
 
 export interface ConnectAdaptorConfig {
-  chainId: string
+  chainId: SupportedNetworks
   jwtToken: string
   apiKey: string
   userName?: string
@@ -22,7 +27,7 @@ export interface ConnectAdaptorConfig {
 
 export class ConnectAdaptor implements AUTHAdapter {
   private signer?: WebAuthnSigner | Wallet
-  readonly chainId: string
+  readonly chainId: SupportedNetworks
   private API: API
   private jwtToken: string
   private provider: StaticJsonRpcProvider
