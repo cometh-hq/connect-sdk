@@ -117,7 +117,7 @@ export class ConnectAdaptor implements AUTHAdapter {
 
     if (isWebAuthnCompatible) {
       const { publicKeyX, publicKeyY, publicKeyId, signerAddress, deviceData } =
-        await webAuthnService.createWebAuthnSigner(+this.chainId)
+        await webAuthnService.createWebAuthnSigner(this.jwtToken, this.API)
 
       addNewSignerRequest = {
         token: this.jwtToken,

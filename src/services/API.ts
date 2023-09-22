@@ -159,6 +159,34 @@ export class API {
    * WebAuthn Section
    */
 
+  async predictWebAuthnSignerAddress({
+    token,
+    publicKeyX,
+    publicKeyY
+  }: {
+    token: string
+    publicKeyX: string
+    publicKeyY: string
+  }): Promise<string> {
+    const config = {
+      headers: {
+        token
+      }
+    }
+
+    const body = {
+      publicKeyX,
+      publicKeyY
+    }
+
+    const response = await this.api.post(
+      `/webauthn-signer/predict-address`,
+      body,
+      config
+    )
+    return response.data?.signerAddress
+  }
+
   async deployWebAuthnSigner({
     token,
     walletAddress,

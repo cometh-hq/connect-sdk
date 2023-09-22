@@ -7,12 +7,7 @@ import psl from 'psl'
 import { SiweMessage } from 'siwe'
 import { v4 } from 'uuid'
 
-import {
-  BLOCK_EVENT_GAP,
-  challengePrefix,
-  networks,
-  P256SignerCreationCode
-} from '../constants'
+import { BLOCK_EVENT_GAP, challengePrefix, networks } from '../constants'
 import { P256SignerFactory__factory } from '../contracts/types/factories'
 import { API } from '../services'
 import * as utils from '../utils/utils'
@@ -81,7 +76,8 @@ const createCredential = async (
 }
 
 const createWebAuthnSigner = async (
-  chainId: number,
+  token: string,
+  API: API,
   userName?: string
 ): Promise<{
   publicKeyX: string
@@ -95,11 +91,11 @@ const createWebAuthnSigner = async (
   const publicKeyX = `0x${webAuthnCredentials.point.getX().toString(16)}`
   const publicKeyY = `0x${webAuthnCredentials.point.getY().toString(16)}`
   const publicKeyId = webAuthnCredentials.id
-  const signerAddress = await predictSignerAddress(
+  const signerAddress = await API.predictWebAuthnSignerAddress({
+    token,
     publicKeyX,
-    publicKeyY,
-    chainId
-  )
+    publicKeyY
+  })
   const deviceData = deviceService.getDeviceData()
 
   return {
@@ -162,32 +158,6 @@ const getWebAuthnSignature = async (
   )
 
   return { encodedSignature, publicKeyId }
-}
-
-const predictSignerAddress = async (
-  publicKey_X: string,
-  publicKey_Y: string,
-  chainId: number
-): Promise<string> => {
-  const deploymentCode = ethers.utils.keccak256(
-    ethers.utils.solidityPack(
-      ['bytes', 'uint256', 'uint256'],
-      [P256SignerCreationCode, publicKey_X, publicKey_Y]
-    )
-  )
-
-  const salt = ethers.utils.keccak256(
-    ethers.utils.defaultAbiCoder.encode(
-      ['uint256', 'uint256'],
-      [publicKey_X, publicKey_Y]
-    )
-  )
-
-  return ethers.utils.getCreate2Address(
-    networks[chainId].P256FactoryContractAddress,
-    salt,
-    deploymentCode
-  )
 }
 
 const waitWebAuthnSignerDeployment = async (
@@ -261,7 +231,7 @@ const createOrGetWebAuthnSigner = async (
 }> => {
   if (!walletAddress) {
     const { publicKeyX, publicKeyY, publicKeyId, signerAddress, deviceData } =
-      await createWebAuthnSigner(+chainId, userName)
+      await createWebAuthnSigner(token, API, userName)
 
     await API.deployWalletWithWebAuthnSigner({
       token,
@@ -333,7 +303,6 @@ export default {
   createCredential,
   sign,
   getWebAuthnSignature,
-  predictSignerAddress,
   waitWebAuthnSignerDeployment,
   isWebAuthnCompatible,
   createWebAuthnSigner,
