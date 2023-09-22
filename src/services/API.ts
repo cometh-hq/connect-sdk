@@ -22,6 +22,15 @@ export class API {
     this.api.defaults.headers.common['chainId'] = chainId
   }
 
+  async getProjectParams(): Promise<{
+    chainId: string
+    P256FactoryContractAddress: string
+    multisendContractAddress: string
+  }> {
+    const response = await this.api.get(`/project/params`)
+    return response?.data?.projectParams
+  }
+
   async getNonce(walletAddress: string): Promise<UserNonceType> {
     const response = await this.api.get(
       `/wallets/${walletAddress}/connection-nonce`

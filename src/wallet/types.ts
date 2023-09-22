@@ -107,3 +107,9 @@ export type NewSignerRequest = {
   publicKeyX?: string
   publicKeyY?: string
 }
+
+export type ProjectParams = {
+  chainId: string
+  P256FactoryContractAddress: string
+  multisendContractAddress: string
+}
