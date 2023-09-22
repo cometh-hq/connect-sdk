@@ -161,13 +161,13 @@ const getWebAuthnSignature = async (
 }
 
 const waitWebAuthnSignerDeployment = async (
+  P256FactoryContractAddress: string,
   publicKey_X: string,
   publicKey_Y: string,
-  chainId: number,
   provider: StaticJsonRpcProvider | ComethProvider
 ): Promise<string> => {
   const P256FactoryInstance = await P256SignerFactory__factory.connect(
-    networks[chainId].P256FactoryContractAddress,
+    P256FactoryContractAddress,
     provider
   )
 
@@ -242,10 +242,12 @@ const createOrGetWebAuthnSigner = async (
       deviceData
     })
 
+    const projectParams = await API.getProjectParams()
+
     await waitWebAuthnSignerDeployment(
+      projectParams.P256FactoryContractAddress,
       publicKeyX,
       publicKeyY,
-      +chainId,
       provider
     )
 

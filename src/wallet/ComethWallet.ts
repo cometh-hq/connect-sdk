@@ -21,6 +21,7 @@ import {
   MetaTransactionData,
   NewSignerRequest,
   NewSignerRequestType,
+  ProjectParams,
   SafeTransactionDataPartial,
   SendTransactionResponse,
   SponsoredTransaction,
@@ -46,6 +47,7 @@ export class ComethWallet {
   private sponsoredAddresses?: SponsoredTransaction[]
   private walletAddress?: string
   private signer?: JsonRpcSigner | Wallet | WebAuthnSigner
+  private projectParams?: ProjectParams
 
   private uiConfig: UIConfig = {
     displayValidationModal: true
@@ -73,6 +75,7 @@ export class ComethWallet {
     if (!this.authAdapter) throw new Error('No EOA adapter found')
     await this.authAdapter.connect()
 
+    this.projectParams = await this.API.getProjectParams()
     this.signer = this.authAdapter.getSigner()
     this.walletAddress = await this.authAdapter.getWalletAddress()
 
@@ -250,6 +253,7 @@ export class ComethWallet {
     if (safeTxData.length === 0) {
       throw new Error('Empty array provided, no transaction to send')
     }
+    if (!this.projectParams) throw new Error('Project params are null')
 
     const safeTxGas = await gasService.estimateSafeTxGas(
       this.getAddress(),
@@ -259,7 +263,7 @@ export class ComethWallet {
 
     const safeTxDataTyped = {
       ...(await this._prepareTransaction(
-        networks[this.chainId].multisendContractAddress,
+        this.projectParams.multisendContractAddress,
         '0',
         encodeMulti(safeTxData).data,
         1
@@ -356,15 +360,17 @@ export class ComethWallet {
   ): Promise<SendTransactionResponse> {
     if (!this.walletAddress) throw new Error('no wallet Address')
 
+    if (!this.projectParams) throw new Error('Project params are null')
+
     await this.deleteNewSignerRequest(newSignerRequest.signerAddress)
 
     if (newSignerRequest.type === NewSignerRequestType.WEBAUTHN) {
       await this.authAdapter.deployWebAuthnSigner(newSignerRequest)
 
       await webAuthnService.waitWebAuthnSignerDeployment(
+        this.projectParams.P256FactoryContractAddress,
         newSignerRequest.publicKeyX!,
         newSignerRequest.publicKeyY!,
-        this.chainId,
         this.getProvider()
       )
     }

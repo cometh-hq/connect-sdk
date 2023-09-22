@@ -5,15 +5,11 @@ export const networks = {
   // Default network: Polygon
   137: {
     RPCUrl: process.env.RPC_URL_POLYGON || 'https://polygon-rpc.com',
-    networkName: 'Polygon',
-    P256FactoryContractAddress: '0x4475499B8B28B9DF289e4D767d6438925505f702',
-    multisendContractAddress: '0xA238CBeb142c10Ef7Ad8442C6D1f9E89e07e7761'
+    networkName: 'Polygon'
   },
   80001: {
     RPCUrl: process.env.RPC_URL_MUMBAI || 'https://rpc-mumbai.maticvigil.com',
-    networkName: 'Mumbai',
-    P256FactoryContractAddress: '0x4475499B8B28B9DF289e4D767d6438925505f702',
-    multisendContractAddress: '0xA238CBeb142c10Ef7Ad8442C6D1f9E89e07e7761'
+    networkName: 'Mumbai'
   }
 }
 export const GAS_GAP_TOLERANCE = 10
