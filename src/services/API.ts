@@ -283,7 +283,7 @@ export class API {
       publicKeyY,
       publicKeyId
     }
-    await this.api.post(`/new-signer-request/create`, body, config)
+    await this.api.post(`/new-signer-request`, body, config)
   }
 
   async getNewSignerRequestByUser(
