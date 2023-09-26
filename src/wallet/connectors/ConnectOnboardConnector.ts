@@ -10,11 +10,13 @@ export function ConnectOnboardConnector({
   apiKey,
   authAdapter,
   rpcUrl,
+  baseUrl,
   uiConfig
 }: {
   apiKey: string
   authAdapter: AUTHAdapter
   rpcUrl?: string
+  baseUrl?: string
   uiConfig?: WalletUiConfig
 }): WalletInit {
   return (): WalletModule => {
@@ -29,6 +31,7 @@ export function ConnectOnboardConnector({
           authAdapter,
           apiKey,
           rpcUrl,
+          baseUrl,
           ...(uiConfig ?? { uiConfig })
         })
         const instanceProvider = new ComethProvider(instance)
