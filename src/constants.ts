@@ -10,6 +10,26 @@ export const networks = {
   80001: {
     RPCUrl: process.env.RPC_URL_MUMBAI || 'https://rpc-mumbai.maticvigil.com',
     networkName: 'Mumbai'
+  },
+  43114: {
+    RPCUrl:
+      process.env.RPC_URL_AVALANCHE ||
+      'https://avalanche-mainnet.infura.io/v3/5eba3fe58b4646c89a0e3fad285769d4',
+    networkName: 'Avalanche'
+  },
+  43113: {
+    RPCUrl:
+      process.env.RPC_URL_FUJI ||
+      'https://avalanche-fuji.infura.io/v3/5eba3fe58b4646c89a0e3fad285769d4',
+    networkName: 'Fuji'
+  },
+  100: {
+    RPCUrl: process.env.RPC_URL_GNOSIS || 'https://rpc.ankr.com/gnosis',
+    networkName: 'Gnosis Chain'
+  },
+  10200: {
+    RPCUrl: process.env.RPC_URL_CHIADO || 'https://rpc.chiadochain.net',
+    networkName: 'Chiado Chain'
   }
 }
 export const GAS_GAP_TOLERANCE = 10
