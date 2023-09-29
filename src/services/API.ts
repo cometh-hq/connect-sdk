@@ -98,37 +98,6 @@ export class API {
     return response.data?.safeTxHash
   }
 
-  async deployWalletWithWebAuthnSigner({
-    token,
-    walletAddress,
-    publicKeyId,
-    publicKeyX,
-    publicKeyY,
-    deviceData
-  }: {
-    token: string
-    walletAddress: string
-    publicKeyId: string
-    publicKeyX: string
-    publicKeyY: string
-    deviceData: DeviceData
-  }): Promise<void> {
-    const config = {
-      headers: {
-        token
-      }
-    }
-    const body = {
-      walletAddress,
-      publicKeyId,
-      publicKeyX,
-      publicKeyY,
-      deviceData
-    }
-
-    await this.api.post(`/wallets/deploy-with-webauthn-signer`, body, config)
-  }
-
   /**
    * User Section
    */

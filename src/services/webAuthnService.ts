@@ -4,7 +4,6 @@ import CBOR from 'cbor-js'
 import { ec as EC } from 'elliptic'
 import { ethers } from 'ethers'
 import psl from 'psl'
-import { SiweMessage } from 'siwe'
 import { v4 } from 'uuid'
 
 import { BLOCK_EVENT_GAP, challengePrefix } from '../constants'
@@ -14,8 +13,6 @@ import * as utils from '../utils/utils'
 import { DeviceData, WebAuthnSigner } from '../wallet'
 import { ComethProvider } from '../wallet/ComethProvider'
 import deviceService from './deviceService'
-import safeService from './safeService'
-import siweService from './siweService'
 import tokenService from './tokenService'
 
 const _formatCreatingRpId = (): { name: string; id?: string } => {
@@ -216,10 +213,27 @@ const signWithWebAuthn = async (
   return { encodedSignature, publicKeyId }
 }
 
+const _setWebauthnCredentialsInStorage = (
+  userId: string,
+  publicKeyId: string,
+  signerAddress: string
+): void => {
+  const localStorageWebauthnCredentials = JSON.stringify({
+    publicKeyId,
+    signerAddress
+  })
+  window.localStorage.setItem(
+    `cometh-connect-${userId}`,
+    localStorageWebauthnCredentials
+  )
+}
+
+const _getWebauthnCredentialsInStorage = (userId: string): string | null => {
+  return window.localStorage.getItem(`cometh-connect-${userId}`)
+}
+
 const createOrGetWebAuthnSigner = async (
   token: string,
-  chainId: string,
-  provider: StaticJsonRpcProvider,
   API: API,
   walletAddress?: string,
   userName?: string
@@ -236,14 +250,7 @@ const createOrGetWebAuthnSigner = async (
       await createWebAuthnSigner(token, API, userName)
 
     /* Store WebAuthn credentials in storage */
-    const localStorageWebauthnCredentials = JSON.stringify({
-      publicKeyId,
-      signerAddress
-    })
-    window.localStorage.setItem(
-      `cometh-connect-${userId}`,
-      localStorageWebauthnCredentials
-    )
+    _setWebauthnCredentialsInStorage(userId, publicKeyId, signerAddress)
 
     /* Deploy Webauthn signer contract */
     await API.initWalletWithWebAuthn({
@@ -265,9 +272,8 @@ const createOrGetWebAuthnSigner = async (
       )
 
     /* Retrieve potentiel WebAuthn credentials in storage */
-    const localStorageWebauthnCredentials = window.localStorage.getItem(
-      `cometh-connect-${userId}`
-    )
+    const localStorageWebauthnCredentials =
+      _getWebauthnCredentialsInStorage(userId)
 
     if (localStorageWebauthnCredentials) {
       /* Check if storage WebAuthn credentials exists in db */
@@ -284,19 +290,12 @@ const createOrGetWebAuthnSigner = async (
         }
     }
 
-    /* Call Webauthn API to get current signer */
+    /* If no local storage or no match in db, Call Webauthn API to get current signer */
     let signatureParams
-    const nonce = await API.getNonce(webAuthnSigners[0].walletAddress)
-    const message: SiweMessage = siweService.createMessage(
-      webAuthnSigners[0].walletAddress,
-      nonce,
-      +chainId
-    )
-
     try {
       signatureParams = await signWithWebAuthn(
         webAuthnSigners,
-        message.prepareMessage()
+        'SDK Connection'
       )
     } catch {
       throw new Error(
@@ -309,14 +308,13 @@ const createOrGetWebAuthnSigner = async (
       signatureParams.publicKeyId
     )
 
-    await API.connect({
-      message,
-      signature: safeService.formatWebAuthnSignatureForSafe(
-        signingWebAuthnSigner.signerAddress,
-        signatureParams.encodedSignature
-      ),
-      walletAddress: signingWebAuthnSigner.walletAddress
-    })
+    /* Store WebAuthn credentials in storage */
+    _setWebauthnCredentialsInStorage(
+      userId,
+      signatureParams.publicKeyId,
+      signatureParams.signerAddress
+    )
+
     return {
       publicKeyId: signingWebAuthnSigner.publicKeyId,
       signerAddress: signingWebAuthnSigner.signerAddress

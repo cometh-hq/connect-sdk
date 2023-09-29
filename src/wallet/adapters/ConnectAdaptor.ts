@@ -69,8 +69,6 @@ export class ConnectAdaptor implements AUTHAdapter {
         const { publicKeyId, signerAddress } =
           await webAuthnService.createOrGetWebAuthnSigner(
             this.jwtToken,
-            this.chainId,
-            this.provider,
             this.API,
             walletAddress,
             this.userName
