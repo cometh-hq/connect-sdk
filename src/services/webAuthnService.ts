@@ -7,7 +7,7 @@ import psl from 'psl'
 import { SiweMessage } from 'siwe'
 import { v4 } from 'uuid'
 
-import { BLOCK_EVENT_GAP, challengePrefix, networks } from '../constants'
+import { BLOCK_EVENT_GAP, challengePrefix } from '../constants'
 import { P256SignerFactory__factory } from '../contracts/types/factories'
 import { API } from '../services'
 import * as utils from '../utils/utils'
@@ -246,7 +246,7 @@ const createOrGetWebAuthnSigner = async (
     )
 
     /* Deploy Webauthn signer contract */
-    await API.deployWalletWithWebAuthnSigner({
+    await API.initWalletWithWebAuthn({
       token,
       walletAddress: await API.getWalletAddress(signerAddress),
       publicKeyId,
@@ -254,15 +254,6 @@ const createOrGetWebAuthnSigner = async (
       publicKeyY,
       deviceData
     })
-
-    /* Wait on deployment of the contract */
-    const projectParams = await API.getProjectParams()
-    await waitWebAuthnSignerDeployment(
-      projectParams.P256FactoryContractAddress,
-      publicKeyX,
-      publicKeyY,
-      provider
-    )
 
     return { publicKeyId, signerAddress }
   } else {
