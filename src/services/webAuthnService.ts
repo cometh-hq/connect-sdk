@@ -13,7 +13,6 @@ import * as utils from '../utils/utils'
 import { DeviceData, WebAuthnSigner } from '../wallet'
 import { ComethProvider } from '../wallet/ComethProvider'
 import deviceService from './deviceService'
-import tokenService from './tokenService'
 
 const _formatCreatingRpId = (): { name: string; id?: string } => {
   return psl.parse(window.location.host).domain
@@ -234,6 +233,7 @@ const _getWebauthnCredentialsInStorage = (userId: string): string | null => {
 
 const createOrGetWebAuthnSigner = async (
   token: string,
+  userId: string,
   API: API,
   walletAddress?: string,
   userName?: string
@@ -241,8 +241,7 @@ const createOrGetWebAuthnSigner = async (
   publicKeyId: string
   signerAddress: string
 }> => {
-  const decodedToken = tokenService.decodeToken(token)
-  const userId = decodedToken?.payload.sub
+  if (!userId) throw new Error('No userId found')
 
   if (!walletAddress) {
     /* Create WebAuthn credentials */
@@ -252,7 +251,7 @@ const createOrGetWebAuthnSigner = async (
     /* Store WebAuthn credentials in storage */
     _setWebauthnCredentialsInStorage(userId, publicKeyId, signerAddress)
 
-    /* Deploy Webauthn signer contract */
+    /* Create Wallet and Webauthn signer in db */
     await API.initWalletWithWebAuthn({
       token,
       walletAddress: await API.getWalletAddress(signerAddress),
@@ -282,7 +281,7 @@ const createOrGetWebAuthnSigner = async (
         JSON.parse(localStorageWebauthnCredentials).publicKeyId
       )
 
-      /* If signer exists in db, init WebAuthn signer  */
+      /* If signer exists in db, instantiate WebAuthn signer  */
       if (registeredWebauthnSigner)
         return {
           publicKeyId: registeredWebauthnSigner.publicKeyId,

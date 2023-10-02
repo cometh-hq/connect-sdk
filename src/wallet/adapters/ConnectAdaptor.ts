@@ -57,9 +57,13 @@ export class ConnectAdaptor implements AUTHAdapter {
 
     const isWebAuthnCompatible = await webAuthnService.isWebAuthnCompatible()
 
+    const decodedToken = tokenService.decodeToken(this.jwtToken)
+    const userId = decodedToken?.payload.sub
+
     if (!isWebAuthnCompatible) {
       this.signer = await burnerWalletService.createOrGetSigner(
         this.jwtToken,
+        userId,
         walletAddress,
         this.API,
         this.provider
@@ -69,6 +73,7 @@ export class ConnectAdaptor implements AUTHAdapter {
         const { publicKeyId, signerAddress } =
           await webAuthnService.createOrGetWebAuthnSigner(
             this.jwtToken,
+            userId,
             this.API,
             walletAddress,
             this.userName
