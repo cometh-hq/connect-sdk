@@ -57,9 +57,13 @@ export class ConnectAdaptor implements AUTHAdapter {
 
     const isWebAuthnCompatible = await webAuthnService.isWebAuthnCompatible()
 
+    const decodedToken = tokenService.decodeToken(this.jwtToken)
+    const userId = decodedToken?.payload.sub
+
     if (!isWebAuthnCompatible) {
       this.signer = await burnerWalletService.createOrGetSigner(
         this.jwtToken,
+        userId,
         walletAddress,
         this.API,
         this.provider
@@ -69,8 +73,7 @@ export class ConnectAdaptor implements AUTHAdapter {
         const { publicKeyId, signerAddress } =
           await webAuthnService.createOrGetWebAuthnSigner(
             this.jwtToken,
-            this.chainId,
-            this.provider,
+            userId,
             this.API,
             walletAddress,
             this.userName
@@ -113,11 +116,19 @@ export class ConnectAdaptor implements AUTHAdapter {
     )
     const isWebAuthnCompatible = await webAuthnService.isWebAuthnCompatible()
 
+    const decodedToken = tokenService.decodeToken(this.jwtToken)
+    const userId = decodedToken?.payload.sub
+    if (!userId) throw new Error('No userId found')
+
     let addNewSignerRequest
 
     if (isWebAuthnCompatible) {
       const { publicKeyX, publicKeyY, publicKeyId, signerAddress, deviceData } =
-        await webAuthnService.createWebAuthnSigner(this.jwtToken, this.API)
+        await webAuthnService.createWebAuthnSigner(
+          this.jwtToken,
+          userId,
+          this.API
+        )
 
       addNewSignerRequest = {
         token: this.jwtToken,
@@ -130,10 +141,6 @@ export class ConnectAdaptor implements AUTHAdapter {
         publicKeyY
       }
     } else {
-      const decodedToken = tokenService.decodeToken(this.jwtToken)
-      const userId = decodedToken?.payload.sub
-      if (!userId) throw new Error('No userId found')
-
       this.signer = ethers.Wallet.createRandom()
       window.localStorage.setItem(
         `cometh-connect-${userId}`,

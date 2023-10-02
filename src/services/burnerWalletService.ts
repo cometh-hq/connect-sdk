@@ -3,16 +3,14 @@ import { ethers, Wallet } from 'ethers'
 
 import { API } from './API'
 import safeService from './safeService'
-import tokenService from './tokenService'
 
 export const createOrGetSigner = async (
   token: string,
+  userId: string,
   walletAddress: string,
   API: API,
   provider: StaticJsonRpcProvider
 ): Promise<Wallet> => {
-  const decodedToken = tokenService.decodeToken(token)
-  const userId = decodedToken?.payload.sub
   if (!userId) throw new Error('No userId found')
 
   const storagePrivateKey = window.localStorage.getItem(

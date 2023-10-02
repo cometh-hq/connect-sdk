@@ -98,7 +98,32 @@ export class API {
     return response.data?.safeTxHash
   }
 
-  async deployWalletWithWebAuthnSigner({
+  /**
+   * User Section
+   */
+
+  async initWalletForUserID({
+    token,
+    ownerAddress
+  }: {
+    token: string
+    ownerAddress: string
+  }): Promise<string> {
+    const config = {
+      headers: {
+        token
+      }
+    }
+    const body = {
+      ownerAddress
+    }
+
+    const response = await this.api.post(`/user/init`, body, config)
+
+    return response?.data.walletAddress
+  }
+
+  async initWalletWithWebAuthn({
     token,
     walletAddress,
     publicKeyId,
@@ -126,32 +151,7 @@ export class API {
       deviceData
     }
 
-    await this.api.post(`/wallets/deploy-with-webauthn-signer`, body, config)
-  }
-
-  /**
-   * User Section
-   */
-
-  async initWalletForUserID({
-    token,
-    ownerAddress
-  }: {
-    token: string
-    ownerAddress: string
-  }): Promise<string> {
-    const config = {
-      headers: {
-        token
-      }
-    }
-    const body = {
-      ownerAddress
-    }
-
-    const response = await this.api.post(`/user/init`, body, config)
-
-    return response?.data.walletAddress
+    await this.api.post(`/user/init-with-webauthn`, body, config)
   }
 
   async getWalletAddressFromUserID(token: string): Promise<string> {
