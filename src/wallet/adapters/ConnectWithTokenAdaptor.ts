@@ -177,7 +177,8 @@ export class ConnectWithTokenAdaptor implements AUTHAdapter {
   }
 
   public async getNewSignerRequestByUser(): Promise<NewSignerRequest[] | null> {
-    return await this.API.getNewSignerRequestByUser(this.jwtToken)
+    const walletAddress = await this.getWalletAddress()
+    return await this.API.getNewSignerRequestByUser(walletAddress)
   }
 
   public async deleteNewSignerRequest(signerAddress: string): Promise<void> {

@@ -202,6 +202,59 @@ export class API {
     return response?.data?.walletAddress
   }
 
+  async createNewSignerRequest({
+    token,
+    walletAddress,
+    signerAddress,
+    deviceData,
+    type,
+    publicKeyX,
+    publicKeyY,
+    publicKeyId
+  }: {
+    token: string
+    walletAddress: string
+    signerAddress: string
+    deviceData: DeviceData
+    type: NewSignerRequestType
+    publicKeyId?: string
+    publicKeyX?: string
+    publicKeyY?: string
+  }): Promise<void> {
+    const config = {
+      headers: {
+        token
+      }
+    }
+
+    const body = {
+      walletAddress,
+      signerAddress,
+      deviceData,
+      type,
+      publicKeyX,
+      publicKeyY,
+      publicKeyId
+    }
+    await this.api.post(`/user/new-signer-request`, body, config)
+  }
+
+  async deleteNewSignerRequest({
+    token,
+    signerAddress
+  }: {
+    token: string
+    signerAddress: string
+  }): Promise<void> {
+    const config = {
+      headers: {
+        token
+      }
+    }
+
+    await this.api.delete(`/user/new-signer-request/${signerAddress}`, config)
+  }
+
   /**
    * WebAuthn Section
    */
@@ -280,70 +333,11 @@ export class API {
    * New signer request
    */
 
-  async createNewSignerRequest({
-    token,
-    walletAddress,
-    signerAddress,
-    deviceData,
-    type,
-    publicKeyX,
-    publicKeyY,
-    publicKeyId
-  }: {
-    token: string
-    walletAddress: string
-    signerAddress: string
-    deviceData: DeviceData
-    type: NewSignerRequestType
-    publicKeyId?: string
-    publicKeyX?: string
-    publicKeyY?: string
-  }): Promise<void> {
-    const config = {
-      headers: {
-        token
-      }
-    }
-
-    const body = {
-      walletAddress,
-      signerAddress,
-      deviceData,
-      type,
-      publicKeyX,
-      publicKeyY,
-      publicKeyId
-    }
-    await this.api.post(`/new-signer-request`, body, config)
-  }
-
   async getNewSignerRequestByUser(
-    token: string
+    walletAddress: string
   ): Promise<NewSignerRequest[] | null> {
-    const config = {
-      headers: {
-        token
-      }
-    }
-
-    const response = await this.api.get(`/new-signer-request`, config)
+    const response = await this.api.get(`/new-signer-request/${walletAddress}`)
 
     return response.data.signerRequests
-  }
-
-  async deleteNewSignerRequest({
-    token,
-    signerAddress
-  }: {
-    token: string
-    signerAddress: string
-  }): Promise<void> {
-    const config = {
-      headers: {
-        token
-      }
-    }
-
-    await this.api.delete(`/new-signer-request/${signerAddress}`, config)
   }
 }
