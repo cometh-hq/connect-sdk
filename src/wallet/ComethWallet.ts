@@ -68,12 +68,12 @@ export class ComethWallet {
    * Connection Section
    */
 
-  public async connect(injectedWalletAddress?: string): Promise<void> {
+  public async connect(walletAddress?: string): Promise<void> {
     if (!networks[this.chainId])
       throw new Error('This network is not supported')
 
     if (!this.authAdapter) throw new Error('No EOA adapter found')
-    await this.authAdapter.connect(injectedWalletAddress)
+    await this.authAdapter.connect(walletAddress)
 
     this.projectParams = await this.API.getProjectParams()
     this.signer = this.authAdapter.getSigner()
