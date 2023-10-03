@@ -28,6 +28,7 @@ export class ConnectAdaptor implements AUTHAdapter {
   readonly chainId: SupportedNetworks
   private API: API
   private provider: StaticJsonRpcProvider
+  private walletAddress?: string
   private userName?: string
 
   constructor({
@@ -46,10 +47,8 @@ export class ConnectAdaptor implements AUTHAdapter {
   }
 
   async connect(injectedWalletAddress?: string): Promise<void> {
-    if (injectedWalletAddress) {
-      const connectWallet = await this.API.getWalletInfos(injectedWalletAddress)
-      if (!connectWallet) throw new Error('Wallet does not exists')
-    }
+    if (injectedWalletAddress)
+      await this._verifyInjectedWalletAddress(injectedWalletAddress)
 
     const isWebAuthnCompatible = await webAuthnService.isWebAuthnCompatible()
 
@@ -74,6 +73,20 @@ export class ConnectAdaptor implements AUTHAdapter {
         )
       }
     }
+
+    this.walletAddress = injectedWalletAddress
+      ? injectedWalletAddress
+      : await this.API.getWalletAddress(await this.signer.getAddress())
+  }
+
+  async _verifyInjectedWalletAddress(walletAddress: string): Promise<void> {
+    let connectWallet
+    try {
+      connectWallet = await this.API.getWalletInfos(walletAddress)
+    } catch {
+      throw new Error('Please verify your injected wallet address')
+    }
+    if (!connectWallet) throw new Error('Injected wallet is not registered')
   }
 
   async logout(): Promise<void> {
@@ -92,8 +105,8 @@ export class ConnectAdaptor implements AUTHAdapter {
   }
 
   async getWalletAddress(): Promise<string> {
-    if (!this.signer) throw new Error('No signer instance found')
-    return this.signer.getAddress()
+    if (!this.walletAddress) throw new Error('No wallet instance found')
+    return this.walletAddress
   }
 
   async getUserInfos(): Promise<Partial<UserInfos>> {

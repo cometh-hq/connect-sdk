@@ -107,7 +107,7 @@ export class API {
       ownerAddress
     }
 
-    const response = await this.api.post(`/wallet/init`, body)
+    const response = await this.api.post(`/wallets/init`, body)
 
     return response?.data.walletAddress
   }
@@ -133,7 +133,7 @@ export class API {
       deviceData
     }
 
-    await this.api.post(`/wallet/init-with-webauthn`, body)
+    await this.api.post(`/wallets/init-with-webauthn`, body)
   }
 
   /**
