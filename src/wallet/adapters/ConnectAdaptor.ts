@@ -46,24 +46,23 @@ export class ConnectAdaptor implements AUTHAdapter {
     )
   }
 
-  async connect(injectedWalletAddress?: string): Promise<void> {
-    if (injectedWalletAddress)
-      await this._verifyInjectedWalletAddress(injectedWalletAddress)
+  async connect(walletAddress?: string): Promise<void> {
+    if (walletAddress) await this._verifywalletAddress(walletAddress)
 
     const isWebAuthnCompatible = await webAuthnService.isWebAuthnCompatible()
 
     if (!isWebAuthnCompatible) {
-      this.signer = injectedWalletAddress
+      this.signer = walletAddress
         ? await burnerWalletService.getSigner(
             this.API,
             this.provider,
-            injectedWalletAddress
+            walletAddress
           )
         : await burnerWalletService.createSignerAndWallet(this.API)
     } else {
       try {
-        const { publicKeyId, signerAddress } = injectedWalletAddress
-          ? await webAuthnService.getSigner(this.API, injectedWalletAddress)
+        const { publicKeyId, signerAddress } = walletAddress
+          ? await webAuthnService.getSigner(this.API, walletAddress)
           : await webAuthnService.createSignerAndWallet(this.API, this.userName)
 
         this.signer = new WebAuthnSigner(publicKeyId, signerAddress)
@@ -74,19 +73,19 @@ export class ConnectAdaptor implements AUTHAdapter {
       }
     }
 
-    this.walletAddress = injectedWalletAddress
-      ? injectedWalletAddress
+    this.walletAddress = walletAddress
+      ? walletAddress
       : await this.API.getWalletAddress(await this.signer.getAddress())
   }
 
-  async _verifyInjectedWalletAddress(walletAddress: string): Promise<void> {
+  async _verifywalletAddress(walletAddress: string): Promise<void> {
     let connectWallet
     try {
       connectWallet = await this.API.getWalletInfos(walletAddress)
     } catch {
-      throw new Error('Please verify your injected wallet address')
+      throw new Error('Invalid address format')
     }
-    if (!connectWallet) throw new Error('Injected wallet is not registered')
+    if (!connectWallet) throw new Error('Wallet does not exist')
   }
 
   async logout(): Promise<void> {
