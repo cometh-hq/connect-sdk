@@ -46,24 +46,25 @@ export class ConnectAdaptor implements AUTHAdapter {
   }
 
   async connect(injectedWalletAddress?: string): Promise<void> {
-    const connectWallet = injectedWalletAddress
-      ? await this.API.getWalletInfos(injectedWalletAddress)
-      : null
+    if (injectedWalletAddress) {
+      const connectWallet = await this.API.getWalletInfos(injectedWalletAddress)
+      if (!connectWallet) throw new Error('Wallet does not exists')
+    }
 
     const isWebAuthnCompatible = await webAuthnService.isWebAuthnCompatible()
 
     if (!isWebAuthnCompatible) {
-      this.signer = connectWallet
+      this.signer = injectedWalletAddress
         ? await burnerWalletService.getSigner(
             this.API,
             this.provider,
-            connectWallet.address
+            injectedWalletAddress
           )
         : await burnerWalletService.createSignerAndWallet(this.API)
     } else {
       try {
-        const { publicKeyId, signerAddress } = connectWallet
-          ? await webAuthnService.getSigner(this.API, connectWallet.address)
+        const { publicKeyId, signerAddress } = injectedWalletAddress
+          ? await webAuthnService.getSigner(this.API, injectedWalletAddress)
           : await webAuthnService.createSignerAndWallet(this.API, this.userName)
 
         this.signer = new WebAuthnSigner(publicKeyId, signerAddress)
