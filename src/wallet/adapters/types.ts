@@ -15,7 +15,7 @@ export interface AUTHAdapter {
     walletAddress: string,
     userName?: string
   ): Promise<NewSignerRequestBody>
-  getNewSignerRequests(): Promise<NewSignerRequest[] | null>
+  getNewSignerRequestsByWallet(): Promise<NewSignerRequest[] | null>
   createNewSignerRequestByToken(): Promise<void>
   deleteNewSignerRequestByToken(signerAddress: string): Promise<void>
   deployWebAuthnSignerByToken(

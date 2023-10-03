@@ -180,7 +180,9 @@ export class ConnectWithTokenAdaptor implements AUTHAdapter {
     })
   }
 
-  public async getNewSignerRequests(): Promise<NewSignerRequest[] | null> {
+  public async getNewSignerRequestsByWallet(): Promise<
+    NewSignerRequest[] | null
+  > {
     const walletAddress = await this.getWalletAddress()
     return await this.API.getNewSignerRequestByUser(walletAddress)
   }

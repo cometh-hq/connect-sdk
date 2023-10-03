@@ -152,7 +152,9 @@ export class ConnectAdaptor implements AUTHAdapter {
     return addNewSignerRequest
   }
 
-  public async getNewSignerRequests(): Promise<NewSignerRequest[] | null> {
+  public async getNewSignerRequestsByWallet(): Promise<
+    NewSignerRequest[] | null
+  > {
     const walletAddress = await this.getWalletAddress()
     return await this.API.getNewSignerRequestByUser(walletAddress)
   }

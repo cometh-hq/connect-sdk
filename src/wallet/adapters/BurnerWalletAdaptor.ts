@@ -69,8 +69,10 @@ export class BurnerWalletAdaptor
     throw new Error('Not authorized method: createNewSignerRequest')
   }
 
-  public async getNewSignerRequests(): Promise<NewSignerRequest[] | null> {
-    throw new Error('Not authorized method: getNewSignerRequests')
+  public async getNewSignerRequestsByWallet(): Promise<
+    NewSignerRequest[] | null
+  > {
+    throw new Error('Not authorized method: getNewSignerRequestsByWallet')
   }
 
   public async createNewSignerRequestByToken(): Promise<void> {
