@@ -74,9 +74,7 @@ export class ConnectAdaptor implements AUTHAdapter {
       }
     }
 
-    this.walletAddress = walletAddress
-      ? walletAddress
-      : await this.API.getWalletAddress(await this.signer.getAddress())
+    this.walletAddress = await this._initAdaptorWalletAddress(walletAddress)
   }
 
   async _verifywalletAddress(walletAddress: string): Promise<void> {
@@ -87,6 +85,13 @@ export class ConnectAdaptor implements AUTHAdapter {
       throw new Error('Invalid address format')
     }
     if (!connectWallet) throw new Error('Wallet does not exist')
+  }
+
+  async _initAdaptorWalletAddress(walletAddress?: string): Promise<string> {
+    if (!this.signer) throw new Error('No signer instance found')
+    return walletAddress
+      ? walletAddress
+      : await this.API.getWalletAddress(await this.signer.getAddress())
   }
 
   async logout(): Promise<void> {
@@ -113,7 +118,7 @@ export class ConnectAdaptor implements AUTHAdapter {
     return { walletAddress: await this.getAccount() } ?? {}
   }
 
-  public async createNewSignerRequest(
+  public async initNewSignerRequest(
     walletAddress: string,
     userName?: string
   ): Promise<NewSignerRequestBody> {
@@ -152,26 +157,8 @@ export class ConnectAdaptor implements AUTHAdapter {
     return addNewSignerRequest
   }
 
-  public async getNewSignerRequestsByWallet(): Promise<
-    NewSignerRequest[] | null
-  > {
+  public async getNewSignerRequests(): Promise<NewSignerRequest[] | null> {
     const walletAddress = await this.getWalletAddress()
-    return await this.API.getNewSignerRequestByUser(walletAddress)
-  }
-
-  public async createNewSignerRequestByToken(): Promise<void> {
-    throw new Error('Not authorized method: createNewSignerRequestByToken')
-  }
-
-  public async deleteNewSignerRequestByToken(
-    signerAddress: string
-  ): Promise<void> {
-    throw new Error('Not authorized method: deleteNewSignerRequestByToken')
-  }
-
-  public async deployWebAuthnSignerByToken(
-    newSignerRequest: NewSignerRequest
-  ): Promise<string> {
-    throw new Error('Not authorized method: deployWebAuthnSignerByToken')
+    return await this.API.getNewSignerRequests(walletAddress)
   }
 }

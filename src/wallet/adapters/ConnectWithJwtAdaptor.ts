@@ -17,7 +17,7 @@ import {
 } from '../types'
 import { AUTHAdapter } from './types'
 
-export interface ConnectWithTokenAdaptorConfig {
+export interface ConnectWithJwtAdaptorConfig {
   chainId: SupportedNetworks
   jwtToken: string
   apiKey: string
@@ -26,7 +26,7 @@ export interface ConnectWithTokenAdaptorConfig {
   baseUrl?: string
 }
 
-export class ConnectWithTokenAdaptor implements AUTHAdapter {
+export class ConnectWithJwtAdaptor implements AUTHAdapter {
   private signer?: WebAuthnSigner | Wallet
   readonly chainId: SupportedNetworks
   private API: API
@@ -41,7 +41,7 @@ export class ConnectWithTokenAdaptor implements AUTHAdapter {
     userName,
     rpcUrl,
     baseUrl
-  }: ConnectWithTokenAdaptorConfig) {
+  }: ConnectWithJwtAdaptorConfig) {
     this.chainId = chainId
     this.jwtToken = jwtToken
     this.userName = userName
@@ -121,7 +121,7 @@ export class ConnectWithTokenAdaptor implements AUTHAdapter {
     return { walletAddress: await this.getAccount() } ?? {}
   }
 
-  public async createNewSignerRequest(
+  public async initNewSignerRequest(
     walletAddress: string,
     userName?: string
   ): Promise<NewSignerRequestBody> {
@@ -164,12 +164,12 @@ export class ConnectWithTokenAdaptor implements AUTHAdapter {
     return addNewSignerRequest
   }
 
-  public async createNewSignerRequestByToken(userName?: string): Promise<void> {
+  public async createNewSignerRequest(userName?: string): Promise<void> {
     const walletAddress = await this.API.getWalletAddressFromUserID(
       this.jwtToken
     )
 
-    const addNewSignerRequest = await this.createNewSignerRequest(
+    const addNewSignerRequest = await this.initNewSignerRequest(
       walletAddress,
       userName
     )
@@ -180,23 +180,19 @@ export class ConnectWithTokenAdaptor implements AUTHAdapter {
     })
   }
 
-  public async getNewSignerRequestsByWallet(): Promise<
-    NewSignerRequest[] | null
-  > {
+  public async getNewSignerRequests(): Promise<NewSignerRequest[] | null> {
     const walletAddress = await this.getWalletAddress()
-    return await this.API.getNewSignerRequestByUser(walletAddress)
+    return await this.API.getNewSignerRequests(walletAddress)
   }
 
-  public async deleteNewSignerRequestByToken(
-    signerAddress: string
-  ): Promise<void> {
+  public async deleteNewSignerRequest(signerAddress: string): Promise<void> {
     return await this.API.deleteNewSignerRequest({
       token: this.jwtToken,
       signerAddress
     })
   }
 
-  public async deployWebAuthnSignerByToken(
+  public async deployWebAuthnSigner(
     newSignerRequest: NewSignerRequest
   ): Promise<string> {
     if (!newSignerRequest.publicKeyId) throw new Error('publicKeyId not valid')

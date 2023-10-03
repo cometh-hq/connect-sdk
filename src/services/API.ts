@@ -333,7 +333,7 @@ export class API {
    * New signer request
    */
 
-  async getNewSignerRequestByUser(
+  async getNewSignerRequests(
     walletAddress: string
   ): Promise<NewSignerRequest[] | null> {
     const response = await this.api.get(`/new-signer-request/${walletAddress}`)

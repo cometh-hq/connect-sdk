@@ -3,7 +3,7 @@ import { ethers } from 'ethers'
 import { Magic, MagicSDKAdditionalConfiguration } from 'magic-sdk'
 
 import { IConnectionSigning } from '../IConnectionSigning'
-import { NewSignerRequest, NewSignerRequestBody, UserInfos } from '../types'
+import { UserInfos } from '../types'
 import { AUTHAdapter } from './types'
 
 export interface MagicLinkAdapterConfig {
@@ -71,34 +71,5 @@ export class MagicLinkAdapter
     if (!this.magic) throw new Error('No magicLink instance found')
     const userInfos = await this.magic.user.getInfo()
     return userInfos ?? {}
-  }
-
-  public async createNewSignerRequest(
-    walletAddress: string,
-    userName?: string
-  ): Promise<NewSignerRequestBody> {
-    throw new Error('Not authorized method: createNewSignerRequest')
-  }
-
-  public async getNewSignerRequestsByWallet(): Promise<
-    NewSignerRequest[] | null
-  > {
-    throw new Error('Not authorized method: getNewSignerRequestsByWallet')
-  }
-
-  public async createNewSignerRequestByToken(): Promise<void> {
-    throw new Error('Not authorized method: createNewSignerRequestByToken')
-  }
-
-  public async deleteNewSignerRequestByToken(
-    signerAddress: string
-  ): Promise<void> {
-    throw new Error('Not authorized method: deleteNewSignerRequestByToken')
-  }
-
-  public async deployWebAuthnSignerByToken(
-    newSignerRequest: NewSignerRequest
-  ): Promise<string> {
-    throw new Error('Not authorized method: deployWebAuthnSignerByToken')
   }
 }
