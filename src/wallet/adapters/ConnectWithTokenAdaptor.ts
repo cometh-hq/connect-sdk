@@ -125,13 +125,17 @@ export class ConnectWithTokenAdaptor implements AUTHAdapter {
     walletAddress: string,
     userName?: string
   ): Promise<NewSignerObject> {
+    const decodedToken = tokenService.decodeToken(this.jwtToken)
+    const userId = decodedToken?.payload.sub
+    if (!userId) throw new Error('No userId found')
+
     const isWebAuthnCompatible = await webAuthnService.isWebAuthnCompatible()
 
     let addNewSignerRequest: NewSignerObject
 
     if (isWebAuthnCompatible) {
       const { publicKeyX, publicKeyY, publicKeyId, signerAddress, deviceData } =
-        await webAuthnService.createWebAuthnSigner(this.API, userName)
+        await webAuthnService.createWebAuthnSigner(this.API, userName, userId)
 
       addNewSignerRequest = {
         walletAddress,
@@ -145,7 +149,7 @@ export class ConnectWithTokenAdaptor implements AUTHAdapter {
     } else {
       this.signer = ethers.Wallet.createRandom()
       window.localStorage.setItem(
-        `cometh-connect-${walletAddress}`,
+        `cometh-connect-${userId}`,
         this.signer.privateKey
       )
 

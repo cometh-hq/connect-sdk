@@ -28,6 +28,7 @@ export class ConnectAdaptor implements AUTHAdapter {
   readonly chainId: SupportedNetworks
   private API: API
   private provider: StaticJsonRpcProvider
+  private walletAddress?: string
   private userName?: string
 
   constructor({
@@ -46,24 +47,23 @@ export class ConnectAdaptor implements AUTHAdapter {
   }
 
   async connect(injectedWalletAddress?: string): Promise<void> {
-    const connectWallet = injectedWalletAddress
-      ? await this.API.getWalletInfos(injectedWalletAddress)
-      : null
+    if (injectedWalletAddress)
+      await this._verifyInjectedWalletAddress(injectedWalletAddress)
 
     const isWebAuthnCompatible = await webAuthnService.isWebAuthnCompatible()
 
     if (!isWebAuthnCompatible) {
-      this.signer = connectWallet
+      this.signer = injectedWalletAddress
         ? await burnerWalletService.getSigner(
             this.API,
             this.provider,
-            connectWallet.address
+            injectedWalletAddress
           )
         : await burnerWalletService.createSignerAndWallet(this.API)
     } else {
       try {
-        const { publicKeyId, signerAddress } = connectWallet
-          ? await webAuthnService.getSigner(this.API, connectWallet.address)
+        const { publicKeyId, signerAddress } = injectedWalletAddress
+          ? await webAuthnService.getSigner(this.API, injectedWalletAddress)
           : await webAuthnService.createSignerAndWallet(this.API, this.userName)
 
         this.signer = new WebAuthnSigner(publicKeyId, signerAddress)
@@ -73,6 +73,20 @@ export class ConnectAdaptor implements AUTHAdapter {
         )
       }
     }
+
+    this.walletAddress = injectedWalletAddress
+      ? injectedWalletAddress
+      : await this.API.getWalletAddress(await this.signer.getAddress())
+  }
+
+  async _verifyInjectedWalletAddress(walletAddress: string): Promise<void> {
+    let connectWallet
+    try {
+      connectWallet = await this.API.getWalletInfos(walletAddress)
+    } catch {
+      throw new Error('Please verify your injected wallet address')
+    }
+    if (!connectWallet) throw new Error('Injected wallet is not registered')
   }
 
   async logout(): Promise<void> {
@@ -91,8 +105,8 @@ export class ConnectAdaptor implements AUTHAdapter {
   }
 
   async getWalletAddress(): Promise<string> {
-    if (!this.signer) throw new Error('No signer instance found')
-    return this.signer.getAddress()
+    if (!this.walletAddress) throw new Error('No wallet instance found')
+    return this.walletAddress
   }
 
   async getUserInfos(): Promise<Partial<UserInfos>> {
