@@ -11,7 +11,10 @@ export interface AUTHAdapter {
   getSigner(): JsonRpcSigner | Wallet | WebAuthnSigner
   getWalletAddress(): Promise<string>
   getUserInfos(): Promise<Partial<UserInfos>>
-  createNewSignerObject(walletAddress: string): Promise<NewSignerObject>
+  createNewSignerObject(
+    walletAddress: string,
+    userName?: string
+  ): Promise<NewSignerObject>
   createNewSignerRequest(): Promise<void>
   getNewSignerRequestByUser(): Promise<NewSignerRequest[] | null>
   deleteNewSignerRequest(signerAddress: string): Promise<void>

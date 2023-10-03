@@ -19,6 +19,7 @@ import { AUTHAdapter } from './adapters'
 import { WebAuthnSigner } from './signers/WebAuthnSigner'
 import {
   MetaTransactionData,
+  NewSignerObject,
   NewSignerRequest,
   NewSignerRequestType,
   ProjectParams,
@@ -350,6 +351,13 @@ export class ComethWallet {
   /**
    * New Signer Request Section
    */
+
+  public async createNewSignerObject(
+    walletAddress: string,
+    userName?: string
+  ): Promise<NewSignerObject> {
+    return await this.authAdapter.createNewSignerObject(walletAddress, userName)
+  }
 
   public async createNewSignerRequest(): Promise<void> {
     await this.authAdapter.createNewSignerRequest()
