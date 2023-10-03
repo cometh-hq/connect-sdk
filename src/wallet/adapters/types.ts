@@ -6,14 +6,12 @@ import { NewSignerRequest, UserInfos } from '../types'
 
 export interface AUTHAdapter {
   logout(): Promise<void>
-  connect(): Promise<void>
+  connect(injectedWalletAddress?: string): Promise<void>
   getAccount(): Promise<string | null>
   getSigner(): JsonRpcSigner | Wallet | WebAuthnSigner
   getWalletAddress(): Promise<string>
   getUserInfos(): Promise<Partial<UserInfos>>
-  createNewSignerRequest(): Promise<void>
-  getNewSignerRequestByUser(): Promise<NewSignerRequest[] | null>
-  deleteNewSignerRequest(signerAddress: string): Promise<void>
+  createNewSignerObject(walletAddress: string): Promise<NewSignerRequest>
   deployWebAuthnSigner(newSignerRequest: NewSignerRequest): Promise<string>
   readonly chainId: string
 }

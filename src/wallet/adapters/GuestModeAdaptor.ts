@@ -5,7 +5,6 @@ import { networks } from '../../constants'
 import { API } from '../../services'
 import burnerWalletService from '../../services/burnerWalletService'
 import deviceService from '../../services/deviceService'
-import tokenService from '../../services/tokenService'
 import webAuthnService from '../../services/webAuthnService'
 import { WebAuthnSigner } from '../signers/WebAuthnSigner'
 import {
@@ -18,31 +17,27 @@ import { AUTHAdapter } from './types'
 
 export interface ConnectAdaptorConfig {
   chainId: SupportedNetworks
-  jwtToken: string
   apiKey: string
   userName?: string
   rpcUrl?: string
   baseUrl?: string
 }
 
-export class ConnectAdaptor implements AUTHAdapter {
+export class GuestModeAdaptor implements AUTHAdapter {
   private signer?: WebAuthnSigner | Wallet
   readonly chainId: SupportedNetworks
   private API: API
-  private jwtToken: string
   private provider: StaticJsonRpcProvider
   private userName?: string
 
   constructor({
     chainId,
-    jwtToken,
     apiKey,
     userName,
     rpcUrl,
     baseUrl
   }: ConnectAdaptorConfig) {
     this.chainId = chainId
-    this.jwtToken = jwtToken
     this.userName = userName
     this.API = new API(apiKey, +chainId, baseUrl)
     this.provider = new StaticJsonRpcProvider(
@@ -50,34 +45,27 @@ export class ConnectAdaptor implements AUTHAdapter {
     )
   }
 
-  async connect(): Promise<void> {
-    const walletAddress = await this.API.getWalletAddressFromUserID(
-      this.jwtToken
-    )
+  async connect(injectedWalletAddress?: string): Promise<void> {
+    const connectWallet = injectedWalletAddress
+      ? await this.API.getWalletInfos(injectedWalletAddress)
+      : null
 
     const isWebAuthnCompatible = await webAuthnService.isWebAuthnCompatible()
 
-    const decodedToken = tokenService.decodeToken(this.jwtToken)
-    const userId = decodedToken?.payload.sub
-
     if (!isWebAuthnCompatible) {
-      this.signer = await burnerWalletService.createOrGetSigner(
-        this.jwtToken,
-        userId,
-        walletAddress,
-        this.API,
-        this.provider
-      )
+      this.signer = connectWallet
+        ? await burnerWalletService.getSigner(
+            this.API,
+            this.provider,
+            connectWallet.address
+          )
+        : await burnerWalletService.createSignerAndWallet(this.API)
     } else {
       try {
-        const { publicKeyId, signerAddress } =
-          await webAuthnService.createOrGetWebAuthnSigner(
-            this.jwtToken,
-            userId,
-            this.API,
-            walletAddress,
-            this.userName
-          )
+        const { publicKeyId, signerAddress } = connectWallet
+          ? await webAuthnService.getSigner(this.API, connectWallet.address)
+          : await webAuthnService.createSignerAndWallet(this.API, this.userName)
+
         this.signer = new WebAuthnSigner(publicKeyId, signerAddress)
       } catch {
         throw new Error(
@@ -88,50 +76,42 @@ export class ConnectAdaptor implements AUTHAdapter {
   }
 
   async logout(): Promise<void> {
-    if (!this.signer) throw new Error('No Wallet instance found')
+    if (!this.signer) throw new Error('No signer instance found')
     this.signer = undefined
   }
 
   async getAccount(): Promise<string> {
-    if (!this.signer) throw new Error('No Wallet instance found')
+    if (!this.signer) throw new Error('No signer instance found')
     return this.signer.getAddress()
   }
 
   getSigner(): Wallet | WebAuthnSigner {
-    if (!this.signer) throw new Error('No Wallet instance found')
+    if (!this.signer) throw new Error('No signer instance found')
     return this.signer
   }
 
   async getWalletAddress(): Promise<string> {
-    return await this.API.getWalletAddressFromUserID(this.jwtToken)
+    if (!this.signer) throw new Error('No signer instance found')
+    return this.signer.getAddress()
   }
 
   async getUserInfos(): Promise<Partial<UserInfos>> {
     return { walletAddress: await this.getAccount() } ?? {}
   }
 
-  public async createNewSignerRequest(): Promise<void> {
-    const walletAddress = await this.API.getWalletAddressFromUserID(
-      this.jwtToken
-    )
+  public async createNewSignerObject(
+    walletAddress: string,
+    userName?: string
+  ): Promise<NewSignerRequest> {
     const isWebAuthnCompatible = await webAuthnService.isWebAuthnCompatible()
-
-    const decodedToken = tokenService.decodeToken(this.jwtToken)
-    const userId = decodedToken?.payload.sub
-    if (!userId) throw new Error('No userId found')
 
     let addNewSignerRequest
 
     if (isWebAuthnCompatible) {
       const { publicKeyX, publicKeyY, publicKeyId, signerAddress, deviceData } =
-        await webAuthnService.createWebAuthnSigner(
-          this.jwtToken,
-          userId,
-          this.API
-        )
+        await webAuthnService.createWebAuthnSigner(this.API, userName)
 
       addNewSignerRequest = {
-        token: this.jwtToken,
         walletAddress,
         signerAddress,
         deviceData,
@@ -143,12 +123,11 @@ export class ConnectAdaptor implements AUTHAdapter {
     } else {
       this.signer = ethers.Wallet.createRandom()
       window.localStorage.setItem(
-        `cometh-connect-${userId}`,
+        `cometh-connect-${walletAddress}`,
         this.signer.privateKey
       )
 
       addNewSignerRequest = {
-        token: this.jwtToken,
         walletAddress,
         signerAddress: this.signer?.address,
         deviceData: deviceService.getDeviceData(),
@@ -156,18 +135,7 @@ export class ConnectAdaptor implements AUTHAdapter {
       }
     }
 
-    await this.API.createNewSignerRequest(addNewSignerRequest)
-  }
-
-  public async getNewSignerRequestByUser(): Promise<NewSignerRequest[] | null> {
-    return await this.API.getNewSignerRequestByUser(this.jwtToken)
-  }
-
-  public async deleteNewSignerRequest(signerAddress: string): Promise<void> {
-    return await this.API.deleteNewSignerRequest({
-      token: this.jwtToken,
-      signerAddress
-    })
+    return addNewSignerRequest
   }
 
   public async deployWebAuthnSigner(
@@ -178,7 +146,6 @@ export class ConnectAdaptor implements AUTHAdapter {
     if (!newSignerRequest.publicKeyY) throw new Error('publicKeyY not valid')
 
     return await this.API.deployWebAuthnSigner({
-      token: this.jwtToken,
       walletAddress: newSignerRequest.walletAddress,
       publicKeyId: newSignerRequest.publicKeyId,
       publicKeyX: newSignerRequest.publicKeyX,

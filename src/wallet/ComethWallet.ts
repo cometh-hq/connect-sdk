@@ -68,12 +68,12 @@ export class ComethWallet {
    * Connection Section
    */
 
-  public async connect(): Promise<void> {
+  public async connect(injectedWalletAddress?: string): Promise<void> {
     if (!networks[this.chainId])
       throw new Error('This network is not supported')
 
     if (!this.authAdapter) throw new Error('No EOA adapter found')
-    await this.authAdapter.connect()
+    await this.authAdapter.connect(injectedWalletAddress)
 
     this.projectParams = await this.API.getProjectParams()
     this.signer = this.authAdapter.getSigner()
@@ -94,7 +94,7 @@ export class ComethWallet {
     return this.provider
   }
 
-  public async getUserInfos(): Promise<WalletInfos> {
+  public async getUserInfos(): Promise<WalletInfos | null> {
     const walletInfos = await this.API.getWalletInfos(this.getAddress())
     return walletInfos
   }
@@ -351,18 +351,17 @@ export class ComethWallet {
    * New Signer Request Section
    */
 
-  public async createNewSignerRequest(): Promise<void> {
-    await this.authAdapter.createNewSignerRequest()
+  public async createNewSignerObject(
+    walletAddress: string
+  ): Promise<NewSignerRequest> {
+    return await this.authAdapter.createNewSignerObject(walletAddress)
   }
 
   public async validateNewSignerRequest(
     newSignerRequest: NewSignerRequest
   ): Promise<SendTransactionResponse> {
     if (!this.walletAddress) throw new Error('no wallet Address')
-
     if (!this.projectParams) throw new Error('Project params are null')
-
-    await this.deleteNewSignerRequest(newSignerRequest.signerAddress)
 
     if (newSignerRequest.type === NewSignerRequestType.WEBAUTHN) {
       await this.authAdapter.deployWebAuthnSigner(newSignerRequest)
@@ -375,17 +374,5 @@ export class ComethWallet {
       )
     }
     return await this.addOwner(newSignerRequest.signerAddress)
-  }
-
-  public async getNewSignerRequestByUser(): Promise<NewSignerRequest[] | null> {
-    if (!this.walletAddress) throw new Error('no wallet Address')
-
-    return await this.authAdapter.getNewSignerRequestByUser()
-  }
-
-  public async deleteNewSignerRequest(signerAddress: string): Promise<void> {
-    if (!this.walletAddress) throw new Error('no wallet Address')
-
-    await this.authAdapter.deleteNewSignerRequest(signerAddress)
   }
 }

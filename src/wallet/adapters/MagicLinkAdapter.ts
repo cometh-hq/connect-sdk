@@ -73,16 +73,8 @@ export class MagicLinkAdapter
     return userInfos ?? {}
   }
 
-  public async createNewSignerRequest(): Promise<void> {
+  public async createNewSignerObject(): Promise<NewSignerRequest> {
     throw new Error('Not authorized method: createNewSignerRequest')
-  }
-
-  public async getNewSignerRequestByUser(): Promise<NewSignerRequest[] | null> {
-    throw new Error('Not authorized method: getNewSignerRequestByUser')
-  }
-
-  public async deleteNewSignerRequest(signerAddress: string): Promise<void> {
-    throw new Error('Not authorized method: deleteNewSignerRequest')
   }
 
   public async deployWebAuthnSigner(
