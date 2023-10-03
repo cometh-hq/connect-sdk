@@ -1,7 +1,12 @@
 import { ethers, Wallet } from 'ethers'
 
 import { IConnectionSigning } from '../IConnectionSigning'
-import { NewSignerRequest, SupportedNetworks, UserInfos } from '../types'
+import {
+  NewSignerRequest,
+  NewSignerRequestBody,
+  SupportedNetworks,
+  UserInfos
+} from '../types'
 import { AUTHAdapter } from './types'
 
 export class BurnerWalletAdaptor
@@ -57,25 +62,30 @@ export class BurnerWalletAdaptor
     return { walletAddress: this.wallet.address } ?? {}
   }
 
-  public async createNewSignerObject(): Promise<NewSignerRequest> {
+  public async createNewSignerRequest(
+    walletAddress: string,
+    userName?: string
+  ): Promise<NewSignerRequestBody> {
     throw new Error('Not authorized method: createNewSignerRequest')
   }
 
-  public async createNewSignerRequest(): Promise<void> {
-    throw new Error('Not authorized method: createNewSignerRequest')
+  public async getNewSignerRequests(): Promise<NewSignerRequest[] | null> {
+    throw new Error('Not authorized method: getNewSignerRequests')
   }
 
-  public async getNewSignerRequestByUser(): Promise<NewSignerRequest[] | null> {
-    throw new Error('Not authorized method: getNewSignerRequestByUser')
+  public async createNewSignerRequestByToken(): Promise<void> {
+    throw new Error('Not authorized method: createNewSignerRequestByToken')
   }
 
-  public async deleteNewSignerRequest(signerAddress: string): Promise<void> {
-    throw new Error('Not authorized method: deleteNewSignerRequest')
+  public async deleteNewSignerRequestByToken(
+    signerAddress: string
+  ): Promise<void> {
+    throw new Error('Not authorized method: deleteNewSignerRequestByToken')
   }
 
-  public async deployWebAuthnSigner(
+  public async deployWebAuthnSignerByToken(
     newSignerRequest: NewSignerRequest
   ): Promise<string> {
-    throw new Error('Not authorized method: deployWebAuthnSigner')
+    throw new Error('Not authorized method: deployWebAuthnSignerByToken')
   }
 }

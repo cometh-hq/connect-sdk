@@ -9,6 +9,7 @@ import webAuthnService from '../../services/webAuthnService'
 import { WebAuthnSigner } from '../signers/WebAuthnSigner'
 import {
   NewSignerRequest,
+  NewSignerRequestBody,
   NewSignerRequestType,
   SupportedNetworks,
   UserInfos
@@ -112,10 +113,10 @@ export class ConnectAdaptor implements AUTHAdapter {
     return { walletAddress: await this.getAccount() } ?? {}
   }
 
-  public async createNewSignerObject(
+  public async createNewSignerRequest(
     walletAddress: string,
     userName?: string
-  ): Promise<NewSignerRequest> {
+  ): Promise<NewSignerRequestBody> {
     const isWebAuthnCompatible = await webAuthnService.isWebAuthnCompatible()
 
     let addNewSignerRequest
@@ -151,21 +152,24 @@ export class ConnectAdaptor implements AUTHAdapter {
     return addNewSignerRequest
   }
 
-  public async createNewSignerRequest(): Promise<void> {
-    throw new Error('Not authorized method: createNewSignerRequest')
+  public async getNewSignerRequests(): Promise<NewSignerRequest[] | null> {
+    const walletAddress = await this.getWalletAddress()
+    return await this.API.getNewSignerRequestByUser(walletAddress)
   }
 
-  public async getNewSignerRequestByUser(): Promise<NewSignerRequest[] | null> {
-    throw new Error('Not authorized method: getNewSignerRequestByUser')
+  public async createNewSignerRequestByToken(): Promise<void> {
+    throw new Error('Not authorized method: createNewSignerRequestByToken')
   }
 
-  public async deleteNewSignerRequest(signerAddress: string): Promise<void> {
-    throw new Error('Not authorized method: deleteNewSignerRequest')
+  public async deleteNewSignerRequestByToken(
+    signerAddress: string
+  ): Promise<void> {
+    throw new Error('Not authorized method: deleteNewSignerRequestByToken')
   }
 
-  public async deployWebAuthnSigner(
+  public async deployWebAuthnSignerByToken(
     newSignerRequest: NewSignerRequest
   ): Promise<string> {
-    throw new Error('Not authorized method: deployWebAuthnSigner')
+    throw new Error('Not authorized method: deployWebAuthnSignerByToken')
   }
 }
