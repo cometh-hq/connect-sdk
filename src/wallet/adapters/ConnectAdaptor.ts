@@ -23,7 +23,7 @@ export interface ConnectAdaptorConfig {
   baseUrl?: string
 }
 
-export class GuestModeAdaptor implements AUTHAdapter {
+export class ConnectAdaptor implements AUTHAdapter {
   private signer?: WebAuthnSigner | Wallet
   readonly chainId: SupportedNetworks
   private API: API
@@ -138,19 +138,21 @@ export class GuestModeAdaptor implements AUTHAdapter {
     return addNewSignerRequest
   }
 
+  public async createNewSignerRequest(): Promise<void> {
+    throw new Error('Not authorized method: createNewSignerRequest')
+  }
+
+  public async getNewSignerRequestByUser(): Promise<NewSignerRequest[] | null> {
+    throw new Error('Not authorized method: getNewSignerRequestByUser')
+  }
+
+  public async deleteNewSignerRequest(signerAddress: string): Promise<void> {
+    throw new Error('Not authorized method: deleteNewSignerRequest')
+  }
+
   public async deployWebAuthnSigner(
     newSignerRequest: NewSignerRequest
   ): Promise<string> {
-    if (!newSignerRequest.publicKeyId) throw new Error('publicKeyId not valid')
-    if (!newSignerRequest.publicKeyX) throw new Error('publicKeyX not valid')
-    if (!newSignerRequest.publicKeyY) throw new Error('publicKeyY not valid')
-
-    return await this.API.deployWebAuthnSigner({
-      walletAddress: newSignerRequest.walletAddress,
-      publicKeyId: newSignerRequest.publicKeyId,
-      publicKeyX: newSignerRequest.publicKeyX,
-      publicKeyY: newSignerRequest.publicKeyY,
-      deviceData: newSignerRequest.deviceData
-    })
+    throw new Error('Not authorized method: deployWebAuthnSigner')
   }
 }

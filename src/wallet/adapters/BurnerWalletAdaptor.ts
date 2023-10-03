@@ -61,6 +61,18 @@ export class BurnerWalletAdaptor
     throw new Error('Not authorized method: createNewSignerRequest')
   }
 
+  public async createNewSignerRequest(): Promise<void> {
+    throw new Error('Not authorized method: createNewSignerRequest')
+  }
+
+  public async getNewSignerRequestByUser(): Promise<NewSignerRequest[] | null> {
+    throw new Error('Not authorized method: getNewSignerRequestByUser')
+  }
+
+  public async deleteNewSignerRequest(signerAddress: string): Promise<void> {
+    throw new Error('Not authorized method: deleteNewSignerRequest')
+  }
+
   public async deployWebAuthnSigner(
     newSignerRequest: NewSignerRequest
   ): Promise<string> {

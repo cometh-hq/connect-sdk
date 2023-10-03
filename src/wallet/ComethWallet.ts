@@ -19,6 +19,7 @@ import { AUTHAdapter } from './adapters'
 import { WebAuthnSigner } from './signers/WebAuthnSigner'
 import {
   MetaTransactionData,
+  NewSignerObject,
   NewSignerRequest,
   NewSignerRequestType,
   ProjectParams,
@@ -351,17 +352,18 @@ export class ComethWallet {
    * New Signer Request Section
    */
 
-  public async createNewSignerObject(
-    walletAddress: string
-  ): Promise<NewSignerRequest> {
-    return await this.authAdapter.createNewSignerObject(walletAddress)
+  public async createNewSignerRequest(): Promise<void> {
+    await this.authAdapter.createNewSignerRequest()
   }
 
   public async validateNewSignerRequest(
     newSignerRequest: NewSignerRequest
   ): Promise<SendTransactionResponse> {
     if (!this.walletAddress) throw new Error('no wallet Address')
+
     if (!this.projectParams) throw new Error('Project params are null')
+
+    await this.deleteNewSignerRequest(newSignerRequest.signerAddress)
 
     if (newSignerRequest.type === NewSignerRequestType.WEBAUTHN) {
       await this.authAdapter.deployWebAuthnSigner(newSignerRequest)
@@ -374,5 +376,17 @@ export class ComethWallet {
       )
     }
     return await this.addOwner(newSignerRequest.signerAddress)
+  }
+
+  public async getNewSignerRequestByUser(): Promise<NewSignerRequest[] | null> {
+    if (!this.walletAddress) throw new Error('no wallet Address')
+
+    return await this.authAdapter.getNewSignerRequestByUser()
+  }
+
+  public async deleteNewSignerRequest(signerAddress: string): Promise<void> {
+    if (!this.walletAddress) throw new Error('no wallet Address')
+
+    await this.authAdapter.deleteNewSignerRequest(signerAddress)
   }
 }

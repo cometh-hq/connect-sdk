@@ -17,6 +17,22 @@ export const createSignerAndWallet = async (API: API): Promise<Wallet> => {
   return newSigner
 }
 
+export const createSignerAndWalletByToken = async (
+  token: string,
+  userId: string,
+  API: API
+): Promise<Wallet> => {
+  const newSigner = ethers.Wallet.createRandom()
+  window.localStorage.setItem(`cometh-connect-${userId}`, newSigner.privateKey)
+
+  await API.initWalletForUserID({
+    token,
+    ownerAddress: newSigner.address
+  })
+
+  return newSigner
+}
+
 export const getSigner = async (
   API: API,
   provider: StaticJsonRpcProvider,
@@ -47,7 +63,41 @@ export const getSigner = async (
   return storageSigner
 }
 
+export const getSignerByToken = async (
+  userId: string,
+  API: API,
+  provider: StaticJsonRpcProvider,
+  walletAddress: string
+): Promise<Wallet> => {
+  const storagePrivateKey = window.localStorage.getItem(
+    `cometh-connect-${userId}`
+  )
+
+  if (!storagePrivateKey)
+    throw new Error(
+      'New Domain detected. You need to add that domain as signer.'
+    )
+
+  const storageSigner = new ethers.Wallet(storagePrivateKey)
+
+  const isOwner = await safeService.isSigner(
+    storageSigner.address,
+    walletAddress,
+    provider,
+    API
+  )
+
+  if (!isOwner)
+    throw new Error(
+      'New Domain detected. You need to add that domain as signer.'
+    )
+
+  return storageSigner
+}
+
 export default {
   createSignerAndWallet,
-  getSigner
+  createSignerAndWalletByToken,
+  getSigner,
+  getSignerByToken
 }
