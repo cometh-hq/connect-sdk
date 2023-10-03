@@ -63,13 +63,13 @@ export class ConnectWithTokenAdaptor implements AUTHAdapter {
 
     if (!isWebAuthnCompatible) {
       this.signer = walletAddress
-        ? await burnerWalletService.getSignerByToken(
+        ? await burnerWalletService.getSignerForUserId(
             userId,
             this.API,
             this.provider,
             walletAddress
           )
-        : await burnerWalletService.createSignerAndWalletByToken(
+        : await burnerWalletService.createSignerAndWalletForUserId(
             this.jwtToken,
             userId,
             this.API
@@ -77,12 +77,12 @@ export class ConnectWithTokenAdaptor implements AUTHAdapter {
     } else {
       try {
         const { publicKeyId, signerAddress } = walletAddress
-          ? await webAuthnService.getSignerByToken(
+          ? await webAuthnService.getSignerForUserId(
               walletAddress,
               userId,
               this.API
             )
-          : await webAuthnService.createSignerAndWalletByToken(
+          : await webAuthnService.createSignerAndWalletForUserId(
               this.jwtToken,
               userId,
               this.API,

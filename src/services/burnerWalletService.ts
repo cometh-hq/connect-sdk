@@ -17,7 +17,7 @@ export const createSignerAndWallet = async (API: API): Promise<Wallet> => {
   return newSigner
 }
 
-export const createSignerAndWalletByToken = async (
+export const createSignerAndWalletForUserId = async (
   token: string,
   userId: string,
   API: API
@@ -63,7 +63,7 @@ export const getSigner = async (
   return storageSigner
 }
 
-export const getSignerByToken = async (
+export const getSignerForUserId = async (
   userId: string,
   API: API,
   provider: StaticJsonRpcProvider,
@@ -97,7 +97,7 @@ export const getSignerByToken = async (
 
 export default {
   createSignerAndWallet,
-  createSignerAndWalletByToken,
+  createSignerAndWalletForUserId,
   getSigner,
-  getSignerByToken
+  getSignerForUserId
 }

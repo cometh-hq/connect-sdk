@@ -260,10 +260,6 @@ export class API {
     )
     return response.data?.signerAddress
   }
-  /**
-   * By walletAddress
-   */
-
   async getWebAuthnSignerByPublicKeyId(
     publicKeyId: string
   ): Promise<WebAuthnSigner> {
@@ -279,6 +275,10 @@ export class API {
     const response = await this.api.get(`/webauthn-signer/${walletAddress}`)
     return response?.data?.webAuthnSigners
   }
+
+  /**
+   * New signer request
+   */
 
   async createNewSignerRequest({
     token,

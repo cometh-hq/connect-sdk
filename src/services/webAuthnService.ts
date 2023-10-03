@@ -271,7 +271,7 @@ const createSignerAndWallet = async (
   return { publicKeyId, signerAddress }
 }
 
-const createSignerAndWalletByToken = async (
+const createSignerAndWalletForUserId = async (
   token: string,
   userId: string,
   API: API,
@@ -358,7 +358,7 @@ const getSigner = async (
   }
 }
 
-const getSignerByToken = async (
+const getSignerForUserId = async (
   walletAddress: string,
   userId: string,
   API: API
@@ -429,7 +429,7 @@ export default {
   createWebAuthnSigner,
   signWithWebAuthn,
   createSignerAndWallet,
-  createSignerAndWalletByToken,
+  createSignerAndWalletForUserId,
   getSigner,
-  getSignerByToken
+  getSignerForUserId
 }
