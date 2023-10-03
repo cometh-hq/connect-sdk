@@ -76,7 +76,11 @@ const isSafeOwner = async (
   provider: StaticJsonRpcProvider
 ): Promise<boolean> => {
   const safeInstance = await Safe__factory.connect(walletAddress, provider)
-  return await safeInstance.isOwner(signerAddress)
+  if ((await isDeployed(walletAddress, provider)) === true) {
+    return await safeInstance.isOwner(signerAddress)
+  } else {
+    throw new Error('wallet is not deployed')
+  }
 }
 
 const getOwners = async (
@@ -84,7 +88,12 @@ const getOwners = async (
   provider: StaticJsonRpcProvider
 ): Promise<string[]> => {
   const safeInstance = await Safe__factory.connect(walletAddress, provider)
-  return await safeInstance.getOwners()
+
+  if ((await isDeployed(walletAddress, provider)) === true) {
+    return await safeInstance.getOwners()
+  } else {
+    throw new Error('wallet is not deployed')
+  }
 }
 
 const prepareAddOwnerTx = async (

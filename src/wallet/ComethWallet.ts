@@ -19,7 +19,6 @@ import { AUTHAdapter } from './adapters'
 import { WebAuthnSigner } from './signers/WebAuthnSigner'
 import {
   MetaTransactionData,
-  NewSignerObject,
   NewSignerRequest,
   NewSignerRequestType,
   ProjectParams,
