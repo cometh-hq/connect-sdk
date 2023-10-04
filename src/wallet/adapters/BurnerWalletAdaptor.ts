@@ -1,7 +1,7 @@
 import { ethers, Wallet } from 'ethers'
 
 import { IConnectionSigning } from '../IConnectionSigning'
-import { NewSignerRequest, SupportedNetworks, UserInfos } from '../types'
+import { SupportedNetworks, UserInfos } from '../types'
 import { AUTHAdapter } from './types'
 
 export class BurnerWalletAdaptor
@@ -55,27 +55,5 @@ export class BurnerWalletAdaptor
   async getUserInfos(): Promise<Partial<UserInfos>> {
     if (!this.wallet) throw new Error('No Wallet instance found')
     return { walletAddress: this.wallet.address } ?? {}
-  }
-
-  public async createNewSignerObject(): Promise<NewSignerRequest> {
-    throw new Error('Not authorized method: createNewSignerRequest')
-  }
-
-  public async createNewSignerRequest(): Promise<void> {
-    throw new Error('Not authorized method: createNewSignerRequest')
-  }
-
-  public async getNewSignerRequestByUser(): Promise<NewSignerRequest[] | null> {
-    throw new Error('Not authorized method: getNewSignerRequestByUser')
-  }
-
-  public async deleteNewSignerRequest(signerAddress: string): Promise<void> {
-    throw new Error('Not authorized method: deleteNewSignerRequest')
-  }
-
-  public async deployWebAuthnSigner(
-    newSignerRequest: NewSignerRequest
-  ): Promise<string> {
-    throw new Error('Not authorized method: deployWebAuthnSigner')
   }
 }

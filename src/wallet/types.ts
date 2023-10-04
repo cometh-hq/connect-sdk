@@ -99,7 +99,7 @@ export enum NewSignerRequestType {
   BURNER_WALLET = 'BURNER_WALLET'
 }
 
-export type NewSignerObject = {
+export type NewSignerRequestBody = {
   walletAddress: string
   signerAddress: string
   deviceData: DeviceData

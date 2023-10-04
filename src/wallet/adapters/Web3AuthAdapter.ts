@@ -4,7 +4,7 @@ import { Web3Auth, Web3AuthOptions } from '@web3auth/modal'
 import { ethers } from 'ethers'
 
 import { IConnectionSigning } from '../IConnectionSigning'
-import { NewSignerRequest, SupportedNetworks, UserInfos } from '../types'
+import { SupportedNetworks, UserInfos } from '../types'
 import { AUTHAdapter } from './types'
 
 export class Web3AuthAdapter extends IConnectionSigning implements AUTHAdapter {
@@ -67,27 +67,5 @@ export class Web3AuthAdapter extends IConnectionSigning implements AUTHAdapter {
     if (!this.web3auth) throw new Error('No Web3Auth instance found')
     const userInfos = await this.web3auth.getUserInfo()
     return userInfos ?? {}
-  }
-
-  public async createNewSignerObject(): Promise<NewSignerRequest> {
-    throw new Error('Not authorized method: createNewSignerRequest')
-  }
-
-  public async createNewSignerRequest(): Promise<void> {
-    throw new Error('Not authorized method: createNewSignerRequest')
-  }
-
-  public async getNewSignerRequestByUser(): Promise<NewSignerRequest[] | null> {
-    throw new Error('Not authorized method: getNewSignerRequestByUser')
-  }
-
-  public async deleteNewSignerRequest(signerAddress: string): Promise<void> {
-    throw new Error('Not authorized method: deleteNewSignerRequest')
-  }
-
-  public async deployWebAuthnSigner(
-    newSignerRequest: NewSignerRequest
-  ): Promise<string> {
-    throw new Error('Not authorized method: deployWebAuthnSigner')
   }
 }

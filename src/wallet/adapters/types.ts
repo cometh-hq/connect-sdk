@@ -2,7 +2,7 @@ import { JsonRpcSigner } from '@ethersproject/providers'
 import { Wallet } from 'ethers'
 
 import { WebAuthnSigner } from '../signers'
-import { NewSignerObject, NewSignerRequest, UserInfos } from '../types'
+import { UserInfos } from '../types'
 
 export interface AUTHAdapter {
   logout(): Promise<void>
@@ -11,11 +11,6 @@ export interface AUTHAdapter {
   getSigner(): JsonRpcSigner | Wallet | WebAuthnSigner
   getWalletAddress(): Promise<string>
   getUserInfos(): Promise<Partial<UserInfos>>
-  createNewSignerObject(walletAddress: string): Promise<NewSignerObject>
-  createNewSignerRequest(): Promise<void>
-  getNewSignerRequestByUser(): Promise<NewSignerRequest[] | null>
-  deleteNewSignerRequest(signerAddress: string): Promise<void>
-  deployWebAuthnSigner(newSignerRequest: NewSignerRequest): Promise<string>
   readonly chainId: string
 }
 

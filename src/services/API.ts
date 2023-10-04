@@ -202,84 +202,6 @@ export class API {
     return response?.data?.walletAddress
   }
 
-  /**
-   * WebAuthn Section
-   */
-
-  async predictWebAuthnSignerAddress({
-    publicKeyX,
-    publicKeyY
-  }: {
-    publicKeyX: string
-    publicKeyY: string
-  }): Promise<string> {
-    const body = {
-      publicKeyX,
-      publicKeyY
-    }
-
-    const response = await this.api.post(
-      `/webauthn-signer/predict-address`,
-      body
-    )
-    return response.data?.signerAddress
-  }
-
-  async deployWebAuthnSigner({
-    token,
-    walletAddress,
-    publicKeyId,
-    publicKeyX,
-    publicKeyY,
-    deviceData
-  }: {
-    token: string
-    walletAddress: string
-    publicKeyId: string
-    publicKeyX: string
-    publicKeyY: string
-    deviceData: DeviceData
-  }): Promise<string> {
-    const config = {
-      headers: {
-        token
-      }
-    }
-
-    const body = {
-      publicKeyId,
-      publicKeyX,
-      publicKeyY,
-      deviceData
-    }
-
-    const response = await this.api.post(
-      `/webauthn-signer/${walletAddress}/deploy-webauthn-signer`,
-      body,
-      config
-    )
-    return response.data?.signerAddress
-  }
-  async getWebAuthnSignerByPublicKeyId(
-    publicKeyId: string
-  ): Promise<WebAuthnSigner> {
-    const response = await this.api.get(
-      `/webauthn-signer/public-key-id/${publicKeyId}`
-    )
-    return response?.data?.webAuthnSigner
-  }
-
-  async getWebAuthnSignersByWalletAddress(
-    walletAddress: string
-  ): Promise<WebAuthnSigner[]> {
-    const response = await this.api.get(`/webauthn-signer/${walletAddress}`)
-    return response?.data?.webAuthnSigners
-  }
-
-  /**
-   * New signer request
-   */
-
   async createNewSignerRequest({
     token,
     walletAddress,
@@ -314,21 +236,7 @@ export class API {
       publicKeyY,
       publicKeyId
     }
-    await this.api.post(`/new-signer-request`, body, config)
-  }
-
-  async getNewSignerRequestByUser(
-    token: string
-  ): Promise<NewSignerRequest[] | null> {
-    const config = {
-      headers: {
-        token
-      }
-    }
-
-    const response = await this.api.get(`/new-signer-request`, config)
-
-    return response.data.signerRequests
+    await this.api.post(`/user/new-signer-request`, body, config)
   }
 
   async deleteNewSignerRequest({
@@ -344,6 +252,94 @@ export class API {
       }
     }
 
-    await this.api.delete(`/new-signer-request/${signerAddress}`, config)
+    await this.api.delete(`/user/new-signer-request/${signerAddress}`, config)
+  }
+
+  async deployWebAuthnSigner({
+    token,
+    walletAddress,
+    publicKeyId,
+    publicKeyX,
+    publicKeyY,
+    deviceData
+  }: {
+    token: string
+    walletAddress: string
+    publicKeyId: string
+    publicKeyX: string
+    publicKeyY: string
+    deviceData: DeviceData
+  }): Promise<string> {
+    const config = {
+      headers: {
+        token
+      }
+    }
+
+    const body = {
+      walletAddress,
+      publicKeyId,
+      publicKeyX,
+      publicKeyY,
+      deviceData
+    }
+
+    const response = await this.api.post(
+      `/user/deploy-webauthn-signer`,
+      body,
+      config
+    )
+    return response.data?.signerAddress
+  }
+
+  /**
+   * WebAuthn Section
+   */
+
+  async predictWebAuthnSignerAddress({
+    publicKeyX,
+    publicKeyY
+  }: {
+    publicKeyX: string
+    publicKeyY: string
+  }): Promise<string> {
+    const body = {
+      publicKeyX,
+      publicKeyY
+    }
+
+    const response = await this.api.post(
+      `/webauthn-signer/predict-address`,
+      body
+    )
+    return response.data?.signerAddress
+  }
+
+  async getWebAuthnSignerByPublicKeyId(
+    publicKeyId: string
+  ): Promise<WebAuthnSigner> {
+    const response = await this.api.get(
+      `/webauthn-signer/public-key-id/${publicKeyId}`
+    )
+    return response?.data?.webAuthnSigner
+  }
+
+  async getWebAuthnSignersByWalletAddress(
+    walletAddress: string
+  ): Promise<WebAuthnSigner[]> {
+    const response = await this.api.get(`/webauthn-signer/${walletAddress}`)
+    return response?.data?.webAuthnSigners
+  }
+
+  /**
+   * New signer request
+   */
+
+  async getNewSignerRequests(
+    walletAddress: string
+  ): Promise<NewSignerRequest[] | null> {
+    const response = await this.api.get(`/new-signer-request/${walletAddress}`)
+
+    return response.data.signerRequests
   }
 }

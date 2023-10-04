@@ -9,7 +9,9 @@ import webAuthnService from '../../services/webAuthnService'
 import { WebAuthnSigner } from '../signers/WebAuthnSigner'
 import {
   NewSignerRequest,
+  NewSignerRequestBody,
   NewSignerRequestType,
+  ProjectParams,
   SupportedNetworks,
   UserInfos
 } from '../types'
@@ -30,6 +32,7 @@ export class ConnectAdaptor implements AUTHAdapter {
   private provider: StaticJsonRpcProvider
   private walletAddress?: string
   private userName?: string
+  private projectParams?: ProjectParams
 
   constructor({
     chainId,
@@ -48,6 +51,8 @@ export class ConnectAdaptor implements AUTHAdapter {
 
   async connect(walletAddress?: string): Promise<void> {
     if (walletAddress) await this._verifywalletAddress(walletAddress)
+
+    this.projectParams = await this.API.getProjectParams()
 
     const isWebAuthnCompatible = await webAuthnService.isWebAuthnCompatible()
 
@@ -73,9 +78,7 @@ export class ConnectAdaptor implements AUTHAdapter {
       }
     }
 
-    this.walletAddress = walletAddress
-      ? walletAddress
-      : await this.API.getWalletAddress(await this.signer.getAddress())
+    this.walletAddress = await this._initAdaptorWalletAddress(walletAddress)
   }
 
   async _verifywalletAddress(walletAddress: string): Promise<void> {
@@ -86,6 +89,13 @@ export class ConnectAdaptor implements AUTHAdapter {
       throw new Error('Invalid address format')
     }
     if (!connectWallet) throw new Error('Wallet does not exist')
+  }
+
+  async _initAdaptorWalletAddress(walletAddress?: string): Promise<string> {
+    if (!this.signer) throw new Error('No signer instance found')
+    return walletAddress
+      ? walletAddress
+      : await this.API.getWalletAddress(await this.signer.getAddress())
   }
 
   async logout(): Promise<void> {
@@ -112,10 +122,10 @@ export class ConnectAdaptor implements AUTHAdapter {
     return { walletAddress: await this.getAccount() } ?? {}
   }
 
-  public async createNewSignerObject(
+  public async initNewSignerRequest(
     walletAddress: string,
     userName?: string
-  ): Promise<NewSignerRequest> {
+  ): Promise<NewSignerRequestBody> {
     const isWebAuthnCompatible = await webAuthnService.isWebAuthnCompatible()
 
     let addNewSignerRequest
@@ -151,21 +161,22 @@ export class ConnectAdaptor implements AUTHAdapter {
     return addNewSignerRequest
   }
 
-  public async createNewSignerRequest(): Promise<void> {
-    throw new Error('Not authorized method: createNewSignerRequest')
+  public async getNewSignerRequests(): Promise<NewSignerRequest[] | null> {
+    const walletAddress = await this.getWalletAddress()
+    return await this.API.getNewSignerRequests(walletAddress)
   }
 
-  public async getNewSignerRequestByUser(): Promise<NewSignerRequest[] | null> {
-    throw new Error('Not authorized method: getNewSignerRequestByUser')
-  }
+  public async waitWebAuthnSignerDeployment(
+    publicKey_X: string,
+    publicKey_Y: string
+  ): Promise<void> {
+    if (!this.projectParams) throw new Error('No project Params found')
 
-  public async deleteNewSignerRequest(signerAddress: string): Promise<void> {
-    throw new Error('Not authorized method: deleteNewSignerRequest')
-  }
-
-  public async deployWebAuthnSigner(
-    newSignerRequest: NewSignerRequest
-  ): Promise<string> {
-    throw new Error('Not authorized method: deployWebAuthnSigner')
+    await webAuthnService.waitWebAuthnSignerDeployment(
+      this.projectParams.P256FactoryContractAddress,
+      publicKey_X,
+      publicKey_Y,
+      this.provider
+    )
   }
 }

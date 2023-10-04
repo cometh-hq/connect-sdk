@@ -13,14 +13,11 @@ import {
 import { API } from '../services'
 import gasService from '../services/gasService'
 import safeService from '../services/safeService'
-import webAuthnService from '../services/webAuthnService'
 import { GasModal } from '../ui'
 import { AUTHAdapter } from './adapters'
 import { WebAuthnSigner } from './signers/WebAuthnSigner'
 import {
   MetaTransactionData,
-  NewSignerRequest,
-  NewSignerRequestType,
   ProjectParams,
   SafeTransactionDataPartial,
   SendTransactionResponse,
@@ -345,47 +342,5 @@ export class ComethWallet {
       refundReceiver: ethers.constants.AddressZero,
       nonce: await safeService.getNonce(this.getAddress(), this.getProvider())
     }
-  }
-
-  /**
-   * New Signer Request Section
-   */
-
-  public async createNewSignerRequest(): Promise<void> {
-    await this.authAdapter.createNewSignerRequest()
-  }
-
-  public async validateNewSignerRequest(
-    newSignerRequest: NewSignerRequest
-  ): Promise<SendTransactionResponse> {
-    if (!this.walletAddress) throw new Error('no wallet Address')
-
-    if (!this.projectParams) throw new Error('Project params are null')
-
-    await this.deleteNewSignerRequest(newSignerRequest.signerAddress)
-
-    if (newSignerRequest.type === NewSignerRequestType.WEBAUTHN) {
-      await this.authAdapter.deployWebAuthnSigner(newSignerRequest)
-
-      await webAuthnService.waitWebAuthnSignerDeployment(
-        this.projectParams.P256FactoryContractAddress,
-        newSignerRequest.publicKeyX!,
-        newSignerRequest.publicKeyY!,
-        this.getProvider()
-      )
-    }
-    return await this.addOwner(newSignerRequest.signerAddress)
-  }
-
-  public async getNewSignerRequestByUser(): Promise<NewSignerRequest[] | null> {
-    if (!this.walletAddress) throw new Error('no wallet Address')
-
-    return await this.authAdapter.getNewSignerRequestByUser()
-  }
-
-  public async deleteNewSignerRequest(signerAddress: string): Promise<void> {
-    if (!this.walletAddress) throw new Error('no wallet Address')
-
-    await this.authAdapter.deleteNewSignerRequest(signerAddress)
   }
 }
