@@ -9,7 +9,7 @@ const createMessage = (
 ): SiweMessage => {
   const domain = window.location.host
   const origin = window.location.origin
-  const statement = `Sign in with Ethereum to Alembic`
+  const statement = `Sign in with Ethereum to Cometh Connect`
   const message = new SiweMessage({
     domain,
     address,

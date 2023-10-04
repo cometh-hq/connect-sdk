@@ -6,40 +6,40 @@ import { BigNumber } from 'ethers'
 import { AccessList } from 'ethers/lib/utils'
 
 import safeService from '../services/safeService'
-import { AlembicProvider } from './AlembicProvider'
-import { AlembicWallet } from './AlembicWallet'
+import { ComethProvider } from './ComethProvider'
+import { ComethWallet } from './ComethWallet'
 
 export class RelayTransactionResponse implements TransactionResponse {
   hash: string
-  blockNumber?: number | undefined
-  blockHash?: string | undefined
-  timestamp?: number | undefined
+  blockNumber?: number
+  blockHash?: string
+  timestamp?: number
   confirmations: number
   from: string
-  raw?: string | undefined
-  to?: string | undefined
+  raw?: string
+  to?: string
   nonce: number
   gasLimit: BigNumber
-  gasPrice?: BigNumber | undefined
+  gasPrice?: BigNumber
   data: string
   value: BigNumber
   chainId: number
-  r?: string | undefined
-  s?: string | undefined
-  v?: number | undefined
-  type?: number | null | undefined
-  accessList?: AccessList | undefined
-  maxPriorityFeePerGas?: BigNumber | undefined
-  maxFeePerGas?: BigNumber | undefined
+  r?: string
+  s?: string
+  v?: number
+  type?: number | null
+  accessList?: AccessList
+  maxPriorityFeePerGas?: BigNumber
+  maxFeePerGas?: BigNumber
 
   constructor(
     private safeTxHash: string,
-    private provider: AlembicProvider,
-    private alembicWallet: AlembicWallet
+    private provider: ComethProvider,
+    private wallet: ComethWallet
   ) {
-    this.hash = '0x0'
+    this.hash = '0x0000000000000000000000000000000000000000'
     this.confirmations = 0
-    this.from = this.alembicWallet.getAddress()
+    this.from = this.wallet.getAddress()
     this.nonce = 0
     this.gasLimit = BigNumber.from(0)
     this.value = BigNumber.from(0)

@@ -4,17 +4,18 @@ import { ethers } from 'ethers'
 import { BLOCK_EVENT_GAP, EIP712_SAFE_TX_TYPES } from '../constants'
 import { Safe__factory } from '../contracts/types/factories'
 import { SafeInterface } from '../contracts/types/Safe'
-import { AlembicProvider } from '../wallet/AlembicProvider'
+import { ComethProvider } from '../wallet/ComethProvider'
 import {
   MetaTransactionData,
   SafeTransactionDataPartial
 } from '../wallet/types'
+import { API } from './API'
 
 const SafeInterface: SafeInterface = Safe__factory.createInterface()
 
 const isDeployed = async (
   walletAddress: string,
-  provider: StaticJsonRpcProvider | AlembicProvider
+  provider: StaticJsonRpcProvider | ComethProvider
 ): Promise<boolean> => {
   try {
     await Safe__factory.connect(walletAddress, provider).deployed()
@@ -26,7 +27,7 @@ const isDeployed = async (
 
 const getNonce = async (
   walletAddress: string,
-  provider: StaticJsonRpcProvider | AlembicProvider
+  provider: StaticJsonRpcProvider | ComethProvider
 ): Promise<number> => {
   return (await isDeployed(walletAddress, provider))
     ? (await Safe__factory.connect(walletAddress, provider).nonce()).toNumber()
@@ -36,7 +37,7 @@ const getNonce = async (
 const getSuccessExecTransactionEvent = async (
   safeTxHash: string,
   walletAddress: string,
-  provider: StaticJsonRpcProvider | AlembicProvider
+  provider: StaticJsonRpcProvider | ComethProvider
 ): Promise<any> => {
   const safeInstance = await Safe__factory.connect(walletAddress, provider)
 
@@ -54,7 +55,7 @@ const getSuccessExecTransactionEvent = async (
 const getFailedExecTransactionEvent = async (
   safeTxHash: string,
   walletAddress: string,
-  provider: StaticJsonRpcProvider | AlembicProvider
+  provider: StaticJsonRpcProvider | ComethProvider
 ): Promise<any> => {
   const safeInstance = await Safe__factory.connect(walletAddress, provider)
 
@@ -75,7 +76,24 @@ const isSafeOwner = async (
   provider: StaticJsonRpcProvider
 ): Promise<boolean> => {
   const safeInstance = await Safe__factory.connect(walletAddress, provider)
-  return await safeInstance.isOwner(signerAddress)
+  if ((await isDeployed(walletAddress, provider)) === true) {
+    return await safeInstance.isOwner(signerAddress)
+  } else {
+    throw new Error('wallet is not deployed')
+  }
+}
+
+const getOwners = async (
+  walletAddress: string,
+  provider: StaticJsonRpcProvider
+): Promise<string[]> => {
+  const safeInstance = await Safe__factory.connect(walletAddress, provider)
+
+  if ((await isDeployed(walletAddress, provider)) === true) {
+    return await safeInstance.getOwners()
+  } else {
+    throw new Error('wallet is not deployed')
+  }
 }
 
 const prepareAddOwnerTx = async (
@@ -89,24 +107,6 @@ const prepareAddOwnerTx = async (
       newOwner,
       1
     ]),
-    operation: 0,
-    safeTxGas: 0,
-    baseGas: 0,
-    gasPrice: 0,
-    gasToken: ethers.constants.AddressZero,
-    refundReceiver: ethers.constants.AddressZero
-  }
-  return tx
-}
-
-const prepareEnableModuleTx = async (
-  walletAddress: string,
-  moduleAddress: string
-): Promise<MetaTransactionData> => {
-  const tx = {
-    to: walletAddress,
-    value: '0x0',
-    data: SafeInterface.encodeFunctionData('enableModule', [moduleAddress]),
     operation: 0,
     safeTxGas: 0,
     baseGas: 0,
@@ -157,15 +157,41 @@ const getTransactionsTotalValue = async (
   return txValue.toString()
 }
 
+const isSigner = async (
+  signerAddress: string,
+  walletAddress: string,
+  provider: StaticJsonRpcProvider,
+  API: API
+): Promise<boolean> => {
+  try {
+    await isDeployed(walletAddress, provider)
+
+    const owner = await isSafeOwner(walletAddress, signerAddress, provider)
+
+    if (!owner) return false
+  } catch {
+    const predictedWalletAddress = await API.getWalletAddress(signerAddress)
+
+    if (predictedWalletAddress !== walletAddress) return false
+  }
+
+  return true
+}
+
+const getFunctionSelector = (transactionData: MetaTransactionData): string => {
+  return transactionData.data.toString().slice(0, 10)
+}
 export default {
   isDeployed,
   getNonce,
   getSuccessExecTransactionEvent,
   getFailedExecTransactionEvent,
   isSafeOwner,
+  getOwners,
   prepareAddOwnerTx,
-  prepareEnableModuleTx,
   formatWebAuthnSignatureForSafe,
   getSafeTransactionHash,
-  getTransactionsTotalValue
+  getTransactionsTotalValue,
+  isSigner,
+  getFunctionSelector
 }

@@ -15,21 +15,21 @@ export class GasModal {
 
   private createModalWrapper(): HTMLElement {
     const existingWrapper: HTMLElement | null = document.getElementById(
-      'alembic-gas-modal-wrapper'
+      'cometh-gas-modal-wrapper'
     )
     if (existingWrapper) {
       existingWrapper.remove()
     }
 
     const wrapper: HTMLElement = document.createElement('section')
-    wrapper.setAttribute('id', 'alembic-gas-modal-wrapper')
+    wrapper.setAttribute('id', 'cometh-gas-modal-wrapper')
     document.body.appendChild(wrapper)
     return wrapper
   }
 
   closeModal() {
     const existingWrapper: HTMLElement | null = document.getElementById(
-      'alembic-gas-modal-wrapper'
+      'cometh-gas-modal-wrapper'
     )
     if (existingWrapper) {
       existingWrapper.remove()

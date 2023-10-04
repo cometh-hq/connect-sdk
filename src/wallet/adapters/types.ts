@@ -1,15 +1,15 @@
 import { JsonRpcSigner } from '@ethersproject/providers'
 import { Wallet } from 'ethers'
 
-import { AlembicAuthSigner } from '../signers/AlembicAuthSigner'
-import { WebAuthnSigner } from '../signers/WebAuthnSigner'
+import { WebAuthnSigner } from '../signers'
 import { UserInfos } from '../types'
 
 export interface AUTHAdapter {
   logout(): Promise<void>
-  connect(userId?: string): Promise<void>
+  connect(injectedWalletAddress?: string): Promise<void>
   getAccount(): Promise<string | null>
-  getSigner(): JsonRpcSigner | Wallet | AlembicAuthSigner | WebAuthnSigner
+  getSigner(): JsonRpcSigner | Wallet | WebAuthnSigner
+  getWalletAddress(): Promise<string>
   getUserInfos(): Promise<Partial<UserInfos>>
   readonly chainId: string
 }

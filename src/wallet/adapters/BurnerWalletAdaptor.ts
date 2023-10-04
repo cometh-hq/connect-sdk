@@ -1,19 +1,22 @@
 import { ethers, Wallet } from 'ethers'
 
-import { UserInfos } from '../types'
+import { IConnectionSigning } from '../IConnectionSigning'
+import { SupportedNetworks, UserInfos } from '../types'
 import { AUTHAdapter } from './types'
 
-export class BurnerWalletAdaptor implements AUTHAdapter {
-  private wallet: Wallet | undefined
-  readonly chainId: string
+export class BurnerWalletAdaptor
+  extends IConnectionSigning
+  implements AUTHAdapter
+{
+  private wallet?: Wallet
 
-  constructor(chainId: string) {
-    this.chainId = chainId
+  constructor(chainId: SupportedNetworks, apiKey: string, baseUrl?: string) {
+    super(chainId, apiKey, baseUrl)
   }
 
   async connect(): Promise<void> {
     const currentPrivateKey = window.localStorage.getItem(
-      'burnerWallet-private-key'
+      'burner-wallet-private-key'
     )
 
     if (currentPrivateKey) {
@@ -21,10 +24,12 @@ export class BurnerWalletAdaptor implements AUTHAdapter {
     } else {
       this.wallet = ethers.Wallet.createRandom()
       window.localStorage.setItem(
-        'burnerWallet-private-key',
+        'burner-wallet-private-key',
         this.wallet.privateKey
       )
     }
+    const walletAddress = await this.getWalletAddress()
+    await this.signAndConnect(walletAddress, this.getSigner())
   }
 
   async logout(): Promise<void> {
@@ -37,6 +42,11 @@ export class BurnerWalletAdaptor implements AUTHAdapter {
     return this.wallet.getAddress()
   }
 
+  async getWalletAddress(): Promise<string> {
+    const ownerAddress = await this.getAccount()
+    if (!ownerAddress) throw new Error('No owner address found')
+    return await this.API.getWalletAddress(ownerAddress)
+  }
   getSigner(): Wallet {
     if (!this.wallet) throw new Error('No Wallet instance found')
     return this.wallet

@@ -2,6 +2,15 @@ export enum RelayStatus {
   MINED = 'mined'
 }
 
+export enum SupportedNetworks {
+  POLYGON = '0x89',
+  MUMBAI = '0x13881',
+  AVALANCHE = '0xA86A',
+  FUJI = '0xA869',
+  GNOSIS = '0x64',
+  CHIADO = '0x27D8'
+}
+
 export declare enum OperationType {
   Call = 0,
   DelegateCall = 1
@@ -28,7 +37,7 @@ export type UserNonceType = {
   connectionNonce: string
 }
 export type SponsoredTransaction = {
-  customerId: string
+  projectId: string
   targetAddress: string
 }
 export type RelayTransactionType = {
@@ -55,25 +64,21 @@ export interface WalletUiConfig {
   displayValidationModal: boolean
 }
 
-export type WebAuthnOwner = {
-  customerId: string
+export type WebAuthnSigner = {
+  projectId: string
+  userId: string
+  chainId: string
   walletAddress: string
   publicKeyId: string
   publicKeyX: string
   publicKeyY: string
-  signature: string
   signerAddress: string
-  userId?: string
+  deviceData: DeviceData
+  isActive: boolean
 }
 
 export type UIConfig = {
   displayValidationModal: boolean
-}
-
-export type SocialRecoveryConfigType = {
-  customerId: string
-  defaultGuardians: string[]
-  defaultGuardiansThreshold: number
 }
 
 export type WalletInfos = {
@@ -87,4 +92,38 @@ export type DeviceData = {
   browser: string
   os: string
   platform: string
+}
+
+export enum NewSignerRequestType {
+  WEBAUTHN = 'WEBAUTHN',
+  BURNER_WALLET = 'BURNER_WALLET'
+}
+
+export type NewSignerRequestBody = {
+  walletAddress: string
+  signerAddress: string
+  deviceData: DeviceData
+  type: NewSignerRequestType
+  publicKeyId?: string
+  publicKeyX?: string
+  publicKeyY?: string
+}
+
+export type NewSignerRequest = {
+  projectId: string
+  userId: string
+  chainId: string
+  walletAddress: string
+  signerAddress: string
+  deviceData: DeviceData
+  type: NewSignerRequestType
+  publicKeyId?: string
+  publicKeyX?: string
+  publicKeyY?: string
+}
+
+export type ProjectParams = {
+  chainId: string
+  P256FactoryContractAddress: string
+  multisendContractAddress: string
 }
