@@ -12,6 +12,7 @@ import {
   NewSignerRequest,
   NewSignerRequestBody,
   NewSignerRequestType,
+  ProjectParams,
   SupportedNetworks,
   UserInfos
 } from '../types'
@@ -33,6 +34,7 @@ export class ConnectWithJwtAdaptor implements AUTHAdapter {
   private jwtToken: string
   private provider: StaticJsonRpcProvider
   private userName?: string
+  private projectParams?: ProjectParams
 
   constructor({
     chainId,
@@ -52,6 +54,8 @@ export class ConnectWithJwtAdaptor implements AUTHAdapter {
   }
 
   async connect(): Promise<void> {
+    this.projectParams = await this.API.getProjectParams()
+
     const walletAddress = await this.API.getWalletAddressFromUserID(
       this.jwtToken
     )
@@ -192,20 +196,35 @@ export class ConnectWithJwtAdaptor implements AUTHAdapter {
     })
   }
 
-  public async deployWebAuthnSigner(
+  public async validateNewSignerRequest(
     newSignerRequest: NewSignerRequest
   ): Promise<string> {
-    if (!newSignerRequest.publicKeyId) throw new Error('publicKeyId not valid')
-    if (!newSignerRequest.publicKeyX) throw new Error('publicKeyX not valid')
-    if (!newSignerRequest.publicKeyY) throw new Error('publicKeyY not valid')
+    if (!this.projectParams) throw new Error('Project params are null')
 
-    return await this.API.deployWebAuthnSigner({
-      token: this.jwtToken,
-      walletAddress: newSignerRequest.walletAddress,
-      publicKeyId: newSignerRequest.publicKeyId,
-      publicKeyX: newSignerRequest.publicKeyX,
-      publicKeyY: newSignerRequest.publicKeyY,
-      deviceData: newSignerRequest.deviceData
-    })
+    await this.deleteNewSignerRequest(newSignerRequest.signerAddress)
+
+    if (newSignerRequest.type === NewSignerRequestType.WEBAUTHN) {
+      if (!newSignerRequest.publicKeyId)
+        throw new Error('publicKeyId not valid')
+      if (!newSignerRequest.publicKeyX) throw new Error('publicKeyX not valid')
+      if (!newSignerRequest.publicKeyY) throw new Error('publicKeyY not valid')
+
+      await this.API.deployWebAuthnSigner({
+        token: this.jwtToken,
+        walletAddress: newSignerRequest.walletAddress,
+        publicKeyId: newSignerRequest.publicKeyId,
+        publicKeyX: newSignerRequest.publicKeyX,
+        publicKeyY: newSignerRequest.publicKeyY,
+        deviceData: newSignerRequest.deviceData
+      })
+
+      await webAuthnService.waitWebAuthnSignerDeployment(
+        this.projectParams.P256FactoryContractAddress,
+        newSignerRequest.publicKeyX!,
+        newSignerRequest.publicKeyY!,
+        this.provider
+      )
+    }
+    return newSignerRequest.signerAddress
   }
 }

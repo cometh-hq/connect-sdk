@@ -255,6 +255,43 @@ export class API {
     await this.api.delete(`/user/new-signer-request/${signerAddress}`, config)
   }
 
+  async deployWebAuthnSigner({
+    token,
+    walletAddress,
+    publicKeyId,
+    publicKeyX,
+    publicKeyY,
+    deviceData
+  }: {
+    token: string
+    walletAddress: string
+    publicKeyId: string
+    publicKeyX: string
+    publicKeyY: string
+    deviceData: DeviceData
+  }): Promise<string> {
+    const config = {
+      headers: {
+        token
+      }
+    }
+
+    const body = {
+      walletAddress,
+      publicKeyId,
+      publicKeyX,
+      publicKeyY,
+      deviceData
+    }
+
+    const response = await this.api.post(
+      `/user/deploy-webauthn-signer`,
+      body,
+      config
+    )
+    return response.data?.signerAddress
+  }
+
   /**
    * WebAuthn Section
    */
@@ -278,41 +315,6 @@ export class API {
     return response.data?.signerAddress
   }
 
-  async deployWebAuthnSigner({
-    token,
-    walletAddress,
-    publicKeyId,
-    publicKeyX,
-    publicKeyY,
-    deviceData
-  }: {
-    token: string
-    walletAddress: string
-    publicKeyId: string
-    publicKeyX: string
-    publicKeyY: string
-    deviceData: DeviceData
-  }): Promise<string> {
-    const config = {
-      headers: {
-        token
-      }
-    }
-
-    const body = {
-      publicKeyId,
-      publicKeyX,
-      publicKeyY,
-      deviceData
-    }
-
-    const response = await this.api.post(
-      `/webauthn-signer/${walletAddress}/deploy-webauthn-signer`,
-      body,
-      config
-    )
-    return response.data?.signerAddress
-  }
   async getWebAuthnSignerByPublicKeyId(
     publicKeyId: string
   ): Promise<WebAuthnSigner> {
