@@ -15,9 +15,7 @@ import {
 
 const walletAdaptor = new ConnectAdaptor({
   chainId: SupportedNetworks.POLYGON,
-  jwtToken: TOKEN,
-  apiKey: API_KEY,
-  userName: USERNAME
+  apiKey: API_KEY
 })
 
 const wallet = new ComethWallet({
@@ -31,21 +29,13 @@ To get an API key please [Contact us](https://alembic.tech/)
 
 ## Available methods
 
-### Connect
+### Create a Wallet
 
 ```javascript
 await wallet.connect()
 ```
 
-This function create your credentials and identify you to the connect API.
-
-### Logout
-
-```javascript
-await wallet.logout()
-```
-
-This function logs the user out and clears the cache.
+This function create a new wallet and connect to the API.
 
 ### Get Address
 
@@ -54,6 +44,22 @@ await wallet.getAddress()
 ```
 
 This function returns the address of the wallet.
+
+### Instanciate a Wallet
+
+```javascript
+await wallet.connect(walletAddress)
+```
+
+You can also connect to a previously created wallet. You'll have to provide the wallet address of the previously created wallet.
+
+### Logout
+
+```javascript
+await wallet.logout()
+```
+
+This function logs the user out and clears the cache.
 
 ### Get user infos
 
@@ -92,49 +98,6 @@ const signature = await wallet.signMessage('hello')
 
 Sign the given message using the EOA, owner of the smart wallet.
 
-### Create New Signer Request
-
-```javascript
-await wallet.createNewSignerRequest()
-```
-
-This function create a new signer request that, when validated, enables to add a new device as signer of your smart wallet.
-
-### Validate New Signer Request
-
-```javascript
-const newSignerRequest = {
-  projectId: PROJECT_ID;
-  userId: USER_IDENTIFIER;
-  chainId: CHAIN_ID;
-  walletAddress: WALLET_ADDRESS;
-  signerAddress: SIGNER_ADDRESS;
-  deviceData: DEVICE_DATA;
-  type: NEW_SIGNER_REQUEST_TYPE;
-}
- await wallet.validateNewSignerRequest(newSignerRequest)
-```
-
-This function validates a new signer request, enabling the targeted device to become a signer of your smart wallet.
-
-### Get New Signer Request By User
-
-```javascript
-const newSignerRequests = await wallet.getNewSignerRequestByUser()
-```
-
-This function gets all new signer request for a given user.
-
-### Delete a New Signer Request
-
-```javascript
-const signerAddress = SIGNER_ADDRESS
-
-await wallet.deleteNewSignerRequest(signerAddress)
-```
-
-This function deletes a new signer request.
-
 ## Go further
 
 ### Interact with contract interface
@@ -149,7 +112,6 @@ import {
 
 const walletAdaptor = new ConnectAdaptor({
   chainId: SupportedNetworks.POLYGON,
-  jwtToken: TOKEN,
   apiKey: API_KEY,
   userName: USERNAME
 })
@@ -187,7 +149,6 @@ import Onboard from '@web3-onboard/core'
 
 const walletAdaptor = new ConnectAdaptor({
   chainId: SupportedNetworks.POLYGON,
-  jwtToken: TOKEN,
   apiKey: API_KEY,
   userName: USERNAME
 })

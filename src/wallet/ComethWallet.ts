@@ -91,7 +91,7 @@ export class ComethWallet {
     return this.provider
   }
 
-  public async getUserInfos(): Promise<WalletInfos | null> {
+  public async getUserInfos(): Promise<WalletInfos> {
     const walletInfos = await this.API.getWalletInfos(this.getAddress())
     return walletInfos
   }

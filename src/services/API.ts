@@ -45,7 +45,7 @@ export class API {
     return response?.data?.walletAddress
   }
 
-  async getWalletInfos(walletAddress: string): Promise<WalletInfos | null> {
+  async getWalletInfos(walletAddress: string): Promise<WalletInfos> {
     const response = await this.api.get(
       `/wallets/${walletAddress}/wallet-infos`
     )
