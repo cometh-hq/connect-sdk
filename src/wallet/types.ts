@@ -9,7 +9,7 @@ export enum SupportedNetworks {
   FUJI = '0xA869',
   GNOSIS = '0x64',
   CHIADO = '0x27D8',
-  POLYGON_ZKEVM_TESTNET = '0x5186'
+  POLYGON_ZKEVM_TESTNET = '0x5A2'
 }
 
 export declare enum OperationType {
