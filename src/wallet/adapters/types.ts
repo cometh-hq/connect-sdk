@@ -6,7 +6,7 @@ import { UserInfos } from '../types'
 
 export interface AUTHAdapter {
   logout(): Promise<void>
-  connect(injectedWalletAddress?: string): Promise<void>
+  connect(walletAddress?: string): Promise<void>
   getAccount(): Promise<string | null>
   getSigner(): JsonRpcSigner | Wallet | WebAuthnSigner
   getWalletAddress(): Promise<string>

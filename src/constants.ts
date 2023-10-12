@@ -30,6 +30,12 @@ export const networks = {
   10200: {
     RPCUrl: process.env.RPC_URL_CHIADO || 'https://rpc.chiadochain.net',
     networkName: 'Chiado Chain'
+  },
+  1442: {
+    RPCUrl:
+      process.env.RPC_URL_POLYGON_ZKEVM_TESTNET ||
+      'https://rpc.public.zkevm-test.net',
+    networkName: 'Polygon zkEVM Testnet'
   }
 }
 export const GAS_GAP_TOLERANCE = 10
