@@ -8,7 +8,7 @@ things you should know about contributing:
 3.  Pull requests are not merged directly into the master branch.
 4.  Code contributions require signing a Cometh CLA.
 
-## API changes
+## Changes
 
 We make changes to Cometh Connect's public [SDKs][], including adding new SDK functionalities, very
 carefully. Because of this, if you're interested in seeing a new feature in
@@ -48,15 +48,6 @@ Guidelines for any code contributions:
    [well-formed commit message][] for the change.
 
 [well-formed commit message]: http://tbaggery.com/2008/04/19/a-note-about-git-commit-messages.html
-
-#### Merging pull requests
-
-Due to Cometh Connect's nature as a subset of Cometh's internal codebase which is
-automatically synced to the public GitHub repository, we are unable to merge
-pull requests directly into the master branch. Instead, once a pull request is
-ready for merging, we'll make the appropriate changes in the internal codebase
-and, when the change is synced out, give the pull request author credit for the
-commit.
 
 ## Contributor License Agreement
 
