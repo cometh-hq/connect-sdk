@@ -43,7 +43,7 @@ export class ComethWallet {
   private provider: StaticJsonRpcProvider
   private sponsoredAddresses?: SponsoredTransaction[]
   private walletAddress?: string
-  private signer?: JsonRpcSigner | Wallet | WebAuthnSigner
+  public signer?: JsonRpcSigner | Wallet | WebAuthnSigner
   private projectParams?: ProjectParams
 
   private uiConfig: UIConfig = {
