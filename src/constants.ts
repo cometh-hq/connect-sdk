@@ -5,37 +5,44 @@ export const networks = {
   // Default network: Polygon
   137: {
     RPCUrl: process.env.RPC_URL_POLYGON || 'https://polygon-rpc.com',
-    networkName: 'Polygon'
+    networkName: 'Polygon',
+    currency: 'MATIC'
   },
   80001: {
     RPCUrl: process.env.RPC_URL_MUMBAI || 'https://rpc-mumbai.maticvigil.com',
-    networkName: 'Mumbai'
+    networkName: 'Mumbai',
+    currency: 'MATIC'
   },
   43114: {
     RPCUrl:
       process.env.RPC_URL_AVALANCHE ||
       'https://avalanche-mainnet.infura.io/v3/5eba3fe58b4646c89a0e3fad285769d4',
-    networkName: 'Avalanche'
+    networkName: 'Avalanche',
+    currency: 'AVAX'
   },
   43113: {
     RPCUrl:
       process.env.RPC_URL_FUJI ||
       'https://avalanche-fuji.infura.io/v3/5eba3fe58b4646c89a0e3fad285769d4',
-    networkName: 'Fuji'
+    networkName: 'Fuji',
+    currency: 'AVAX'
   },
   100: {
     RPCUrl: process.env.RPC_URL_GNOSIS || 'https://rpc.ankr.com/gnosis',
-    networkName: 'Gnosis Chain'
+    networkName: 'Gnosis Chain',
+    currency: 'xDai'
   },
   10200: {
     RPCUrl: process.env.RPC_URL_CHIADO || 'https://rpc.chiadochain.net',
-    networkName: 'Chiado Chain'
+    networkName: 'Chiado Chain',
+    currency: 'xDai'
   },
   1442: {
     RPCUrl:
       process.env.RPC_URL_POLYGON_ZKEVM_TESTNET ||
       'https://rpc.public.zkevm-test.net',
-    networkName: 'Polygon zkEVM Testnet'
+    networkName: 'Polygon zkEVM Testnet',
+    currency: 'MATIC'
   }
 }
 export const GAS_GAP_TOLERANCE = 10
