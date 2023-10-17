@@ -36,7 +36,11 @@ export class GasModal {
     }
   }
 
-  async initModal(balance: string, txGasFees: string): Promise<boolean> {
+  async initModal(
+    balance: string,
+    txGasFees: string,
+    currency: string
+  ): Promise<boolean> {
     const modalWrapper = this.createModalWrapper()
     const root = createRoot(modalWrapper)
     const self = this
@@ -64,6 +68,7 @@ export class GasModal {
             onAccept={accept}
             balance={+balance}
             txGasFees={+txGasFees}
+            currency={currency}
             isOpen
             withBackdrop
           />

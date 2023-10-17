@@ -250,6 +250,7 @@ export class ComethWallet {
     if (safeTxData.length === 0) {
       throw new Error('Empty array provided, no transaction to send')
     }
+
     if (!this.projectParams) throw new Error('Project params are null')
 
     const safeTxGas = await gasService.estimateSafeTxGas(
@@ -317,7 +318,8 @@ export class ComethWallet {
     if (
       !(await new GasModal().initModal(
         displayedTotalBalance,
-        displayedTotalGasCost
+        displayedTotalGasCost,
+        networks[this.chainId].currency
       ))
     ) {
       throw new Error('Transaction denied')

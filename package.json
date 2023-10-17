@@ -1,6 +1,6 @@
 {
   "name": "@cometh/connect-sdk",
-  "version": "1.1.1",
+  "version": "1.1.2",
   "main": "dist/index.js",
   "types": "dist/index.d.ts",
   "description": "SDK Cometh Connect",
@@ -58,7 +58,7 @@
     "webpack-cli": "^5.0.2"
   },
   "dependencies": {
-    "@alembic/ui": "^1.5.2",
+    "@alembic/ui": "1.5.3",
     "@ethersproject/abstract-provider": "^5.7.0",
     "@ethersproject/abstract-signer": "^5.7.0",
     "@ethersproject/providers": "^5.7.2",
