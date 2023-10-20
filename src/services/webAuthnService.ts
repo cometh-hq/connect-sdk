@@ -69,12 +69,17 @@ const createCredential = async (
   }
 }
 
-const createWebAuthnSigner = async (
-  API: API,
-  walletAddress?: string,
-  userName?: string,
+const createWebAuthnSigner = async ({
+  API,
+  walletAddress,
+  userName,
+  userId
+}: {
+  API: API
+  walletAddress?: string
+  userName?: string
   userId?: string
-): Promise<{
+}): Promise<{
   publicKeyX: string
   publicKeyY: string
   publicKeyId: string
@@ -92,6 +97,7 @@ const createWebAuthnSigner = async (
     publicKeyY
   })
   const deviceData = deviceService.getDeviceData()
+
   walletAddress = walletAddress
     ? walletAddress
     : await API.getWalletAddress(signerAddress)
@@ -223,7 +229,7 @@ const signWithWebAuthn = async (
 }
 
 const _setWebauthnCredentialsInStorage = (
-  walletAddress: string,
+  identifier: string,
   publicKeyId: string,
   signerAddress: string
 ): void => {
@@ -232,21 +238,28 @@ const _setWebauthnCredentialsInStorage = (
     signerAddress
   })
   window.localStorage.setItem(
-    `cometh-connect-${walletAddress}`,
+    `cometh-connect-${identifier}`,
     localStorageWebauthnCredentials
   )
 }
 
 const _getWebauthnCredentialsInStorage = (
-  walletAddress: string
+  identifier: string
 ): string | null => {
-  return window.localStorage.getItem(`cometh-connect-${walletAddress}`)
+  return window.localStorage.getItem(`cometh-connect-${identifier}`)
 }
 
-const createSignerAndWallet = async (
-  API: API,
+const createSignerAndWallet = async ({
+  API,
+  userName,
+  token,
+  userId
+}: {
+  API: API
   userName?: string
-): Promise<{
+  token?: string
+  userId?: string
+}): Promise<{
   publicKeyId: string
   signerAddress: string
 }> => {
@@ -258,115 +271,43 @@ const createSignerAndWallet = async (
     signerAddress,
     deviceData,
     walletAddress
-  } = await createWebAuthnSigner(API, userName)
+  } = await createWebAuthnSigner({ API, userName, userId })
 
-  /* Create Wallet and Webauthn signer in db */
-  await API.initWalletWithWebAuthn({
-    walletAddress,
-    publicKeyId,
-    publicKeyX,
-    publicKeyY,
-    deviceData
-  })
-
+  if (token && userId) {
+    await API.initWalletWithWebAuthnForUserID({
+      token,
+      walletAddress,
+      publicKeyId,
+      publicKeyX,
+      publicKeyY,
+      deviceData
+    })
+  } else {
+    await API.initWalletWithWebAuthn({
+      walletAddress,
+      publicKeyId,
+      publicKeyX,
+      publicKeyY,
+      deviceData
+    })
+  }
   return { publicKeyId, signerAddress }
 }
 
-const createSignerAndWalletForUserId = async (
-  token: string,
-  userId: string,
-  API: API,
-  userName?: string
-): Promise<{
-  publicKeyId: string
-  signerAddress: string
-}> => {
-  /* Create WebAuthn credentials */
-  const { publicKeyX, publicKeyY, publicKeyId, signerAddress, deviceData } =
-    await createWebAuthnSigner(API, userName, userId)
-
-  /* Create Wallet and Webauthn signer in db */
-  await API.initWalletWithWebAuthnForUserID({
-    token,
-    walletAddress: await API.getWalletAddress(signerAddress),
-    publicKeyId,
-    publicKeyX,
-    publicKeyY,
-    deviceData
-  })
-
-  return { publicKeyId, signerAddress }
-}
-
-const getSigner = async (
-  API: API,
-  walletAddress: string
-): Promise<{
-  publicKeyId: string
-  signerAddress: string
-}> => {
-  const webAuthnSigners = await API.getWebAuthnSignersByWalletAddress(
-    walletAddress
-  )
-
-  if (webAuthnSigners.length === 0)
-    throw new Error(
-      'New Domain detected. You need to add that domain as signer'
-    )
-
-  /* Retrieve potentiel WebAuthn credentials in storage */
-  const localStorageWebauthnCredentials =
-    _getWebauthnCredentialsInStorage(walletAddress)
-
-  if (localStorageWebauthnCredentials) {
-    /* Check if storage WebAuthn credentials exists in db */
-    const registeredWebauthnSigner = await API.getWebAuthnSignerByPublicKeyId(
-      JSON.parse(localStorageWebauthnCredentials).publicKeyId
-    )
-
-    /* If signer exists in db, instantiate WebAuthn signer  */
-    if (registeredWebauthnSigner)
-      return {
-        publicKeyId: registeredWebauthnSigner.publicKeyId,
-        signerAddress: registeredWebauthnSigner.signerAddress
-      }
-  }
-
-  /* If no local storage or no match in db, Call Webauthn API to get current signer */
-  let signatureParams
-  try {
-    signatureParams = await signWithWebAuthn(webAuthnSigners, 'SDK Connection')
-  } catch {
-    throw new Error(
-      'New Domain detected. You need to add that domain as signer'
-    )
-  }
-
-  const signingWebAuthnSigner = await API.getWebAuthnSignerByPublicKeyId(
-    signatureParams.publicKeyId
-  )
-
-  /* Store WebAuthn credentials in storage */
-  _setWebauthnCredentialsInStorage(
-    walletAddress,
-    signatureParams.publicKeyId,
-    signatureParams.signerAddress
-  )
-
-  return {
-    publicKeyId: signingWebAuthnSigner.publicKeyId,
-    signerAddress: signingWebAuthnSigner.signerAddress
-  }
-}
-
-const getSignerForUserId = async (
-  walletAddress: string,
-  userId: string,
+const getSigner = async ({
+  API,
+  walletAddress,
+  userId
+}: {
   API: API
-): Promise<{
+  walletAddress: string
+  userId?: string
+}): Promise<{
   publicKeyId: string
   signerAddress: string
 }> => {
+  const identifier = userId ? userId : walletAddress
+
   const webAuthnSigners = await API.getWebAuthnSignersByWalletAddress(
     walletAddress
   )
@@ -378,7 +319,7 @@ const getSignerForUserId = async (
 
   /* Retrieve potentiel WebAuthn credentials in storage */
   const localStorageWebauthnCredentials =
-    _getWebauthnCredentialsInStorage(userId)
+    _getWebauthnCredentialsInStorage(identifier)
 
   if (localStorageWebauthnCredentials) {
     /* Check if storage WebAuthn credentials exists in db */
@@ -410,7 +351,7 @@ const getSignerForUserId = async (
 
   /* Store WebAuthn credentials in storage */
   _setWebauthnCredentialsInStorage(
-    userId,
+    identifier,
     signatureParams.publicKeyId,
     signatureParams.signerAddress
   )
@@ -430,7 +371,5 @@ export default {
   createWebAuthnSigner,
   signWithWebAuthn,
   createSignerAndWallet,
-  createSignerAndWalletForUserId,
-  getSigner,
-  getSignerForUserId
+  getSigner
 }

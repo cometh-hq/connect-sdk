@@ -67,31 +67,31 @@ export class ConnectWithJwtAdaptor implements AUTHAdapter {
 
     if (!isWebAuthnCompatible) {
       this.signer = walletAddress
-        ? await burnerWalletService.getSignerForUserId(
-            userId,
-            this.API,
-            this.provider,
-            walletAddress
-          )
-        : await burnerWalletService.createSignerAndWalletForUserId(
-            this.jwtToken,
-            userId,
-            this.API
-          )
+        ? await burnerWalletService.getSigner({
+            API: this.API,
+            provider: this.provider,
+            walletAddress,
+            userId
+          })
+        : await burnerWalletService.createSignerAndWallet({
+            API: this.API,
+            token: this.jwtToken,
+            userId
+          })
     } else {
       try {
         const { publicKeyId, signerAddress } = walletAddress
-          ? await webAuthnService.getSignerForUserId(
+          ? await webAuthnService.getSigner({
+              API: this.API,
               walletAddress,
-              userId,
-              this.API
-            )
-          : await webAuthnService.createSignerAndWalletForUserId(
-              this.jwtToken,
-              userId,
-              this.API,
-              this.userName
-            )
+              userId
+            })
+          : await webAuthnService.createSignerAndWallet({
+              API: this.API,
+              userName: this.userName,
+              token: this.jwtToken,
+              userId
+            })
 
         this.signer = new WebAuthnSigner(publicKeyId, signerAddress)
       } catch {
@@ -139,7 +139,11 @@ export class ConnectWithJwtAdaptor implements AUTHAdapter {
 
     if (isWebAuthnCompatible) {
       const { publicKeyX, publicKeyY, publicKeyId, signerAddress, deviceData } =
-        await webAuthnService.createWebAuthnSigner(this.API, userName, userId)
+        await webAuthnService.createWebAuthnSigner({
+          API: this.API,
+          userName,
+          userId
+        })
 
       addNewSignerRequest = {
         walletAddress,
