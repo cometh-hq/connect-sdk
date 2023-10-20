@@ -71,6 +71,7 @@ const createCredential = async (
 
 const createWebAuthnSigner = async (
   API: API,
+  walletAddress?: string,
   userName?: string,
   userId?: string
 ): Promise<{
@@ -91,14 +92,14 @@ const createWebAuthnSigner = async (
     publicKeyY
   })
   const deviceData = deviceService.getDeviceData()
-  const walletAddress = await API.getWalletAddress(signerAddress)
+  walletAddress = walletAddress
+    ? walletAddress
+    : await API.getWalletAddress(signerAddress)
 
-  if (userId) {
-    _setWebauthnCredentialsInStorage(userId, publicKeyId, signerAddress)
-  } else {
-    /* Store WebAuthn credentials in storage */
-    _setWebauthnCredentialsInStorage(walletAddress, publicKeyId, signerAddress)
-  }
+  const identifier = userId ? userId : walletAddress
+
+  /* Store WebAuthn credentials in storage */
+  _setWebauthnCredentialsInStorage(identifier, publicKeyId, signerAddress)
 
   return {
     publicKeyX,

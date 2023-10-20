@@ -98,6 +98,45 @@ export class ConnectAdaptor implements AUTHAdapter {
       : await this.API.getWalletAddress(await this.signer.getAddress())
   }
 
+  public async connectWithExternalSafe(
+    walletAddress: string,
+    signature: string
+  ): Promise<string> {
+    let signerPayload: any = {}
+
+    const isWebAuthnCompatible = await webAuthnService.isWebAuthnCompatible()
+
+    if (!isWebAuthnCompatible) {
+      const signer = ethers.Wallet.createRandom()
+      signerPayload.signerAddress = signer.address
+      window.localStorage.setItem(
+        `cometh-connect-${walletAddress}`,
+        signer.privateKey
+      )
+    } else {
+      try {
+        signerPayload = await webAuthnService.createWebAuthnSigner(
+          this.API,
+          walletAddress,
+          this.userName
+        )
+      } catch {
+        throw new Error('Error in webAuthn creation')
+      }
+    }
+
+    this.API.importExternalSafe({
+      signature,
+      walletAddress,
+      deviceData: signerPayload.deviceData,
+      publicKeyId: signerPayload.publicKeyId,
+      publicKeyX: signerPayload.publicKeyX,
+      publicKeyY: signerPayload.publicKeyY
+    })
+
+    return signerPayload.signerAddress
+  }
+
   async logout(): Promise<void> {
     if (!this.signer) throw new Error('No signer instance found')
     this.signer = undefined

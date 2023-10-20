@@ -283,7 +283,7 @@ export class ComethWallet {
         txValue
       )
       if (this.uiConfig.displayValidationModal) {
-        this.displayModal(safeTxGas, gasPrice)
+        await this.displayModal(safeTxGas, gasPrice)
       }
 
       safeTxDataTyped.safeTxGas = +safeTxGas
