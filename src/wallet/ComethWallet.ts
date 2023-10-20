@@ -243,6 +243,17 @@ export class ComethWallet {
 
     return { safeTxHash }
   }
+  /* 
+  public standardizeMetaTransactionData(
+    tx: MetaTransactionData
+  ): MetaTransactionData {
+    const standardizedTxs = {
+      ...tx,
+      operation: 0
+    }
+
+    return standardizedTxs
+  } */
 
   public async sendBatchTransactions(
     safeTxData: MetaTransactionData[]
@@ -253,17 +264,23 @@ export class ComethWallet {
 
     if (!this.projectParams) throw new Error('Project params are null')
 
-    const safeTxGas = await gasService.estimateSafeTxGas(
-      this.getAddress(),
+    const multisendData = encodeMulti(
       safeTxData,
-      this.provider
+      this.projectParams.multisendContractAddress
+    ).data
+
+    const safeTxGas = await gasService.estimateSafeTxGasWithSimulate(
+      this.projectParams.multisendContractAddress,
+      this.getAddress(),
+      this.provider,
+      multisendData
     )
 
     const safeTxDataTyped = {
       ...(await this._prepareTransaction(
         this.projectParams.multisendContractAddress,
         '0',
-        encodeMulti(safeTxData).data,
+        multisendData,
         1
       ))
     }
@@ -283,7 +300,7 @@ export class ComethWallet {
         txValue
       )
       if (this.uiConfig.displayValidationModal) {
-        this.displayModal(safeTxGas, gasPrice)
+        await this.displayModal(safeTxGas, gasPrice)
       }
 
       safeTxDataTyped.safeTxGas = +safeTxGas
