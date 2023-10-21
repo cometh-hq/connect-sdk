@@ -152,7 +152,7 @@ export class API {
     publicKeyId?: string
     publicKeyX?: string
     publicKeyY?: string
-  }): Promise<void> {
+  }): Promise<string> {
     const body = {
       signature,
       walletAddress,
@@ -163,7 +163,9 @@ export class API {
       publicKeyY
     }
 
-    await this.api.post(`/wallets/import`, body)
+    const response = await this.api.post(`/wallets/import`, body)
+
+    return response?.data.signerAddress
   }
 
   /**

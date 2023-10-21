@@ -15,7 +15,7 @@ export const _getSignerLocalStorage = (identifier: string): string | null => {
   return window.localStorage.getItem(`cometh-connect-${identifier}`)
 }
 
-export const createSignerAndWallet = async ({
+export const createSigner = async ({
   API,
   walletAddress,
   token,
@@ -25,32 +25,22 @@ export const createSignerAndWallet = async ({
   walletAddress?: string
   token?: string
   userId?: string
-}): Promise<Wallet> => {
-  const newSigner = ethers.Wallet.createRandom()
+}): Promise<{ signer: Wallet; walletAddress: string }> => {
+  const signer = ethers.Wallet.createRandom()
 
   // if import external safe wallet
   if (walletAddress) {
-    _setSignerLocalStorage(walletAddress, newSigner.privateKey)
-
-    // if connect with jwt
-  } else if (token && userId) {
-    await API.initWalletForUserID({
-      token,
-      ownerAddress: newSigner.address
-    })
-
-    _setSignerLocalStorage(userId, newSigner.privateKey)
-
-    // if connect without authentication
-  } else {
-    const walletAddress = await API.initWallet({
-      ownerAddress: newSigner.address
-    })
-
-    _setSignerLocalStorage(walletAddress, newSigner.privateKey)
+    _setSignerLocalStorage(walletAddress, signer.privateKey)
+    return { signer, walletAddress }
   }
 
-  return newSigner
+  // if safe created by cometh wallet SDK
+  const predictedWalletAddress = await API.getWalletAddress(signer.address)
+
+  const identifier = userId ? userId : predictedWalletAddress
+  _setSignerLocalStorage(identifier, signer.privateKey)
+
+  return { signer, walletAddress: predictedWalletAddress }
 }
 
 export const getSigner = async ({
@@ -90,6 +80,6 @@ export const getSigner = async ({
 }
 
 export default {
-  createSignerAndWallet,
+  createSigner,
   getSigner
 }

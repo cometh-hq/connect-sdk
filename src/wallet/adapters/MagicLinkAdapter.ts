@@ -20,6 +20,7 @@ export class MagicLinkAdapter
   private magic: Magic | null = null
   private ethProvider: ethers.providers.Web3Provider | null = null
   private magicConfig: MagicLinkAdapterConfig
+  private walletAddress?: string
 
   constructor(
     magicConfig: MagicLinkAdapterConfig,
@@ -41,8 +42,11 @@ export class MagicLinkAdapter
     const provider = await this.magic.wallet.getProvider()
     this.ethProvider = new ethers.providers.Web3Provider(provider)
 
-    const walletAddress = await this.getWalletAddress()
-    await this.signAndConnect(walletAddress, this.getSigner())
+    const ownerAddress = await this.getAccount()
+    if (!ownerAddress) throw new Error('No owner address found')
+
+    this.walletAddress = await this.API.getWalletAddress(ownerAddress)
+    await this.signAndConnect(this.walletAddress, this.getSigner())
   }
 
   async logout(): Promise<void> {
@@ -56,10 +60,9 @@ export class MagicLinkAdapter
     return await signer.getAddress()
   }
 
-  async getWalletAddress(): Promise<string> {
-    const ownerAddress = await this.getAccount()
-    if (!ownerAddress) throw new Error('No owner address found')
-    return await this.API.getWalletAddress(ownerAddress)
+  getWalletAddress(): string {
+    if (!this.walletAddress) throw new Error('No Wallet instance found')
+    return this.walletAddress
   }
 
   getSigner(): JsonRpcSigner {

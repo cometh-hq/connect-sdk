@@ -50,12 +50,11 @@ export class ConnectAdaptor implements AUTHAdapter {
   }
 
   async _verifywalletAddress(walletAddress: string): Promise<void> {
-    let connectWallet
-    try {
-      connectWallet = await this.API.getWalletInfos(walletAddress)
-    } catch {
+    if (!ethers.utils.isAddress(walletAddress)) {
       throw new Error('Invalid address format')
     }
+
+    const connectWallet = await this.API.getWalletInfos(walletAddress)
     if (!connectWallet) throw new Error('Wallet does not exist')
   }
 
@@ -84,41 +83,58 @@ export class ConnectAdaptor implements AUTHAdapter {
       this.walletAddress = walletAddress
     } else {
       if (isWebAuthnCompatible) {
-        const { publicKeyId, signerAddress } =
-          await webAuthnService.createSignerAndWallet({
-            API: this.API,
-            userName: this.userName
-          })
+        const {
+          publicKeyX,
+          publicKeyY,
+          publicKeyId,
+          signerAddress,
+          deviceData,
+          walletAddress
+        } = await webAuthnService.createSigner({
+          API: this.API,
+          userName: this.userName
+        })
 
         this.signer = new WebAuthnSigner(publicKeyId, signerAddress)
+        this.walletAddress = walletAddress
+
+        await this.API.initWalletWithWebAuthn({
+          walletAddress,
+          publicKeyId,
+          publicKeyX,
+          publicKeyY,
+          deviceData
+        })
       } else {
-        this.signer = await burnerWalletService.createSignerAndWallet({
-          API: this.API
+        const { signer, walletAddress } =
+          await burnerWalletService.createSigner({
+            API: this.API
+          })
+
+        this.signer = signer
+        this.walletAddress = walletAddress
+
+        await this.API.initWallet({
+          ownerAddress: await this.signer.getAddress()
         })
       }
-      this.walletAddress = await this.API.getWalletAddress(
-        await this.signer.getAddress()
-      )
     }
   }
 
-  public async connectWithExternalSafe(
-    walletAddress: string,
-    signature: string
-  ): Promise<string> {
-    let signerPayload
+  async importSafe(walletAddress: string, signature: string): Promise<string> {
+    let requestBody
 
     const isWebAuthnCompatible = await webAuthnService.isWebAuthnCompatible()
 
     if (!isWebAuthnCompatible) {
-      const signer = await burnerWalletService.createSignerAndWallet({
+      const { signer } = await burnerWalletService.createSigner({
         API: this.API,
         walletAddress
       })
-      signerPayload = { signerAddress: signer.address }
+      requestBody = { signerAddress: signer.address }
     } else {
       try {
-        signerPayload = await webAuthnService.createWebAuthnSigner({
+        requestBody = await webAuthnService.createSigner({
           API: this.API,
           walletAddress,
           userName: this.userName
@@ -128,17 +144,17 @@ export class ConnectAdaptor implements AUTHAdapter {
       }
     }
 
-    await this.API.importExternalSafe({
+    const signerAddress = await this.API.importExternalSafe({
       signature,
       walletAddress,
-      signerAddress: signerPayload.signerAddress,
-      deviceData: signerPayload.deviceData,
-      publicKeyId: signerPayload.publicKeyId,
-      publicKeyX: signerPayload.publicKeyX,
-      publicKeyY: signerPayload.publicKeyY
+      signerAddress: requestBody.signerAddress,
+      deviceData: requestBody.deviceData,
+      publicKeyId: requestBody.publicKeyId,
+      publicKeyX: requestBody.publicKeyX,
+      publicKeyY: requestBody.publicKeyY
     })
 
-    return signerPayload.signerAddress
+    return signerAddress
   }
 
   async logout(): Promise<void> {
@@ -156,7 +172,7 @@ export class ConnectAdaptor implements AUTHAdapter {
     return this.signer
   }
 
-  async getWalletAddress(): Promise<string> {
+  getWalletAddress(): string {
     if (!this.walletAddress) throw new Error('No wallet instance found')
     return this.walletAddress
   }
@@ -165,7 +181,7 @@ export class ConnectAdaptor implements AUTHAdapter {
     return { walletAddress: await this.getAccount() } ?? {}
   }
 
-  public async initNewSignerRequest(
+  async initNewSignerRequest(
     walletAddress: string,
     userName?: string
   ): Promise<NewSignerRequestBody> {
@@ -175,7 +191,7 @@ export class ConnectAdaptor implements AUTHAdapter {
 
     if (isWebAuthnCompatible) {
       const { publicKeyX, publicKeyY, publicKeyId, signerAddress, deviceData } =
-        await webAuthnService.createWebAuthnSigner({ API: this.API, userName })
+        await webAuthnService.createSigner({ API: this.API, userName })
 
       addNewSignerRequest = {
         walletAddress,
@@ -204,12 +220,12 @@ export class ConnectAdaptor implements AUTHAdapter {
     return addNewSignerRequest
   }
 
-  public async getNewSignerRequests(): Promise<NewSignerRequest[] | null> {
-    const walletAddress = await this.getWalletAddress()
+  async getNewSignerRequests(): Promise<NewSignerRequest[] | null> {
+    const walletAddress = this.getWalletAddress()
     return await this.API.getNewSignerRequests(walletAddress)
   }
 
-  public async waitWebAuthnSignerDeployment(
+  async waitWebAuthnSignerDeployment(
     publicKey_X: string,
     publicKey_Y: string
   ): Promise<void> {

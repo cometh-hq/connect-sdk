@@ -9,7 +9,7 @@ export interface AUTHAdapter {
   connect(walletAddress?: string): Promise<void>
   getAccount(): Promise<string | null>
   getSigner(): JsonRpcSigner | Wallet | WebAuthnSigner
-  getWalletAddress(): Promise<string>
+  getWalletAddress(): string
   getUserInfos(): Promise<Partial<UserInfos>>
   readonly chainId: string
 }

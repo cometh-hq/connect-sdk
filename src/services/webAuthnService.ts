@@ -20,7 +20,7 @@ const _formatCreatingRpId = (): { name: string; id?: string } => {
         name: psl.parse(window.location.host).domain,
         id: psl.parse(window.location.host).domain
       }
-    : { name: 'test' }
+    : { name: 'localhost' }
 }
 
 const _formatSigningRpId = (): string | undefined => {
@@ -66,54 +66,6 @@ const createCredential = async (
   return {
     point,
     id: utils.hexArrayStr(webAuthnCredentials.rawId)
-  }
-}
-
-const createWebAuthnSigner = async ({
-  API,
-  walletAddress,
-  userName,
-  userId
-}: {
-  API: API
-  walletAddress?: string
-  userName?: string
-  userId?: string
-}): Promise<{
-  publicKeyX: string
-  publicKeyY: string
-  publicKeyId: string
-  signerAddress: string
-  deviceData: DeviceData
-  walletAddress: string
-}> => {
-  const webAuthnCredentials = await createCredential(userName)
-
-  const publicKeyX = `0x${webAuthnCredentials.point.getX().toString(16)}`
-  const publicKeyY = `0x${webAuthnCredentials.point.getY().toString(16)}`
-  const publicKeyId = webAuthnCredentials.id
-  const signerAddress = await API.predictWebAuthnSignerAddress({
-    publicKeyX,
-    publicKeyY
-  })
-  const deviceData = deviceService.getDeviceData()
-
-  walletAddress = walletAddress
-    ? walletAddress
-    : await API.getWalletAddress(signerAddress)
-
-  const identifier = userId ? userId : walletAddress
-
-  /* Store WebAuthn credentials in storage */
-  _setWebauthnCredentialsInStorage(identifier, publicKeyId, signerAddress)
-
-  return {
-    publicKeyX,
-    publicKeyY,
-    publicKeyId,
-    signerAddress,
-    deviceData,
-    walletAddress
   }
 }
 
@@ -195,14 +147,18 @@ const waitWebAuthnSignerDeployment = async (
 }
 
 const isWebAuthnCompatible = async (): Promise<boolean> => {
-  if (!window.PublicKeyCredential) return false
+  try {
+    if (!window.PublicKeyCredential) return false
 
-  const isUserVerifyingPlatformAuthenticatorAvailable =
-    await PublicKeyCredential.isUserVerifyingPlatformAuthenticatorAvailable()
+    const isUserVerifyingPlatformAuthenticatorAvailable =
+      await PublicKeyCredential.isUserVerifyingPlatformAuthenticatorAvailable()
 
-  if (!isUserVerifyingPlatformAuthenticatorAvailable) return false
+    if (!isUserVerifyingPlatformAuthenticatorAvailable) return false
 
-  return true
+    return true
+  } catch {
+    return false
+  }
 }
 
 const signWithWebAuthn = async (
@@ -249,49 +205,55 @@ const _getWebauthnCredentialsInStorage = (
   return window.localStorage.getItem(`cometh-connect-${identifier}`)
 }
 
-const createSignerAndWallet = async ({
+const createSigner = async ({
   API,
+  walletAddress,
   userName,
-  token,
   userId
 }: {
   API: API
+  walletAddress?: string
   userName?: string
-  token?: string
   userId?: string
 }): Promise<{
+  publicKeyX: string
+  publicKeyY: string
   publicKeyId: string
   signerAddress: string
+  deviceData: DeviceData
+  walletAddress: string
 }> => {
-  /* Create WebAuthn credentials */
-  const {
-    publicKeyX,
-    publicKeyY,
-    publicKeyId,
-    signerAddress,
-    deviceData,
-    walletAddress
-  } = await createWebAuthnSigner({ API, userName, userId })
+  try {
+    const webAuthnCredentials = await createCredential(userName)
 
-  if (token && userId) {
-    await API.initWalletWithWebAuthnForUserID({
-      token,
-      walletAddress,
-      publicKeyId,
+    const publicKeyX = `0x${webAuthnCredentials.point.getX().toString(16)}`
+    const publicKeyY = `0x${webAuthnCredentials.point.getY().toString(16)}`
+    const publicKeyId = webAuthnCredentials.id
+    const signerAddress = await API.predictWebAuthnSignerAddress({
+      publicKeyX,
+      publicKeyY
+    })
+    const deviceData = deviceService.getDeviceData()
+    walletAddress = walletAddress
+      ? walletAddress
+      : await API.getWalletAddress(signerAddress)
+
+    const identifier = userId ? userId : walletAddress
+
+    /* Store WebAuthn credentials in storage */
+    _setWebauthnCredentialsInStorage(identifier, publicKeyId, signerAddress)
+
+    return {
       publicKeyX,
       publicKeyY,
-      deviceData
-    })
-  } else {
-    await API.initWalletWithWebAuthn({
-      walletAddress,
       publicKeyId,
-      publicKeyX,
-      publicKeyY,
-      deviceData
-    })
+      signerAddress,
+      deviceData,
+      walletAddress
+    }
+  } catch {
+    throw new Error('Error in the webauthn credential creation')
   }
-  return { publicKeyId, signerAddress }
 }
 
 const getSigner = async ({
@@ -368,8 +330,7 @@ export default {
   getWebAuthnSignature,
   waitWebAuthnSignerDeployment,
   isWebAuthnCompatible,
-  createWebAuthnSigner,
+  createSigner,
   signWithWebAuthn,
-  createSignerAndWallet,
   getSigner
 }
