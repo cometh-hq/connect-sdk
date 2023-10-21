@@ -115,7 +115,7 @@ export class ConnectAdaptor implements AUTHAdapter {
         this.walletAddress = walletAddress
 
         await this.API.initWallet({
-          ownerAddress: await this.signer.getAddress()
+          ownerAddress: signer.address
         })
       }
     }
