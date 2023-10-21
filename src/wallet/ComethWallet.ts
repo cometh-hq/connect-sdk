@@ -211,13 +211,24 @@ export class ComethWallet {
       ))
     }
 
-    if (!(await this._isSponsoredTransaction([safeTxDataTyped]))) {
-      const safeTxGas = await gasService.estimateSafeTxGas(
+    const safeTxGas = await gasService.estimateSafeTxGas(
+      this.getAddress(),
+      [safeTxData],
+      this.provider
+    )
+
+    console.log(safeTxGas.toString())
+
+    const otherSafeTxGas =
+      await gasService.estimateRegularSafeTxGasWithSimulate(
         this.getAddress(),
-        [safeTxData],
-        this.provider
+        this.provider,
+        safeTxData
       )
 
+    console.log(otherSafeTxGas.toString())
+
+    if (!(await this._isSponsoredTransaction([safeTxDataTyped]))) {
       const gasPrice = await gasService.getGasPrice(
         this.provider,
         this.REWARD_PERCENTILE
@@ -234,7 +245,7 @@ export class ComethWallet {
         await this.displayModal(safeTxGas, gasPrice)
       }
 
-      safeTxDataTyped.safeTxGas = +safeTxGas
+      safeTxDataTyped.safeTxGas = +otherSafeTxGas
       safeTxDataTyped.baseGas = this.BASE_GAS
       safeTxDataTyped.gasPrice = +gasPrice
     }
@@ -258,6 +269,13 @@ export class ComethWallet {
       this.projectParams.multisendContractAddress
     ).data
 
+    const safeTxGas = await gasService.estimateSafeTxGasWithSimulate(
+      this.projectParams.multisendContractAddress,
+      this.getAddress(),
+      this.provider,
+      multisendData
+    )
+
     const safeTxDataTyped = {
       ...(await this._prepareTransaction(
         this.projectParams.multisendContractAddress,
@@ -268,13 +286,6 @@ export class ComethWallet {
     }
 
     if (!(await this._isSponsoredTransaction(safeTxData))) {
-      const safeTxGas = await gasService.estimateSafeTxGasWithSimulate(
-        this.projectParams.multisendContractAddress,
-        this.getAddress(),
-        this.provider,
-        multisendData
-      )
-
       const txValue = await safeService.getTransactionsTotalValue(safeTxData)
       const gasPrice = await gasService.getGasPrice(
         this.provider,

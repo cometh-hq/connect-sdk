@@ -152,8 +152,68 @@ const estimateSafeTxGasWithSimulate = async (
   return BigNumber.from(0)
 }
 
+const estimateRegularSafeTxGasWithSimulate = async (
+  walletAddress: string,
+  provider: StaticJsonRpcProvider,
+  safeTxData: MetaTransactionData
+): Promise<BigNumber> => {
+  const isSafeDeployed = await safeService.isDeployed(walletAddress, provider)
+
+  const singletonAdress = '0x3E5c63644E683549055b9Be8653de26E0B4CD36E'
+  const simulateTxAccessor = '0x59AD6735bCd8152B84860Cb256dD9e96b85F69Da'
+
+  const safeContract = new ethers.Contract(singletonAdress, safeAbi, provider)
+
+  const simulateTxAccessorContractInterface = new ethers.Contract(
+    simulateTxAccessor,
+    SimulateTxAbi,
+    provider
+  )
+
+  const transactionDataToEstimate: string =
+    simulateTxAccessorContractInterface.interface.encodeFunctionData(
+      'simulate',
+      [safeTxData.to, safeTxData.value, safeTxData.data, 0]
+    )
+
+  // if the Safe is not deployed we can use the singleton address to simulate
+  const to = isSafeDeployed ? walletAddress : singletonAdress
+
+  const safeFunctionToEstimate: string =
+    safeContract.interface.encodeFunctionData('simulateAndRevert', [
+      simulateTxAccessor,
+      transactionDataToEstimate
+    ])
+
+  const transactionToEstimateGas = {
+    to,
+    value: '0',
+    data: safeFunctionToEstimate
+  }
+
+  try {
+    const encodedResponse = await provider.call(transactionToEstimateGas)
+
+    console.log({ encodedResponse })
+
+    const safeTxGas = decodeSafeTxGas(encodedResponse)
+
+    console.log({ safeTxGas })
+
+    return BigNumber.from(safeTxGas)
+
+    // if the call throws an error we try to parse the returned value
+  } catch (error: any) {
+    console.log(error)
+    // return parseSafeTxGasErrorResponse(error)
+  }
+
+  return BigNumber.from(0)
+}
+
 export default {
   estimateSafeTxGasWithSimulate,
+  estimateRegularSafeTxGasWithSimulate,
   getGasPrice,
   estimateSafeTxGas,
   getTotalCost,
