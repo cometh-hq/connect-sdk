@@ -121,7 +121,11 @@ export class ConnectAdaptor implements AUTHAdapter {
     }
   }
 
-  async importSafe(walletAddress: string, signature: string): Promise<string> {
+  async importSafe(
+    walletAddress: string,
+    message: string,
+    signature: string
+  ): Promise<string> {
     let requestBody
 
     const isWebAuthnCompatible = await webAuthnService.isWebAuthnCompatible()
@@ -145,6 +149,7 @@ export class ConnectAdaptor implements AUTHAdapter {
     }
 
     const signerAddress = await this.API.importExternalSafe({
+      message,
       signature,
       walletAddress,
       signerAddress: requestBody.signerAddress,

@@ -137,6 +137,7 @@ export class API {
   }
 
   async importExternalSafe({
+    message,
     signature,
     walletAddress,
     signerAddress,
@@ -145,6 +146,7 @@ export class API {
     publicKeyX,
     publicKeyY
   }: {
+    message: string
     signature: string
     walletAddress: string
     signerAddress: string
@@ -154,6 +156,7 @@ export class API {
     publicKeyY?: string
   }): Promise<string> {
     const body = {
+      message,
       signature,
       walletAddress,
       signerAddress,
