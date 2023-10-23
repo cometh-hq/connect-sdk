@@ -20,6 +20,7 @@ export interface MetaTransactionData {
   readonly to: string
   readonly value: string
   readonly data: string
+  readonly operation?: OperationType | string
 }
 
 export interface SafeTransactionDataPartial extends MetaTransactionData {
@@ -126,4 +127,6 @@ export type ProjectParams = {
   chainId: string
   P256FactoryContractAddress: string
   multisendContractAddress: string
+  singletonAddress: string
+  simulateTxAccessorAddress: string
 }

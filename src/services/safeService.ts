@@ -1,4 +1,6 @@
+import { arrayify } from '@ethersproject/bytes'
 import { StaticJsonRpcProvider } from '@ethersproject/providers'
+import { pack as solidityPack } from '@ethersproject/solidity'
 import { ethers } from 'ethers'
 
 import { BLOCK_EVENT_GAP, EIP712_SAFE_TX_TYPES } from '../constants'
@@ -181,6 +183,20 @@ const isSigner = async (
 const getFunctionSelector = (transactionData: MetaTransactionData): string => {
   return transactionData.data.toString().slice(0, 10)
 }
+
+const _encodeMetaTransaction = (tx: MetaTransactionData): string => {
+  const data = arrayify(tx.data)
+  const encoded = solidityPack(
+    ['uint8', 'address', 'uint256', 'uint256', 'bytes'],
+    [0, tx.to, tx.value, data.length, data]
+  )
+  return encoded.slice(2)
+}
+
+const encodeMultiSendDataForEstimate = (txs: MetaTransactionData[]): string => {
+  return `0x${txs.map((tx) => _encodeMetaTransaction(tx)).join('')}`
+}
+
 export default {
   isDeployed,
   getNonce,
@@ -193,5 +209,6 @@ export default {
   getSafeTransactionHash,
   getTransactionsTotalValue,
   isSigner,
-  getFunctionSelector
+  getFunctionSelector,
+  encodeMultiSendDataForEstimate
 }
