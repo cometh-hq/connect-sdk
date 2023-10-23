@@ -100,12 +100,15 @@ export class ConnectWithJwtAdaptor implements AUTHAdapter {
         })
 
         this.signer = new WebAuthnSigner(publicKeyId, signerAddress)
+        this.walletAddress = walletAddress
       } else {
-        const { signer } = await burnerWalletService.createSigner({
-          API: this.API
-        })
+        const { signer, walletAddress } =
+          await burnerWalletService.createSigner({
+            API: this.API
+          })
 
         this.signer = signer
+        this.walletAddress = walletAddress
 
         await this.API.initWalletForUserID({
           token: this.jwtToken,
