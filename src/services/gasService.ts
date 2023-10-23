@@ -116,9 +116,9 @@ const estimateSafeTxGasWithSimulate = async (
   walletAddress: string,
   provider: StaticJsonRpcProvider,
   safeTxData: MetaTransactionData[] | MetaTransactionData,
-  multisendAddress: string,
-  singletonAddress: string,
-  simulateTxAccessorAddress: string
+  multisendAddress: string
+  /*   singletonAddress: string,
+  simulateTxAccessorAddress: string */
 ): Promise<BigNumber> => {
   let transaction: MetaTransactionData
 
@@ -140,8 +140,8 @@ const estimateSafeTxGasWithSimulate = async (
 
   const isSafeDeployed = await safeService.isDeployed(walletAddress, provider)
 
-  /*  const singletonAdress = '0x3E5c63644E683549055b9Be8653de26E0B4CD36E'
-  const simulateTxAccessor = '0x59AD6735bCd8152B84860Cb256dD9e96b85F69Da' */
+  const singletonAddress = '0x3E5c63644E683549055b9Be8653de26E0B4CD36E'
+  const simulateTxAccessorAddress = '0x59AD6735bCd8152B84860Cb256dD9e96b85F69Da'
 
   const transactionDataToEstimate = SimulateTxAcessor.encodeFunctionData(
     'simulate',

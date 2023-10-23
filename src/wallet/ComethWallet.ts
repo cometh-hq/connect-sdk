@@ -218,12 +218,10 @@ export class ComethWallet {
         this.getAddress(),
         this.provider,
         safeTxData,
-        this.projectParams.multisendContractAddress,
-        this.projectParams.singletonAddress,
-        this.projectParams.simulateTxAccessorAddress
+        this.projectParams.multisendContractAddress
+        /*   this.projectParams.singletonAddress,
+        this.projectParams.simulateTxAccessorAddress */
       )
-
-      console.log(safeTxGas.toString())
 
       const gasPrice = await gasService.getGasPrice(
         this.provider,
@@ -279,9 +277,9 @@ export class ComethWallet {
         this.getAddress(),
         this.provider,
         safeTxData,
-        this.projectParams.multisendContractAddress,
-        this.projectParams.singletonAddress,
-        this.projectParams.simulateTxAccessorAddress
+        this.projectParams.multisendContractAddress
+        /*    this.projectParams.singletonAddress,
+        this.projectParams.simulateTxAccessorAddress */
       )
 
       const txValue = await safeService.getTransactionsTotalValue(safeTxData)
