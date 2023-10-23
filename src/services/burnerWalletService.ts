@@ -5,26 +5,24 @@ import { API } from './API'
 import safeService from './safeService'
 
 export const _setSignerLocalStorage = (
-  identifier: string,
+  walletAddress: string,
   privateKey: string
 ): void => {
-  window.localStorage.setItem(`cometh-connect-${identifier}`, privateKey)
+  window.localStorage.setItem(`cometh-connect-${walletAddress}`, privateKey)
 }
 
-export const _getSignerLocalStorage = (identifier: string): string | null => {
-  return window.localStorage.getItem(`cometh-connect-${identifier}`)
+export const _getSignerLocalStorage = (
+  walletAddress: string
+): string | null => {
+  return window.localStorage.getItem(`cometh-connect-${walletAddress}`)
 }
 
 export const createSigner = async ({
   API,
-  walletAddress,
-  token,
-  userId
+  walletAddress
 }: {
   API: API
   walletAddress?: string
-  token?: string
-  userId?: string
 }): Promise<{ signer: Wallet; walletAddress: string }> => {
   const signer = ethers.Wallet.createRandom()
 
@@ -37,8 +35,7 @@ export const createSigner = async ({
   // if safe created by cometh wallet SDK
   const predictedWalletAddress = await API.getWalletAddress(signer.address)
 
-  const identifier = userId ? userId : predictedWalletAddress
-  _setSignerLocalStorage(identifier, signer.privateKey)
+  _setSignerLocalStorage(predictedWalletAddress, signer.privateKey)
 
   return { signer, walletAddress: predictedWalletAddress }
 }
@@ -46,16 +43,13 @@ export const createSigner = async ({
 export const getSigner = async ({
   API,
   provider,
-  walletAddress,
-  userId
+  walletAddress
 }: {
   API: API
   provider: StaticJsonRpcProvider
   walletAddress: string
-  userId?: string
 }): Promise<Wallet> => {
-  const identifier = userId ? userId : walletAddress
-  const storagePrivateKey = _getSignerLocalStorage(identifier)
+  const storagePrivateKey = _getSignerLocalStorage(walletAddress)
 
   if (!storagePrivateKey)
     throw new Error(

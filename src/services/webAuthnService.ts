@@ -185,7 +185,7 @@ const signWithWebAuthn = async (
 }
 
 const _setWebauthnCredentialsInStorage = (
-  identifier: string,
+  walletAddress: string,
   publicKeyId: string,
   signerAddress: string
 ): void => {
@@ -194,15 +194,15 @@ const _setWebauthnCredentialsInStorage = (
     signerAddress
   })
   window.localStorage.setItem(
-    `cometh-connect-${identifier}`,
+    `cometh-connect-${walletAddress}`,
     localStorageWebauthnCredentials
   )
 }
 
 const _getWebauthnCredentialsInStorage = (
-  identifier: string
+  walletAddress: string
 ): string | null => {
-  return window.localStorage.getItem(`cometh-connect-${identifier}`)
+  return window.localStorage.getItem(`cometh-connect-${walletAddress}`)
 }
 
 const createSigner = async ({
@@ -258,18 +258,14 @@ const createSigner = async ({
 
 const getSigner = async ({
   API,
-  walletAddress,
-  userId
+  walletAddress
 }: {
   API: API
   walletAddress: string
-  userId?: string
 }): Promise<{
   publicKeyId: string
   signerAddress: string
 }> => {
-  const identifier = userId ? userId : walletAddress
-
   const webAuthnSigners = await API.getWebAuthnSignersByWalletAddress(
     walletAddress
   )
@@ -281,7 +277,7 @@ const getSigner = async ({
 
   /* Retrieve potentiel WebAuthn credentials in storage */
   const localStorageWebauthnCredentials =
-    _getWebauthnCredentialsInStorage(identifier)
+    _getWebauthnCredentialsInStorage(walletAddress)
 
   if (localStorageWebauthnCredentials) {
     /* Check if storage WebAuthn credentials exists in db */
@@ -313,7 +309,7 @@ const getSigner = async ({
 
   /* Store WebAuthn credentials in storage */
   _setWebauthnCredentialsInStorage(
-    identifier,
+    walletAddress,
     signatureParams.publicKeyId,
     signatureParams.signerAddress
   )

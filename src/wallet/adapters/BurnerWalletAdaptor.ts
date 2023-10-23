@@ -1,7 +1,7 @@
 import { ethers, Wallet } from 'ethers'
 
 import { IConnectionSigning } from '../IConnectionSigning'
-import { SupportedNetworks, UserInfos } from '../types'
+import { SupportedNetworks } from '../types'
 import { AUTHAdapter } from './types'
 
 export class BurnerWalletAdaptor
@@ -54,10 +54,5 @@ export class BurnerWalletAdaptor
   getSigner(): Wallet {
     if (!this.wallet) throw new Error('No Wallet instance found')
     return this.wallet
-  }
-
-  async getUserInfos(): Promise<Partial<UserInfos>> {
-    if (!this.wallet) throw new Error('No Wallet instance found')
-    return { walletAddress: this.wallet.address } ?? {}
   }
 }

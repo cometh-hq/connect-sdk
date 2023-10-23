@@ -13,8 +13,7 @@ import {
   NewSignerRequestBody,
   NewSignerRequestType,
   ProjectParams,
-  SupportedNetworks,
-  UserInfos
+  SupportedNetworks
 } from '../types'
 import { AUTHAdapter } from './types'
 
@@ -60,8 +59,6 @@ export class ConnectWithJwtAdaptor implements AUTHAdapter {
     this.walletAddress = await this.API.getWalletAddressFromUserID(
       this.jwtToken
     )
-    const decodedToken = tokenService.decodeToken(this.jwtToken)
-    const userId = decodedToken?.payload.sub
 
     const isWebAuthnCompatible = await webAuthnService.isWebAuthnCompatible()
 
@@ -69,16 +66,14 @@ export class ConnectWithJwtAdaptor implements AUTHAdapter {
       if (isWebAuthnCompatible) {
         const { publicKeyId, signerAddress } = await webAuthnService.getSigner({
           API: this.API,
-          walletAddress: this.walletAddress,
-          userId
+          walletAddress: this.walletAddress
         })
         this.signer = new WebAuthnSigner(publicKeyId, signerAddress)
       } else {
         await burnerWalletService.getSigner({
           API: this.API,
           provider: this.provider,
-          walletAddress: this.walletAddress,
-          userId
+          walletAddress: this.walletAddress
         })
       }
     } else {
@@ -92,8 +87,7 @@ export class ConnectWithJwtAdaptor implements AUTHAdapter {
           walletAddress
         } = await webAuthnService.createSigner({
           API: this.API,
-          userName: this.userName,
-          userId
+          userName: this.userName
         })
 
         await this.API.initWalletWithWebAuthnForUserID({
@@ -108,9 +102,7 @@ export class ConnectWithJwtAdaptor implements AUTHAdapter {
         this.signer = new WebAuthnSigner(publicKeyId, signerAddress)
       } else {
         const { signer } = await burnerWalletService.createSigner({
-          API: this.API,
-          token: this.jwtToken,
-          userId
+          API: this.API
         })
 
         this.signer = signer
@@ -141,10 +133,6 @@ export class ConnectWithJwtAdaptor implements AUTHAdapter {
   getWalletAddress(): string {
     if (!this.walletAddress) throw new Error('No wallet instance found')
     return this.walletAddress
-  }
-
-  async getUserInfos(): Promise<Partial<UserInfos>> {
-    return { walletAddress: await this.getAccount() } ?? {}
   }
 
   async initNewSignerRequest(

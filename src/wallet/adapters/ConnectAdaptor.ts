@@ -12,8 +12,7 @@ import {
   NewSignerRequestBody,
   NewSignerRequestType,
   ProjectParams,
-  SupportedNetworks,
-  UserInfos
+  SupportedNetworks
 } from '../types'
 import { AUTHAdapter } from './types'
 
@@ -49,13 +48,17 @@ export class ConnectAdaptor implements AUTHAdapter {
     )
   }
 
-  async _verifywalletAddress(walletAddress: string): Promise<void> {
+  async _doesWalletExistsInDB(walletAddress: string): Promise<boolean> {
     if (!ethers.utils.isAddress(walletAddress)) {
       throw new Error('Invalid address format')
     }
 
     const connectWallet = await this.API.getWalletInfos(walletAddress)
-    if (!connectWallet) throw new Error('Wallet does not exist')
+    if (!connectWallet) {
+      return false
+    } else {
+      return true
+    }
   }
 
   async connect(walletAddress?: string): Promise<void> {
@@ -64,7 +67,8 @@ export class ConnectAdaptor implements AUTHAdapter {
     const isWebAuthnCompatible = await webAuthnService.isWebAuthnCompatible()
 
     if (walletAddress) {
-      await this._verifywalletAddress(walletAddress)
+      const walletExistsInDB = await this._doesWalletExistsInDB(walletAddress)
+      if (!walletExistsInDB) throw new Error('Wallet does not exists')
 
       if (isWebAuthnCompatible) {
         const { publicKeyId, signerAddress } = await webAuthnService.getSigner({
@@ -126,6 +130,9 @@ export class ConnectAdaptor implements AUTHAdapter {
     message: string,
     signature: string
   ): Promise<string> {
+    const walletExistsInDB = await this._doesWalletExistsInDB(walletAddress)
+    if (walletExistsInDB) throw new Error('Wallet already exists')
+
     let requestBody
 
     const isWebAuthnCompatible = await webAuthnService.isWebAuthnCompatible()
@@ -180,10 +187,6 @@ export class ConnectAdaptor implements AUTHAdapter {
   getWalletAddress(): string {
     if (!this.walletAddress) throw new Error('No wallet instance found')
     return this.walletAddress
-  }
-
-  async getUserInfos(): Promise<Partial<UserInfos>> {
-    return { walletAddress: await this.getAccount() } ?? {}
   }
 
   async initNewSignerRequest(

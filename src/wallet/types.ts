@@ -45,11 +45,6 @@ export type RelayTransactionType = {
   signatures: string
   walletAddress: string
 }
-export type UserInfos = {
-  ownerAddress: string | undefined
-  walletAddress: string
-  email: string | null
-}
 
 export type TransactionStatus = {
   hash: string
