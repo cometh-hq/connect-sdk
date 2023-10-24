@@ -31,7 +31,7 @@ const _formatSigningRpId = (): string | undefined => {
 }
 
 const createCredential = async (
-  userName?: string
+  passkeyName?: string
 ): Promise<{
   point: any
   id: string
@@ -44,8 +44,8 @@ const createCredential = async (
       rp: _formatCreatingRpId(),
       user: {
         id: new TextEncoder().encode(v4()),
-        name: userName ? userName : 'Cometh Connect',
-        displayName: userName ? userName : 'Cometh Connect'
+        name: passkeyName ? passkeyName : 'Cometh Connect',
+        displayName: passkeyName ? passkeyName : 'Cometh Connect'
       },
       authenticatorSelection: { authenticatorAttachment: 'platform' },
       timeout: 20000,
@@ -208,13 +208,11 @@ const _getWebauthnCredentialsInStorage = (
 const createSigner = async ({
   API,
   walletAddress,
-  userName,
-  userId
+  passkeyName
 }: {
   API: API
   walletAddress?: string
-  userName?: string
-  userId?: string
+  passkeyName?: string
 }): Promise<{
   publicKeyX: string
   publicKeyY: string
@@ -224,7 +222,7 @@ const createSigner = async ({
   walletAddress: string
 }> => {
   try {
-    const webAuthnCredentials = await createCredential(userName)
+    const webAuthnCredentials = await createCredential(passkeyName)
 
     const publicKeyX = `0x${webAuthnCredentials.point.getX().toString(16)}`
     const publicKeyY = `0x${webAuthnCredentials.point.getY().toString(16)}`
@@ -238,10 +236,8 @@ const createSigner = async ({
       ? walletAddress
       : await API.getWalletAddress(signerAddress)
 
-    const identifier = userId ? userId : walletAddress
-
     /* Store WebAuthn credentials in storage */
-    _setWebauthnCredentialsInStorage(identifier, publicKeyId, signerAddress)
+    _setWebauthnCredentialsInStorage(walletAddress, publicKeyId, signerAddress)
 
     return {
       publicKeyX,

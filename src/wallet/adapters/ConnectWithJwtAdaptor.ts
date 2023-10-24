@@ -5,7 +5,6 @@ import { networks } from '../../constants'
 import { API } from '../../services'
 import burnerWalletService from '../../services/burnerWalletService'
 import deviceService from '../../services/deviceService'
-import tokenService from '../../services/tokenService'
 import webAuthnService from '../../services/webAuthnService'
 import { WebAuthnSigner } from '../signers/WebAuthnSigner'
 import {
@@ -21,7 +20,7 @@ export interface ConnectWithJwtAdaptorConfig {
   chainId: SupportedNetworks
   jwtToken: string
   apiKey: string
-  userName?: string
+  passkeyName?: string
   rpcUrl?: string
   baseUrl?: string
 }
@@ -33,20 +32,20 @@ export class ConnectWithJwtAdaptor implements AUTHAdapter {
   private jwtToken: string
   private provider: StaticJsonRpcProvider
   private walletAddress?: string
-  private userName?: string
+  private passkeyName?: string
   private projectParams?: ProjectParams
 
   constructor({
     chainId,
     jwtToken,
     apiKey,
-    userName,
+    passkeyName,
     rpcUrl,
     baseUrl
   }: ConnectWithJwtAdaptorConfig) {
     this.chainId = chainId
     this.jwtToken = jwtToken
-    this.userName = userName
+    this.passkeyName = passkeyName
     this.API = new API(apiKey, +chainId, baseUrl)
     this.provider = new StaticJsonRpcProvider(
       rpcUrl ? rpcUrl : networks[+this.chainId].RPCUrl
@@ -87,7 +86,7 @@ export class ConnectWithJwtAdaptor implements AUTHAdapter {
           walletAddress
         } = await webAuthnService.createSigner({
           API: this.API,
-          userName: this.userName
+          passkeyName: this.passkeyName
         })
 
         await this.API.initWalletWithWebAuthnForUserID({
@@ -140,12 +139,8 @@ export class ConnectWithJwtAdaptor implements AUTHAdapter {
 
   async initNewSignerRequest(
     walletAddress: string,
-    userName?: string
+    passkeyName?: string
   ): Promise<NewSignerRequestBody> {
-    const decodedToken = tokenService.decodeToken(this.jwtToken)
-    const userId = decodedToken?.payload.sub
-    if (!userId) throw new Error('No userId found')
-
     const isWebAuthnCompatible = await webAuthnService.isWebAuthnCompatible()
 
     let addNewSignerRequest: NewSignerRequestBody
@@ -154,8 +149,7 @@ export class ConnectWithJwtAdaptor implements AUTHAdapter {
       const { publicKeyX, publicKeyY, publicKeyId, signerAddress, deviceData } =
         await webAuthnService.createSigner({
           API: this.API,
-          userName,
-          userId
+          passkeyName
         })
 
       addNewSignerRequest = {
@@ -170,7 +164,7 @@ export class ConnectWithJwtAdaptor implements AUTHAdapter {
     } else {
       this.signer = ethers.Wallet.createRandom()
       window.localStorage.setItem(
-        `cometh-connect-${userId}`,
+        `cometh-connect-${walletAddress}`,
         this.signer.privateKey
       )
 
@@ -185,14 +179,14 @@ export class ConnectWithJwtAdaptor implements AUTHAdapter {
     return addNewSignerRequest
   }
 
-  async createNewSignerRequest(userName?: string): Promise<void> {
+  async createNewSignerRequest(passkeyName?: string): Promise<void> {
     const walletAddress = await this.API.getWalletAddressFromUserID(
       this.jwtToken
     )
 
     const addNewSignerRequest = await this.initNewSignerRequest(
       walletAddress,
-      userName
+      passkeyName
     )
 
     await this.API.createNewSignerRequest({

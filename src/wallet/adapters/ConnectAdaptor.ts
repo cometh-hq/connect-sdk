@@ -19,7 +19,7 @@ import { AUTHAdapter } from './types'
 export interface ConnectAdaptorConfig {
   chainId: SupportedNetworks
   apiKey: string
-  userName?: string
+  passkeyName?: string
   rpcUrl?: string
   baseUrl?: string
 }
@@ -30,18 +30,18 @@ export class ConnectAdaptor implements AUTHAdapter {
   private API: API
   private provider: StaticJsonRpcProvider
   private walletAddress?: string
-  private userName?: string
+  private passkeyName?: string
   private projectParams?: ProjectParams
 
   constructor({
     chainId,
     apiKey,
-    userName,
+    passkeyName,
     rpcUrl,
     baseUrl
   }: ConnectAdaptorConfig) {
     this.chainId = chainId
-    this.userName = userName
+    this.passkeyName = passkeyName
     this.API = new API(apiKey, +chainId, baseUrl)
     this.provider = new StaticJsonRpcProvider(
       rpcUrl ? rpcUrl : networks[+this.chainId].RPCUrl
@@ -96,7 +96,7 @@ export class ConnectAdaptor implements AUTHAdapter {
           walletAddress
         } = await webAuthnService.createSigner({
           API: this.API,
-          userName: this.userName
+          passkeyName: this.passkeyName
         })
 
         this.signer = new WebAuthnSigner(publicKeyId, signerAddress)
@@ -148,7 +148,7 @@ export class ConnectAdaptor implements AUTHAdapter {
         requestBody = await webAuthnService.createSigner({
           API: this.API,
           walletAddress,
-          userName: this.userName
+          passkeyName: this.passkeyName
         })
       } catch {
         throw new Error('Error in webAuthn creation')
@@ -191,7 +191,7 @@ export class ConnectAdaptor implements AUTHAdapter {
 
   async initNewSignerRequest(
     walletAddress: string,
-    userName?: string
+    passkeyName?: string
   ): Promise<NewSignerRequestBody> {
     const isWebAuthnCompatible = await webAuthnService.isWebAuthnCompatible()
 
@@ -199,7 +199,7 @@ export class ConnectAdaptor implements AUTHAdapter {
 
     if (isWebAuthnCompatible) {
       const { publicKeyX, publicKeyY, publicKeyId, signerAddress, deviceData } =
-        await webAuthnService.createSigner({ API: this.API, userName })
+        await webAuthnService.createSigner({ API: this.API, passkeyName })
 
       addNewSignerRequest = {
         walletAddress,
