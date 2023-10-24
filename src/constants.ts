@@ -43,6 +43,13 @@ export const networks = {
       'https://rpc.public.zkevm-test.net',
     networkName: 'Polygon zkEVM Testnet',
     currency: 'MATIC'
+  },
+  2121337: {
+    RPCUrl:
+      process.env.RPC_URL_MUSTER_TESTNET ||
+      'https://muster-anytrust.alt.technology',
+    networkName: 'Muster Testnet',
+    currency: 'ETH'
   }
 }
 export const GAS_GAP_TOLERANCE = 10
