@@ -8,7 +8,8 @@ export enum SupportedNetworks {
   AVALANCHE = '0xa86a',
   FUJI = '0xa869',
   GNOSIS = '0x64',
-  CHIADO = '0x27d8'
+  CHIADO = '0x27d8',
+  MUSTER_TESTNET = '0x205E79'
 }
 
 export declare enum OperationType {
