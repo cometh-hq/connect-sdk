@@ -188,9 +188,7 @@ const getSafeVersion = async (
 ): Promise<string> => {
   const safe = await Safe__factory.connect(walletAddress, provider).deployed()
 
-  const version = await safe.VERSION()
-
-  return version
+  return await safe.VERSION()
 }
 
 export default {

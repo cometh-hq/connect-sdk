@@ -119,14 +119,14 @@ export class ConnectAdaptor implements AUTHAdapter {
     message: string,
     signature: string
   ): Promise<string> {
+    const wallet = await this.getWalletInfos(walletAddress)
+
     const safeVersion = await safeService.getSafeVersion(
       walletAddress,
       this.provider
     )
 
     if (safeVersion !== '1.3.0') throw new Error('Safe version should be 1.3.0')
-
-    const wallet = await this.getWalletInfos(walletAddress)
 
     if (wallet) {
       return wallet.initiatorAddress
