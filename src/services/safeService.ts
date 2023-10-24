@@ -181,6 +181,22 @@ const isSigner = async (
 const getFunctionSelector = (transactionData: MetaTransactionData): string => {
   return transactionData.data.toString().slice(0, 10)
 }
+
+const getSafeVersion = async (
+  walletAddress: string,
+  provider: StaticJsonRpcProvider
+): Promise<string> => {
+  try {
+    await isDeployed(walletAddress, provider)
+
+    const safe = await Safe__factory.connect(walletAddress, provider).deployed()
+
+    return await safe.VERSION()
+  } catch {
+    throw new Error('Please verify that the address is a deployed safe wallet')
+  }
+}
+
 export default {
   isDeployed,
   getNonce,
@@ -193,5 +209,6 @@ export default {
   getSafeTransactionHash,
   getTransactionsTotalValue,
   isSigner,
-  getFunctionSelector
+  getFunctionSelector,
+  getSafeVersion
 }

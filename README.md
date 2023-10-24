@@ -113,7 +113,7 @@ import {
 const walletAdaptor = new ConnectAdaptor({
   chainId: SupportedNetworks.POLYGON,
   apiKey: API_KEY,
-  userName: USERNAME
+  passkeyName: passkeyName
 })
 
 const wallet = new ComethWallet({
@@ -150,7 +150,7 @@ import Onboard from '@web3-onboard/core'
 const walletAdaptor = new ConnectAdaptor({
   chainId: SupportedNetworks.POLYGON,
   apiKey: API_KEY,
-  userName: USERNAME
+  passkeyName: passkeyName
 })
 
 const connectOnboardConnector = ConnectOnboardConnector({

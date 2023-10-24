@@ -74,7 +74,7 @@ export class ComethWallet {
 
     this.projectParams = await this.API.getProjectParams()
     this.signer = this.authAdapter.getSigner()
-    this.walletAddress = await this.authAdapter.getWalletAddress()
+    this.walletAddress = this.authAdapter.getWalletAddress()
 
     if (!this.signer) throw new Error('No signer found')
     if (!this.walletAddress) throw new Error('No walletAddress found')
@@ -203,12 +203,6 @@ export class ComethWallet {
   public async sendTransaction(
     safeTxData: MetaTransactionData
   ): Promise<SendTransactionResponse> {
-    const safeTxGas = await gasService.estimateSafeTxGas(
-      this.getAddress(),
-      [safeTxData],
-      this.provider
-    )
-
     const safeTxDataTyped = {
       ...(await this._prepareTransaction(
         safeTxData.to,
@@ -218,6 +212,12 @@ export class ComethWallet {
     }
 
     if (!(await this._isSponsoredTransaction([safeTxDataTyped]))) {
+      const safeTxGas = await gasService.estimateSafeTxGas(
+        this.getAddress(),
+        [safeTxData],
+        this.provider
+      )
+
       const gasPrice = await gasService.getGasPrice(
         this.provider,
         this.REWARD_PERCENTILE
@@ -253,12 +253,6 @@ export class ComethWallet {
 
     if (!this.projectParams) throw new Error('Project params are null')
 
-    const safeTxGas = await gasService.estimateSafeTxGas(
-      this.getAddress(),
-      safeTxData,
-      this.provider
-    )
-
     const safeTxDataTyped = {
       ...(await this._prepareTransaction(
         this.projectParams.multisendContractAddress,
@@ -269,6 +263,12 @@ export class ComethWallet {
     }
 
     if (!(await this._isSponsoredTransaction(safeTxData))) {
+      const safeTxGas = await gasService.estimateSafeTxGas(
+        this.getAddress(),
+        safeTxData,
+        this.provider
+      )
+
       const txValue = await safeService.getTransactionsTotalValue(safeTxData)
       const gasPrice = await gasService.getGasPrice(
         this.provider,
@@ -283,7 +283,7 @@ export class ComethWallet {
         txValue
       )
       if (this.uiConfig.displayValidationModal) {
-        this.displayModal(safeTxGas, gasPrice)
+        await this.displayModal(safeTxGas, gasPrice)
       }
 
       safeTxDataTyped.safeTxGas = +safeTxGas
