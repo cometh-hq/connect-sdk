@@ -181,6 +181,18 @@ const isSigner = async (
 const getFunctionSelector = (transactionData: MetaTransactionData): string => {
   return transactionData.data.toString().slice(0, 10)
 }
+
+const getSafeVersion = async (
+  walletAddress: string,
+  provider: StaticJsonRpcProvider
+): Promise<string> => {
+  const safe = await Safe__factory.connect(walletAddress, provider).deployed()
+
+  const version = await safe.VERSION()
+
+  return version
+}
+
 export default {
   isDeployed,
   getNonce,
@@ -193,5 +205,6 @@ export default {
   getSafeTransactionHash,
   getTransactionsTotalValue,
   isSigner,
-  getFunctionSelector
+  getFunctionSelector,
+  getSafeVersion
 }

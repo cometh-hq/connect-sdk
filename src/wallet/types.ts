@@ -80,6 +80,8 @@ export type WalletInfos = {
   connectionDate: Date
   creationDate: Date
   userId: string
+  initiatorAddress: string
+  initiatorAddressType: NewSignerRequestType
 }
 
 export type DeviceData = {

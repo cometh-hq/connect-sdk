@@ -5,6 +5,7 @@ import { networks } from '../../constants'
 import { API } from '../../services'
 import burnerWalletService from '../../services/burnerWalletService'
 import deviceService from '../../services/deviceService'
+import safeService from '../../services/safeService'
 import webAuthnService from '../../services/webAuthnService'
 import { WebAuthnSigner } from '../signers/WebAuthnSigner'
 import {
@@ -12,7 +13,8 @@ import {
   NewSignerRequestBody,
   NewSignerRequestType,
   ProjectParams,
-  SupportedNetworks
+  SupportedNetworks,
+  WalletInfos
 } from '../types'
 import { AUTHAdapter } from './types'
 
@@ -48,27 +50,14 @@ export class ConnectAdaptor implements AUTHAdapter {
     )
   }
 
-  async _doesWalletExistsInDB(walletAddress: string): Promise<boolean> {
-    if (!ethers.utils.isAddress(walletAddress)) {
-      throw new Error('Invalid address format')
-    }
-
-    const connectWallet = await this.API.getWalletInfos(walletAddress)
-    if (!connectWallet) {
-      return false
-    } else {
-      return true
-    }
-  }
-
   async connect(walletAddress?: string): Promise<void> {
     this.projectParams = await this.API.getProjectParams()
 
     const isWebAuthnCompatible = await webAuthnService.isWebAuthnCompatible()
 
     if (walletAddress) {
-      const walletExistsInDB = await this._doesWalletExistsInDB(walletAddress)
-      if (!walletExistsInDB) throw new Error('Wallet does not exists')
+      const wallet = await this.getWalletInfos(walletAddress)
+      if (!wallet) throw new Error('Wallet does not exists')
 
       if (isWebAuthnCompatible) {
         const { publicKeyId, signerAddress } = await webAuthnService.getSigner({
@@ -130,43 +119,61 @@ export class ConnectAdaptor implements AUTHAdapter {
     message: string,
     signature: string
   ): Promise<string> {
-    const walletExistsInDB = await this._doesWalletExistsInDB(walletAddress)
-    if (walletExistsInDB) throw new Error('Wallet already exists')
+    const safeVersion = await safeService.getSafeVersion(
+      walletAddress,
+      this.provider
+    )
 
-    let requestBody
+    if (safeVersion !== '1.3.0') throw new Error('Safe version should be 1.3.0')
 
-    const isWebAuthnCompatible = await webAuthnService.isWebAuthnCompatible()
+    const wallet = await this.getWalletInfos(walletAddress)
 
-    if (!isWebAuthnCompatible) {
-      const { signer } = await burnerWalletService.createSigner({
-        API: this.API,
-        walletAddress
-      })
-      requestBody = { signerAddress: signer.address }
+    if (wallet) {
+      return wallet.initiatorAddress
     } else {
-      try {
-        requestBody = await webAuthnService.createSigner({
+      let requestBody
+
+      const isWebAuthnCompatible = await webAuthnService.isWebAuthnCompatible()
+
+      if (!isWebAuthnCompatible) {
+        const { signer } = await burnerWalletService.createSigner({
           API: this.API,
-          walletAddress,
-          passkeyName: this.passkeyName
+          walletAddress
         })
-      } catch {
-        throw new Error('Error in webAuthn creation')
+        requestBody = { signerAddress: signer.address }
+      } else {
+        try {
+          requestBody = await webAuthnService.createSigner({
+            API: this.API,
+            walletAddress,
+            passkeyName: this.passkeyName
+          })
+        } catch {
+          throw new Error('Error in webAuthn creation')
+        }
       }
+
+      const signerAddress = await this.API.importExternalSafe({
+        message,
+        signature,
+        walletAddress,
+        signerAddress: requestBody.signerAddress,
+        deviceData: requestBody.deviceData,
+        publicKeyId: requestBody.publicKeyId,
+        publicKeyX: requestBody.publicKeyX,
+        publicKeyY: requestBody.publicKeyY
+      })
+
+      return signerAddress
+    }
+  }
+
+  async getWalletInfos(walletAddress: string): Promise<WalletInfos> {
+    if (!ethers.utils.isAddress(walletAddress)) {
+      throw new Error('Invalid address format')
     }
 
-    const signerAddress = await this.API.importExternalSafe({
-      message,
-      signature,
-      walletAddress,
-      signerAddress: requestBody.signerAddress,
-      deviceData: requestBody.deviceData,
-      publicKeyId: requestBody.publicKeyId,
-      publicKeyX: requestBody.publicKeyX,
-      publicKeyY: requestBody.publicKeyY
-    })
-
-    return signerAddress
+    return await this.API.getWalletInfos(walletAddress)
   }
 
   async logout(): Promise<void> {
