@@ -186,9 +186,15 @@ const getSafeVersion = async (
   walletAddress: string,
   provider: StaticJsonRpcProvider
 ): Promise<string> => {
-  const safe = await Safe__factory.connect(walletAddress, provider).deployed()
+  try {
+    await isDeployed(walletAddress, provider)
 
-  return await safe.VERSION()
+    const safe = await Safe__factory.connect(walletAddress, provider).deployed()
+
+    return await safe.VERSION()
+  } catch {
+    throw new Error('Please verify that the address is a deployed safe wallet')
+  }
 }
 
 export default {
