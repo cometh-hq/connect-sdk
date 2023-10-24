@@ -5,7 +5,6 @@ import { networks } from '../../constants'
 import { API } from '../../services'
 import burnerWalletService from '../../services/burnerWalletService'
 import deviceService from '../../services/deviceService'
-import tokenService from '../../services/tokenService'
 import webAuthnService from '../../services/webAuthnService'
 import { WebAuthnSigner } from '../signers/WebAuthnSigner'
 import {
@@ -13,8 +12,7 @@ import {
   NewSignerRequestBody,
   NewSignerRequestType,
   ProjectParams,
-  SupportedNetworks,
-  UserInfos
+  SupportedNetworks
 } from '../types'
 import { AUTHAdapter } from './types'
 
@@ -22,7 +20,7 @@ export interface ConnectWithJwtAdaptorConfig {
   chainId: SupportedNetworks
   jwtToken: string
   apiKey: string
-  userName?: string
+  passkeyName?: string
   rpcUrl?: string
   baseUrl?: string
 }
@@ -33,20 +31,21 @@ export class ConnectWithJwtAdaptor implements AUTHAdapter {
   private API: API
   private jwtToken: string
   private provider: StaticJsonRpcProvider
-  private userName?: string
+  private walletAddress?: string
+  private passkeyName?: string
   private projectParams?: ProjectParams
 
   constructor({
     chainId,
     jwtToken,
     apiKey,
-    userName,
+    passkeyName,
     rpcUrl,
     baseUrl
   }: ConnectWithJwtAdaptorConfig) {
     this.chainId = chainId
     this.jwtToken = jwtToken
-    this.userName = userName
+    this.passkeyName = passkeyName
     this.API = new API(apiKey, +chainId, baseUrl)
     this.provider = new StaticJsonRpcProvider(
       rpcUrl ? rpcUrl : networks[+this.chainId].RPCUrl
@@ -56,48 +55,64 @@ export class ConnectWithJwtAdaptor implements AUTHAdapter {
   async connect(): Promise<void> {
     this.projectParams = await this.API.getProjectParams()
 
-    const walletAddress = await this.API.getWalletAddressFromUserID(
+    this.walletAddress = await this.API.getWalletAddressFromUserID(
       this.jwtToken
     )
 
     const isWebAuthnCompatible = await webAuthnService.isWebAuthnCompatible()
 
-    const decodedToken = tokenService.decodeToken(this.jwtToken)
-    const userId = decodedToken?.payload.sub
-
-    if (!isWebAuthnCompatible) {
-      this.signer = walletAddress
-        ? await burnerWalletService.getSignerForUserId(
-            userId,
-            this.API,
-            this.provider,
-            walletAddress
-          )
-        : await burnerWalletService.createSignerAndWalletForUserId(
-            this.jwtToken,
-            userId,
-            this.API
-          )
+    if (this.walletAddress) {
+      if (isWebAuthnCompatible) {
+        const { publicKeyId, signerAddress } = await webAuthnService.getSigner({
+          API: this.API,
+          walletAddress: this.walletAddress
+        })
+        this.signer = new WebAuthnSigner(publicKeyId, signerAddress)
+      } else {
+        await burnerWalletService.getSigner({
+          API: this.API,
+          provider: this.provider,
+          walletAddress: this.walletAddress
+        })
+      }
     } else {
-      try {
-        const { publicKeyId, signerAddress } = walletAddress
-          ? await webAuthnService.getSignerForUserId(
-              walletAddress,
-              userId,
-              this.API
-            )
-          : await webAuthnService.createSignerAndWalletForUserId(
-              this.jwtToken,
-              userId,
-              this.API,
-              this.userName
-            )
+      if (isWebAuthnCompatible) {
+        const {
+          publicKeyX,
+          publicKeyY,
+          publicKeyId,
+          signerAddress,
+          deviceData,
+          walletAddress
+        } = await webAuthnService.createSigner({
+          API: this.API,
+          passkeyName: this.passkeyName
+        })
+
+        await this.API.initWalletWithWebAuthnForUserID({
+          token: this.jwtToken,
+          walletAddress,
+          publicKeyId,
+          publicKeyX,
+          publicKeyY,
+          deviceData
+        })
 
         this.signer = new WebAuthnSigner(publicKeyId, signerAddress)
-      } catch {
-        throw new Error(
-          'New Domain detected. You need to add that domain as signer.'
-        )
+        this.walletAddress = walletAddress
+      } else {
+        const { signer, walletAddress } =
+          await burnerWalletService.createSigner({
+            API: this.API
+          })
+
+        this.signer = signer
+        this.walletAddress = walletAddress
+
+        await this.API.initWalletForUserID({
+          token: this.jwtToken,
+          ownerAddress: signer.address
+        })
       }
     }
   }
@@ -117,29 +132,25 @@ export class ConnectWithJwtAdaptor implements AUTHAdapter {
     return this.signer
   }
 
-  async getWalletAddress(): Promise<string> {
-    return await this.API.getWalletAddressFromUserID(this.jwtToken)
+  getWalletAddress(): string {
+    if (!this.walletAddress) throw new Error('No wallet instance found')
+    return this.walletAddress
   }
 
-  async getUserInfos(): Promise<Partial<UserInfos>> {
-    return { walletAddress: await this.getAccount() } ?? {}
-  }
-
-  public async initNewSignerRequest(
+  async initNewSignerRequest(
     walletAddress: string,
-    userName?: string
+    passkeyName?: string
   ): Promise<NewSignerRequestBody> {
-    const decodedToken = tokenService.decodeToken(this.jwtToken)
-    const userId = decodedToken?.payload.sub
-    if (!userId) throw new Error('No userId found')
-
     const isWebAuthnCompatible = await webAuthnService.isWebAuthnCompatible()
 
     let addNewSignerRequest: NewSignerRequestBody
 
     if (isWebAuthnCompatible) {
       const { publicKeyX, publicKeyY, publicKeyId, signerAddress, deviceData } =
-        await webAuthnService.createWebAuthnSigner(this.API, userName, userId)
+        await webAuthnService.createSigner({
+          API: this.API,
+          passkeyName
+        })
 
       addNewSignerRequest = {
         walletAddress,
@@ -153,7 +164,7 @@ export class ConnectWithJwtAdaptor implements AUTHAdapter {
     } else {
       this.signer = ethers.Wallet.createRandom()
       window.localStorage.setItem(
-        `cometh-connect-${userId}`,
+        `cometh-connect-${walletAddress}`,
         this.signer.privateKey
       )
 
@@ -168,14 +179,14 @@ export class ConnectWithJwtAdaptor implements AUTHAdapter {
     return addNewSignerRequest
   }
 
-  public async createNewSignerRequest(userName?: string): Promise<void> {
+  async createNewSignerRequest(passkeyName?: string): Promise<void> {
     const walletAddress = await this.API.getWalletAddressFromUserID(
       this.jwtToken
     )
 
     const addNewSignerRequest = await this.initNewSignerRequest(
       walletAddress,
-      userName
+      passkeyName
     )
 
     await this.API.createNewSignerRequest({
@@ -184,19 +195,19 @@ export class ConnectWithJwtAdaptor implements AUTHAdapter {
     })
   }
 
-  public async getNewSignerRequests(): Promise<NewSignerRequest[] | null> {
+  async getNewSignerRequests(): Promise<NewSignerRequest[] | null> {
     const walletAddress = await this.getWalletAddress()
     return await this.API.getNewSignerRequests(walletAddress)
   }
 
-  public async deleteNewSignerRequest(signerAddress: string): Promise<void> {
+  async deleteNewSignerRequest(signerAddress: string): Promise<void> {
     return await this.API.deleteNewSignerRequest({
       token: this.jwtToken,
       signerAddress
     })
   }
 
-  public async validateNewSignerRequest(
+  async validateNewSignerRequest(
     newSignerRequest: NewSignerRequest
   ): Promise<string> {
     if (!this.projectParams) throw new Error('Project params are null')

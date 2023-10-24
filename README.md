@@ -40,7 +40,7 @@ This function create a new wallet and connect to the API.
 ### Get Address
 
 ```javascript
-await wallet.getAddress()
+wallet.getAddress()
 ```
 
 This function returns the address of the wallet.
@@ -60,14 +60,6 @@ await wallet.logout()
 ```
 
 This function logs the user out and clears the cache.
-
-### Get user infos
-
-```javascript
-await wallet.getUserInfos()
-```
-
-If the user is logged in with social media accounts, this function can be used to fetch user related data such as email, etc.
 
 ### Send transaction
 
@@ -113,7 +105,7 @@ import {
 const walletAdaptor = new ConnectAdaptor({
   chainId: SupportedNetworks.POLYGON,
   apiKey: API_KEY,
-  userName: USERNAME
+  passkeyName: passkeyName
 })
 
 const wallet = new ComethWallet({
@@ -150,7 +142,7 @@ import Onboard from '@web3-onboard/core'
 const walletAdaptor = new ConnectAdaptor({
   chainId: SupportedNetworks.POLYGON,
   apiKey: API_KEY,
-  userName: USERNAME
+  passkeyName: passkeyName
 })
 
 const connectOnboardConnector = ConnectOnboardConnector({
