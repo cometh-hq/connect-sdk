@@ -138,6 +138,41 @@ export class API {
     await this.api.post(`/wallets/init-with-webauthn`, body)
   }
 
+  async importExternalSafe({
+    message,
+    signature,
+    walletAddress,
+    signerAddress,
+    deviceData,
+    publicKeyId,
+    publicKeyX,
+    publicKeyY
+  }: {
+    message: string
+    signature: string
+    walletAddress: string
+    signerAddress: string
+    deviceData: DeviceData
+    publicKeyId?: string
+    publicKeyX?: string
+    publicKeyY?: string
+  }): Promise<string> {
+    const body = {
+      message,
+      signature,
+      walletAddress,
+      signerAddress,
+      deviceData,
+      publicKeyId,
+      publicKeyX,
+      publicKeyY
+    }
+
+    const response = await this.api.post(`/wallets/import`, body)
+
+    return response?.data.signerAddress
+  }
+
   /**
    * User Section
    */

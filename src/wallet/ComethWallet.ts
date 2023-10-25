@@ -74,7 +74,7 @@ export class ComethWallet {
 
     this.projectParams = await this.API.getProjectParams()
     this.signer = this.authAdapter.getSigner()
-    this.walletAddress = await this.authAdapter.getWalletAddress()
+    this.walletAddress = this.authAdapter.getWalletAddress()
 
     if (!this.signer) throw new Error('No signer found')
     if (!this.walletAddress) throw new Error('No walletAddress found')

@@ -8,7 +8,8 @@ export enum SupportedNetworks {
   AVALANCHE = '0xa86a',
   FUJI = '0xa869',
   GNOSIS = '0x64',
-  CHIADO = '0x27d8'
+  CHIADO = '0x27d8',
+  MUSTER_TESTNET = '0x205e79'
 }
 
 export declare enum OperationType {
@@ -46,11 +47,6 @@ export type RelayTransactionType = {
   signatures: string
   walletAddress: string
 }
-export type UserInfos = {
-  ownerAddress: string | undefined
-  walletAddress: string
-  email: string | null
-}
 
 export type TransactionStatus = {
   hash: string
@@ -75,7 +71,6 @@ export type WebAuthnSigner = {
   publicKeyY: string
   signerAddress: string
   deviceData: DeviceData
-  isActive: boolean
 }
 
 export type UIConfig = {
@@ -87,6 +82,8 @@ export type WalletInfos = {
   connectionDate: Date
   creationDate: Date
   userId: string
+  initiatorAddress: string
+  initiatorAddressType: NewSignerRequestType
 }
 
 export type DeviceData = {
@@ -100,27 +97,23 @@ export enum NewSignerRequestType {
   BURNER_WALLET = 'BURNER_WALLET'
 }
 
-export type NewSignerRequestBody = {
+export type Signer = {
   walletAddress: string
   signerAddress: string
   deviceData: DeviceData
-  type: NewSignerRequestType
   publicKeyId?: string
   publicKeyX?: string
   publicKeyY?: string
 }
 
-export type NewSignerRequest = {
+export type NewSignerRequestBody = Signer & {
+  type: NewSignerRequestType
+}
+
+export type NewSignerRequest = NewSignerRequestBody & {
   projectId: string
   userId: string
   chainId: string
-  walletAddress: string
-  signerAddress: string
-  deviceData: DeviceData
-  type: NewSignerRequestType
-  publicKeyId?: string
-  publicKeyX?: string
-  publicKeyY?: string
 }
 
 export type ProjectParams = {

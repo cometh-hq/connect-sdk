@@ -1,7 +1,7 @@
 import { ethers, Wallet } from 'ethers'
 
 import { IConnectionSigning } from '../IConnectionSigning'
-import { SupportedNetworks, UserInfos } from '../types'
+import { SupportedNetworks } from '../types'
 import { AUTHAdapter } from './types'
 
 export class BurnerWalletAdaptor
@@ -9,6 +9,7 @@ export class BurnerWalletAdaptor
   implements AUTHAdapter
 {
   private wallet?: Wallet
+  private walletAddress?: string
 
   constructor(chainId: SupportedNetworks, apiKey: string, baseUrl?: string) {
     super(chainId, apiKey, baseUrl)
@@ -28,8 +29,11 @@ export class BurnerWalletAdaptor
         this.wallet.privateKey
       )
     }
-    const walletAddress = await this.getWalletAddress()
-    await this.signAndConnect(walletAddress, this.getSigner())
+    const ownerAddress = await this.getAccount()
+    if (!ownerAddress) throw new Error('No owner address found')
+
+    this.walletAddress = await this.API.getWalletAddress(ownerAddress)
+    await this.signAndConnect(this.walletAddress, this.getSigner())
   }
 
   async logout(): Promise<void> {
@@ -42,18 +46,13 @@ export class BurnerWalletAdaptor
     return this.wallet.getAddress()
   }
 
-  async getWalletAddress(): Promise<string> {
-    const ownerAddress = await this.getAccount()
-    if (!ownerAddress) throw new Error('No owner address found')
-    return await this.API.getWalletAddress(ownerAddress)
+  getWalletAddress(): string {
+    if (!this.walletAddress) throw new Error('No Wallet instance found')
+    return this.walletAddress
   }
+
   getSigner(): Wallet {
     if (!this.wallet) throw new Error('No Wallet instance found')
     return this.wallet
-  }
-
-  async getUserInfos(): Promise<Partial<UserInfos>> {
-    if (!this.wallet) throw new Error('No Wallet instance found')
-    return { walletAddress: this.wallet.address } ?? {}
   }
 }

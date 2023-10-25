@@ -2,12 +2,12 @@ kind: pipeline
 type: docker
 name: pull request
 steps:
-- name: unit tests
-  image: node:16
-  commands:
-    - yarn install
-    - yarn test
-    - yarn build
+  - name: unit tests
+    image: node:16
+    commands:
+      - yarn install
+      - yarn test
+      - yarn build
 trigger:
   event:
     - pull_request
@@ -16,30 +16,30 @@ kind: pipeline
 type: docker
 name: develop release
 steps:
-- name: unit tests
-  image: node:16
-  commands:
-    - yarn install
-    - yarn test
-    - yarn build
-- name: discord notification
-  image: appleboy/drone-discord
-  settings:
-    webhook_id:
-      from_secret: discord_webhook_id
-    webhook_token:
-      from_secret: discord_webhook_token
-    username: drone
-    message: >
-      {{#success build.status}}
-        build push and rolling update for develop {{repo.name}} succeeded.
-        {{build.link}}
-      {{else}}
-         build push and rolling update for develop {{repo.name}} failed. Fix me please.
-        {{build.link}}
-      {{/success}}
-    when:
-      status: [success, failure]
+  - name: unit tests
+    image: node:16
+    commands:
+      - yarn install
+      - yarn test
+      - yarn build
+  - name: discord notification
+    image: appleboy/drone-discord
+    settings:
+      webhook_id:
+        from_secret: discord_webhook_id
+      webhook_token:
+        from_secret: discord_webhook_token
+      passkeyName: drone
+      message: >
+        {{#success build.status}}
+          build push and rolling update for develop {{repo.name}} succeeded.
+          {{build.link}}
+        {{else}}
+           build push and rolling update for develop {{repo.name}} failed. Fix me please.
+          {{build.link}}
+        {{/success}}
+      when:
+        status: [success, failure]
 trigger:
   branch:
     include:

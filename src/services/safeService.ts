@@ -197,6 +197,21 @@ const encodeMultiSendDataForEstimate = (txs: MetaTransactionData[]): string => {
   return `0x${txs.map((tx) => _encodeMetaTransaction(tx)).join('')}`
 }
 
+const getSafeVersion = async (
+  walletAddress: string,
+  provider: StaticJsonRpcProvider
+): Promise<string> => {
+  try {
+    await isDeployed(walletAddress, provider)
+
+    const safe = await Safe__factory.connect(walletAddress, provider).deployed()
+
+    return await safe.VERSION()
+  } catch {
+    throw new Error('Please verify that the address is a deployed safe wallet')
+  }
+}
+
 export default {
   isDeployed,
   getNonce,
@@ -210,5 +225,6 @@ export default {
   getTransactionsTotalValue,
   isSigner,
   getFunctionSelector,
-  encodeMultiSendDataForEstimate
+  encodeMultiSendDataForEstimate,
+  getSafeVersion
 }

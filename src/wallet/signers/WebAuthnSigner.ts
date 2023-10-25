@@ -5,6 +5,7 @@ import {
   TypedDataField
 } from '@ethersproject/abstract-signer'
 import { Bytes, ethers } from 'ethers'
+import _ from 'lodash'
 
 import { EIP712_SAFE_MESSAGE_TYPE, EIP712_SAFE_TX_TYPES } from '../../constants'
 import safeService from '../../services/safeService'
@@ -30,13 +31,15 @@ export class WebAuthnSigner extends Signer {
     types: Record<string, Array<TypedDataField>>,
     value: Record<string, any>
   ): Promise<string> {
-    if (types !== EIP712_SAFE_TX_TYPES && types !== EIP712_SAFE_MESSAGE_TYPE)
+    const IS_SAFE_MESSAGE_TYPE = _.isEqual(types, EIP712_SAFE_MESSAGE_TYPE)
+    const IS_SAFE_TX_TYPE = _.isEqual(types, EIP712_SAFE_TX_TYPES)
+
+    if (!IS_SAFE_MESSAGE_TYPE && !IS_SAFE_TX_TYPE)
       throw new Error('types data not supported')
 
-    const data =
-      types === EIP712_SAFE_TX_TYPES
-        ? ethers.utils._TypedDataEncoder.hash(domain, types, value)
-        : ethers.utils.keccak256(value.message)
+    const data = IS_SAFE_TX_TYPE
+      ? ethers.utils._TypedDataEncoder.hash(domain, types, value)
+      : ethers.utils.keccak256(value.message)
 
     const publicKeyCredential: PublicKeyCredentialDescriptor[] = [
       {
