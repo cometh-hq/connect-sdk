@@ -65,7 +65,8 @@ export class ConnectWithJwtAdaptor implements AUTHAdapter {
       if (isWebAuthnCompatible) {
         const { publicKeyId, signerAddress } = await webAuthnService.getSigner({
           API: this.API,
-          walletAddress: this.walletAddress
+          walletAddress: this.walletAddress,
+          provider: this.provider
         })
         this.signer = new WebAuthnSigner(publicKeyId, signerAddress)
       } else {

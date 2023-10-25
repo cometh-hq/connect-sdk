@@ -13,6 +13,7 @@ import * as utils from '../utils/utils'
 import { DeviceData, WebAuthnSigner } from '../wallet'
 import { ComethProvider } from '../wallet/ComethProvider'
 import deviceService from './deviceService'
+import safeService from './safeService'
 
 const _formatCreatingRpId = (): { name: string; id?: string } => {
   return psl.parse(window.location.host).domain
@@ -254,10 +255,12 @@ const createSigner = async ({
 
 const getSigner = async ({
   API,
-  walletAddress
+  walletAddress,
+  provider
 }: {
   API: API
   walletAddress: string
+  provider: StaticJsonRpcProvider
 }): Promise<{
   publicKeyId: string
   signerAddress: string
@@ -281,6 +284,18 @@ const getSigner = async ({
       JSON.parse(localStorageWebauthnCredentials).publicKeyId
     )
 
+    const isOwner = await safeService.isSigner(
+      registeredWebauthnSigner.signerAddress,
+      walletAddress,
+      provider,
+      API
+    )
+
+    if (!isOwner)
+      throw new Error(
+        'New Domain detected. You need to add that domain as signer.'
+      )
+
     /* If signer exists in db, instantiate WebAuthn signer  */
     if (registeredWebauthnSigner)
       return {
@@ -302,6 +317,18 @@ const getSigner = async ({
   const signingWebAuthnSigner = await API.getWebAuthnSignerByPublicKeyId(
     signatureParams.publicKeyId
   )
+
+  const isOwner = await safeService.isSigner(
+    signingWebAuthnSigner.signerAddress,
+    walletAddress,
+    provider,
+    API
+  )
+
+  if (!isOwner)
+    throw new Error(
+      'New Domain detected. You need to add that domain as signer.'
+    )
 
   /* Store WebAuthn credentials in storage */
   _setWebauthnCredentialsInStorage(
