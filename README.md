@@ -4,6 +4,8 @@ Cometh Connect SDK allows developers to onboard their users with a seedless, gas
 
 Account Abstraction (AA) improves transaction user experience by using smart contract wallets as primary accounts.
 
+If you need more information on how to use the SDK check our [documentation](https://docs.cometh.io/connect/cometh-connect/what-is-connect)
+
 ## Instanciate Wallet
 
 ```javascript
@@ -25,7 +27,7 @@ const wallet = new ComethWallet({
 })
 ```
 
-To get an API key please [Contact us](https://alembic.tech/)
+To get an API key please [Contact us](https://www.cometh.io/)
 
 ## Available methods
 
@@ -146,7 +148,7 @@ const walletAdaptor = new ConnectAdaptor({
 })
 
 const connectOnboardConnector = ConnectOnboardConnector({
-  apiKey: process.env.NEXT_PUBLIC_ALEMBIC_API_KEY,
+  apiKey: API_KEY,
   authAdapter: walletAdaptor,
   rpcUrl: RPC_URL
 })
