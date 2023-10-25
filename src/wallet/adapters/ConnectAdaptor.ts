@@ -1,7 +1,7 @@
 import { StaticJsonRpcProvider } from '@ethersproject/providers'
 import { ethers, Wallet } from 'ethers'
 
-import { networks } from '../../constants'
+import { importSafeMessage, networks } from '../../constants'
 import { API } from '../../services'
 import burnerWalletService from '../../services/burnerWalletService'
 import deviceService from '../../services/deviceService'
@@ -62,7 +62,8 @@ export class ConnectAdaptor implements AUTHAdapter {
       if (isWebAuthnCompatible) {
         const { publicKeyId, signerAddress } = await webAuthnService.getSigner({
           API: this.API,
-          walletAddress
+          walletAddress,
+          provider: this.provider
         })
         this.signer = new WebAuthnSigner(publicKeyId, signerAddress)
       } else {
@@ -119,11 +120,12 @@ export class ConnectAdaptor implements AUTHAdapter {
     message: string,
     signature: string
   ): Promise<string> {
+    if (message !== importSafeMessage) throw new Error('Wrong message signed')
+
     const safeVersion = await safeService.getSafeVersion(
       walletAddress,
       this.provider
     )
-
     if (safeVersion !== '1.3.0') throw new Error('Safe version should be 1.3.0')
 
     const wallet = await this.getWalletInfos(walletAddress)
