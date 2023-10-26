@@ -27,7 +27,7 @@ export class API {
     P256FactoryContractAddress: string
     multisendContractAddress: string
     singletonAddress: string
-    simulateTxAccessorAddress: string
+    simulateTxAcessorAddress: string
   }> {
     const response = await this.api.get(`/project/params`)
     return response?.data?.projectParams

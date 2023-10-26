@@ -121,5 +121,5 @@ export type ProjectParams = {
   P256FactoryContractAddress: string
   multisendContractAddress: string
   singletonAddress: string
-  simulateTxAccessorAddress: string
+  simulateTxAcessorAddress: string
 }
