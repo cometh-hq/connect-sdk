@@ -2,6 +2,7 @@ import { arrayify } from '@ethersproject/bytes'
 import { StaticJsonRpcProvider } from '@ethersproject/providers'
 import { pack as solidityPack } from '@ethersproject/solidity'
 import { ethers } from 'ethers'
+import { MetaTransaction } from 'ethers-multisend'
 
 import { BLOCK_EVENT_GAP, EIP712_SAFE_TX_TYPES } from '../constants'
 import { Safe__factory } from '../contracts/types/factories'
@@ -101,7 +102,7 @@ const getOwners = async (
 const prepareAddOwnerTx = async (
   walletAddress: string,
   newOwner: string
-): Promise<MetaTransactionData> => {
+): Promise<MetaTransaction> => {
   const tx = {
     to: walletAddress,
     value: '0x0',

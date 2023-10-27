@@ -13,6 +13,7 @@ import {
 import { API } from '../services'
 import gasService from '../services/gasService'
 import safeService from '../services/safeService'
+import simulateTxService from '../services/simulateTxService'
 import { GasModal } from '../ui'
 import { AUTHAdapter } from './adapters'
 import { WebAuthnSigner } from './signers/WebAuthnSigner'
@@ -201,7 +202,7 @@ export class ComethWallet {
   }
 
   public async sendTransaction(
-    safeTxData: MetaTransactionData
+    safeTxData: MetaTransaction
   ): Promise<SendTransactionResponse> {
     if (!this.projectParams) throw new Error('Project params are null')
 
@@ -214,7 +215,7 @@ export class ComethWallet {
     }
 
     if (!(await this._isSponsoredTransaction([safeTxDataTyped]))) {
-      const safeTxGas = await gasService.estimateSafeTxGasWithSimulate(
+      const safeTxGas = await simulateTxService.estimateSafeTxGasWithSimulate(
         this.getAddress(),
         this.provider,
         safeTxData,
@@ -273,7 +274,7 @@ export class ComethWallet {
     }
 
     if (!(await this._isSponsoredTransaction(safeTxData))) {
-      const safeTxGas = await gasService.estimateSafeTxGasWithSimulate(
+      const safeTxGas = await simulateTxService.estimateSafeTxGasWithSimulate(
         this.getAddress(),
         this.provider,
         safeTxData,
