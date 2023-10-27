@@ -81,27 +81,8 @@ const verifyHasEnoughBalance = async (
     throw new Error('Not enough balance to send this value and pay for gas')
 }
 
-const _parseSafeTxGasErrorResponse = (error: any): string => {
-  // Ethers
-  if (error?.error?.body) {
-    const revertData = JSON.parse(error.error.body).error.data
-    if (revertData && revertData.startsWith('Reverted ')) {
-      const [, encodedResponse] = revertData.split('Reverted ')
-      const safeTxGas = decodeSafeTxGas(encodedResponse)
-
-      return safeTxGas
-    }
-  }
-
-  // Web3
-  const [, encodedResponse] = error.message.split('return data: ')
-  const safeTxGas = decodeSafeTxGas(encodedResponse)
-
-  return safeTxGas
-}
-
 const _addExtraGasForSafety = (safeTxGas: string): string => {
-  const INCREASE_GAS_FACTOR = 1.05 // increase the gas by 5% as a security margin
+  const INCREASE_GAS_FACTOR = 1.1 // increase the gas by 10% as a security margin
 
   return Math.round(Number(safeTxGas) * INCREASE_GAS_FACTOR).toString()
 }
@@ -170,10 +151,8 @@ const estimateSafeTxGasWithSimulate = async (
     const safeTxGas = decodeSafeTxGas(encodedResponse)
 
     return BigNumber.from(_addExtraGasForSafety(safeTxGas))
-
-    // if the call throws an error we try to parse the returned value
-  } catch (error: any) {
-    return BigNumber.from(_parseSafeTxGasErrorResponse(error))
+  } catch {
+    throw new Error('Impossible to determine gas...')
   }
 }
 
