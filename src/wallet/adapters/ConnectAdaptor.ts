@@ -170,6 +170,10 @@ export class ConnectAdaptor implements AUTHAdapter {
     }
   }
 
+  getImportSafeMessage(): string {
+    return importSafeMessage
+  }
+
   async getWalletInfos(walletAddress: string): Promise<WalletInfos> {
     if (!ethers.utils.isAddress(walletAddress)) {
       throw new Error('Invalid address format')
