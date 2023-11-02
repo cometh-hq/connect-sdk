@@ -4,7 +4,8 @@ import { encodeMulti, MetaTransaction } from 'ethers-multisend'
 
 import {
   ADD_OWNER_FUNCTION_SELECTOR,
-  DEFAULT_BASE_GAS,
+  DEFAULT_BASE_GAS_BURNER,
+  DEFAULT_BASE_GAS_WEBAUTHN,
   DEFAULT_REWARD_PERCENTILE,
   EIP712_SAFE_MESSAGE_TYPE,
   EIP712_SAFE_TX_TYPES,
@@ -58,7 +59,7 @@ export class ComethWallet {
     this.provider = new StaticJsonRpcProvider(
       rpcUrl ? rpcUrl : networks[this.chainId].RPCUrl
     )
-    this.BASE_GAS = DEFAULT_BASE_GAS
+    this.BASE_GAS = DEFAULT_BASE_GAS_WEBAUTHN
     this.REWARD_PERCENTILE = DEFAULT_REWARD_PERCENTILE
   }
 
@@ -79,6 +80,8 @@ export class ComethWallet {
 
     if (!this.signer) throw new Error('No signer found')
     if (!this.walletAddress) throw new Error('No walletAddress found')
+
+    if (this.signer instanceof Wallet) this.BASE_GAS = DEFAULT_BASE_GAS_BURNER
 
     this.sponsoredAddresses = await this.API.getSponsoredAddresses()
     this.connected = true
@@ -204,6 +207,7 @@ export class ComethWallet {
   public async sendTransaction(
     safeTxData: MetaTransaction
   ): Promise<SendTransactionResponse> {
+    if (!this.projectParams) throw new Error('Project params are null')
     if (!this.projectParams) throw new Error('Project params are null')
 
     const safeTxDataTyped = {
