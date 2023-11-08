@@ -171,8 +171,8 @@ export class ConnectAdaptor implements AUTHAdapter {
     }
   }
 
-  async recoverWalletAddressFromSigner(): Promise<string> {
-    return await webAuthnService.recoverWalletAddressFromSigner(this.API)
+  async retrieveWalletAddressFromSigner(): Promise<string> {
+    return await webAuthnService.retrieveWalletAddressFromSigner(this.API)
   }
 
   getImportSafeMessage(): string {

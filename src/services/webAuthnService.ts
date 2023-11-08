@@ -345,7 +345,7 @@ const getSigner = async ({
   }
 }
 
-const recoverWalletAddressFromSigner = async (API: API): Promise<string> => {
+const retrieveWalletAddressFromSigner = async (API: API): Promise<string> => {
   let publicKeyId: string
 
   try {
@@ -375,5 +375,5 @@ export default {
   createSigner,
   signWithWebAuthn,
   getSigner,
-  recoverWalletAddressFromSigner
+  retrieveWalletAddressFromSigner
 }
