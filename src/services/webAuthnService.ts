@@ -345,7 +345,7 @@ const getSigner = async ({
   }
 }
 
-const recoverWalletAddressFromSignature = async (API: API): Promise<string> => {
+const recoverWalletAddressFromSigner = async (API: API): Promise<string> => {
   let publicKeyId: string
 
   try {
@@ -361,7 +361,9 @@ const recoverWalletAddressFromSignature = async (API: API): Promise<string> => {
 
   const { walletAddress, signerAddress } = signingWebAuthnSigner
 
-  _setWebauthnCredentialsInStorage(walletAddress, publicKeyId, signerAddress)
+  if (!_getWebauthnCredentialsInStorage(walletAddress)) {
+    _setWebauthnCredentialsInStorage(walletAddress, publicKeyId, signerAddress)
+  }
 
   return walletAddress
 }
@@ -375,5 +377,5 @@ export default {
   createSigner,
   signWithWebAuthn,
   getSigner,
-  recoverWalletAddressFromSignature
+  recoverWalletAddressFromSigner
 }
