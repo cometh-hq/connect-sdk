@@ -72,13 +72,13 @@ const createCredential = async (
 
 const sign = async (
   challenge: BufferSource,
-  publicKeyCredential: PublicKeyCredentialDescriptor[]
+  publicKeyCredential?: PublicKeyCredentialDescriptor[]
 ): Promise<any> => {
   const assertionPayload: any = await navigator.credentials.get({
     publicKey: {
       challenge,
       rpId: _formatSigningRpId(),
-      allowCredentials: publicKeyCredential,
+      allowCredentials: publicKeyCredential || [],
       timeout: 20000
     }
   })
@@ -88,7 +88,7 @@ const sign = async (
 
 const getWebAuthnSignature = async (
   hash: string,
-  publicKeyCredential: PublicKeyCredentialDescriptor[]
+  publicKeyCredential?: PublicKeyCredentialDescriptor[]
 ): Promise<{ encodedSignature: string; publicKeyId: string }> => {
   const challenge = utils.parseHex(hash.slice(2))
   const assertionPayload = await sign(challenge, publicKeyCredential)
@@ -163,19 +163,21 @@ const isWebAuthnCompatible = async (): Promise<boolean> => {
 }
 
 const signWithWebAuthn = async (
-  webAuthnSigners: WebAuthnSigner[],
-  challenge: string
+  challenge: string,
+  webAuthnSigners?: WebAuthnSigner[]
 ): Promise<{
   encodedSignature: string
   publicKeyId: string
 }> => {
-  const publicKeyCredentials: PublicKeyCredentialDescriptor[] =
-    webAuthnSigners.map((webAuthnSigner) => {
+  let publicKeyCredentials: PublicKeyCredentialDescriptor[] | undefined
+  if (webAuthnSigners) {
+    publicKeyCredentials = webAuthnSigners.map((webAuthnSigner) => {
       return {
         id: utils.parseHex(webAuthnSigner.publicKeyId),
         type: 'public-key'
       }
     })
+  }
 
   const { encodedSignature, publicKeyId } = await getWebAuthnSignature(
     ethers.utils.keccak256(ethers.utils.hashMessage(challenge)),
@@ -307,7 +309,7 @@ const getSigner = async ({
   /* If no local storage or no match in db, Call Webauthn API to get current signer */
   let signatureParams
   try {
-    signatureParams = await signWithWebAuthn(webAuthnSigners, 'SDK Connection')
+    signatureParams = await signWithWebAuthn('SDK Connection', webAuthnSigners)
   } catch {
     throw new Error(
       'New Domain detected. You need to add that domain as signer'
@@ -343,6 +345,27 @@ const getSigner = async ({
   }
 }
 
+const recoverWalletAddressFromSignature = async (API: API): Promise<string> => {
+  let publicKeyId: string
+
+  try {
+    ;({ publicKeyId } = await signWithWebAuthn('Retrieve user wallet'))
+  } catch {
+    throw new Error('Unable to sign message')
+  }
+
+  const signingWebAuthnSigner = await API.getWebAuthnSignerByPublicKeyId(
+    publicKeyId
+  )
+  if (!signingWebAuthnSigner) throw new Error('No webauthn signer found')
+
+  const { walletAddress, signerAddress } = signingWebAuthnSigner
+
+  _setWebauthnCredentialsInStorage(walletAddress, publicKeyId, signerAddress)
+
+  return walletAddress
+}
+
 export default {
   createCredential,
   sign,
@@ -351,5 +374,6 @@ export default {
   isWebAuthnCompatible,
   createSigner,
   signWithWebAuthn,
-  getSigner
+  getSigner,
+  recoverWalletAddressFromSignature
 }
