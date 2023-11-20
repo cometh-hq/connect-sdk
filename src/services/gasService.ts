@@ -2,11 +2,6 @@ import { StaticJsonRpcProvider } from '@ethersproject/providers'
 import { BigNumber } from 'ethers'
 
 import { GAS_GAP_TOLERANCE } from '../constants'
-import { Safe__factory } from '../contracts/types/factories'
-import { SafeInterface } from '../contracts/types/Safe'
-import { MetaTransactionData } from '../wallet/types'
-
-const SafeInterface: SafeInterface = Safe__factory.createInterface()
 
 const getGasPrice = async (
   provider: StaticJsonRpcProvider,
@@ -26,23 +21,6 @@ const getGasPrice = async (
     BigNumber.from(reward.add(BaseFee)).div(GAS_GAP_TOLERANCE)
   )
   return gasPrice
-}
-
-const estimateSafeTxGas = async (
-  walletAddress: string,
-  safeTransactionData: MetaTransactionData[],
-  provider: StaticJsonRpcProvider
-): Promise<BigNumber> => {
-  let safeTxGas = BigNumber.from(0)
-  for (let i = 0; i < safeTransactionData.length; i++) {
-    safeTxGas = safeTxGas.add(
-      await provider.estimateGas({
-        ...safeTransactionData[i],
-        from: walletAddress
-      })
-    )
-  }
-  return safeTxGas
 }
 
 const getTotalCost = async (
@@ -71,7 +49,6 @@ const verifyHasEnoughBalance = async (
 
 export default {
   getGasPrice,
-  estimateSafeTxGas,
   getTotalCost,
   verifyHasEnoughBalance
 }

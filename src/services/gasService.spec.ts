@@ -9,90 +9,19 @@ import stubProvider from '../tests/unit/stubProvider'
 import gasService from './gasService'
 
 const WALLET_ADDRESS = '0xecf9D83633dC1DE88400945c0f97B76153a386ec'
-const EOA_ADDRESS = '0x4B758d3Af4c8B2662bC485420077413DDdd62E33'
 
 jest.mock('@ethersproject/providers')
 
 jest.mock('../ui/GasModal')
 
 describe('gasService', () => {
+  const provider = new stubProvider.StubProvider()
   const reward = BigNumber.from(10)
   const baseFeePerGas = BigNumber.from(100)
-  const mockedEstimateGas = BigNumber.from(123)
 
-  describe('estimateSafeTxGas', () => {
-    const transactionData = {
-      to: EOA_ADDRESS,
-      value: '1',
-      data: '0x',
-      operation: '0',
-      safeTxGas: '0',
-      baseGas: '0',
-      gasPrice: '0',
-      gasToken: ethers.constants.AddressZero,
-      refundReceiver: ethers.constants.AddressZero,
-      nonce: '0x_nonce',
-      signatures: '0x_signature'
-    }
-
-    it('Given a single call transaction, when predicting the safeTxGas, then call estimateGas with the correct parameters', async () => {
-      const provider = new stubProvider()
-      const estimateGas = jest.spyOn(provider, 'estimateGas')
-      await gasService.estimateSafeTxGas(
-        WALLET_ADDRESS,
-        [transactionData],
-        provider
-      )
-
-      expect(estimateGas).toHaveBeenCalledWith({
-        baseGas: '0',
-        data: '0x',
-        from: WALLET_ADDRESS,
-        gasPrice: '0',
-        gasToken: '0x0000000000000000000000000000000000000000',
-        nonce: '0x_nonce',
-        operation: '0',
-        refundReceiver: '0x0000000000000000000000000000000000000000',
-        safeTxGas: '0',
-        signatures: '0x_signature',
-        to: EOA_ADDRESS,
-        value: '1'
-      })
-    })
-
-    it('Given a single call transaction, when predicting the safeTxGas, then return the correct value', async () => {
-      const safeTxGas = await gasService.estimateSafeTxGas(
-        WALLET_ADDRESS,
-        [transactionData],
-        new stubProvider()
-      )
-
-      expect(safeTxGas).toEqual(mockedEstimateGas)
-    })
-
-    it('Given a multisend transaction, when predicting the safeTxGas, then return the correct value', async () => {
-      const to = EOA_ADDRESS
-      const value = '0'
-      const data = '0x'
-
-      const transactionDataMultisend = [
-        { to, value, data },
-        { to, value, data },
-        { to, value, data }
-      ]
-      const safeTxGas = await gasService.estimateSafeTxGas(
-        WALLET_ADDRESS,
-        transactionDataMultisend,
-        new stubProvider()
-      )
-
-      expect(safeTxGas).toEqual(mockedEstimateGas.mul(3))
-    })
-  })
   describe('getGasPrice', () => {
     const rewardPercentile = 80
     it('Given the correct parameters, when getting the gas price, then call eth_feeHistory with the correct parameters', async () => {
-      const provider = new stubProvider()
       const send = jest.spyOn(provider, 'send')
       await gasService.getGasPrice(provider, rewardPercentile)
       expect(send).toHaveBeenCalledWith('eth_feeHistory', [
@@ -102,10 +31,7 @@ describe('gasService', () => {
       ])
     })
     it('Given the correct parameters, when getting the gas price, then return the correct gas price', async () => {
-      const result = await gasService.getGasPrice(
-        new stubProvider(),
-        rewardPercentile
-      )
+      const result = await gasService.getGasPrice(provider, rewardPercentile)
       const expectedResult = BigNumber.from(reward.add(baseFeePerGas)).add(
         BigNumber.from(reward.add(baseFeePerGas)).div(GAS_GAP_TOLERANCE)
       )
@@ -121,7 +47,7 @@ describe('gasService', () => {
 
       await expect(
         gasService.verifyHasEnoughBalance(
-          new stubProvider(),
+          provider,
           WALLET_ADDRESS,
           BigNumber.from(safeTxGas),
           BigNumber.from(gasPrice),
@@ -138,7 +64,7 @@ describe('gasService', () => {
 
       await expect(
         gasService.verifyHasEnoughBalance(
-          new stubProvider(),
+          provider,
           WALLET_ADDRESS,
           BigNumber.from(safeTxGas),
           BigNumber.from(gasPrice),
@@ -157,7 +83,7 @@ describe('gasService', () => {
 
       await expect(
         gasService.verifyHasEnoughBalance(
-          new stubProvider(),
+          provider,
           WALLET_ADDRESS,
           BigNumber.from(safeTxGas),
           BigNumber.from(gasPrice),
