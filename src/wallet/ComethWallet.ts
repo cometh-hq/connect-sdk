@@ -4,7 +4,7 @@ import { encodeMulti, MetaTransaction } from 'ethers-multisend'
 
 import {
   ADD_OWNER_FUNCTION_SELECTOR,
-  DEFAULT_BASE_GAS_BURNER,
+  DEFAULT_BASE_GAS_LOCAL_WALLET,
   DEFAULT_BASE_GAS_WEBAUTHN,
   DEFAULT_REWARD_PERCENTILE,
   EIP712_SAFE_MESSAGE_TYPE,
@@ -81,7 +81,8 @@ export class ComethWallet {
     if (!this.signer) throw new Error('No signer found')
     if (!this.walletAddress) throw new Error('No walletAddress found')
 
-    if (this.signer instanceof Wallet) this.BASE_GAS = DEFAULT_BASE_GAS_BURNER
+    if (this.signer instanceof Wallet)
+      this.BASE_GAS = DEFAULT_BASE_GAS_LOCAL_WALLET
 
     this.sponsoredAddresses = await this.API.getSponsoredAddresses()
     this.connected = true

@@ -53,7 +53,7 @@ export const networks = {
   }
 }
 export const GAS_GAP_TOLERANCE = 10
-export const DEFAULT_BASE_GAS_BURNER = 80000
+export const DEFAULT_BASE_GAS_LOCAL_WALLET = 80000
 export const DEFAULT_BASE_GAS_WEBAUTHN = 300000
 export const DEFAULT_REWARD_PERCENTILE = 80
 export const BLOCK_EVENT_GAP = -500
