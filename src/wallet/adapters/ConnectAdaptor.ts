@@ -57,6 +57,7 @@ export class ConnectAdaptor implements AUTHAdapter {
 
     if (walletAddress) {
       const wallet = await this.getWalletInfos(walletAddress)
+
       if (!wallet) throw new Error('Wallet does not exists')
 
       if (isWebAuthnCompatible) {
@@ -212,7 +213,11 @@ export class ConnectAdaptor implements AUTHAdapter {
 
     if (isWebAuthnCompatible) {
       const { publicKeyX, publicKeyY, publicKeyId, signerAddress, deviceData } =
-        await webAuthnService.createSigner({ API: this.API, passkeyName })
+        await webAuthnService.createSigner({
+          API: this.API,
+          walletAddress,
+          passkeyName
+        })
 
       addNewSignerRequest = {
         walletAddress,
