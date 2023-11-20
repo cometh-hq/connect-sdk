@@ -116,6 +116,10 @@ export class ConnectAdaptor implements AUTHAdapter {
     }
   }
 
+  async retrieveWalletAddressFromSigner(): Promise<string> {
+    return await webAuthnService.retrieveWalletAddressFromSigner(this.API)
+  }
+
   async importSafe(
     walletAddress: string,
     message: string,
