@@ -58,3 +58,7 @@ export const bufferToArrayBuffer = (bufferObject): ArrayBuffer => {
 export const bufferToHex = (s: ArrayBuffer): string => {
   return Buffer.from(s).toString('hex')
 }
+
+export const decodeSafeTxGas = (encodedSafeTxGas: string): string => {
+  return Number(`0x${encodedSafeTxGas.slice(184).slice(0, 10)}`).toString()
+}
