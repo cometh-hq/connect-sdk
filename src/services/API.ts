@@ -26,6 +26,8 @@ export class API {
     chainId: string
     P256FactoryContractAddress: string
     multisendContractAddress: string
+    singletonAddress: string
+    simulateTxAcessorAddress: string
   }> {
     const response = await this.api.get(`/project/params`)
     return response?.data?.projectParams
@@ -134,6 +136,41 @@ export class API {
     }
 
     await this.api.post(`/wallets/init-with-webauthn`, body)
+  }
+
+  async importExternalSafe({
+    message,
+    signature,
+    walletAddress,
+    signerAddress,
+    deviceData,
+    publicKeyId,
+    publicKeyX,
+    publicKeyY
+  }: {
+    message: string
+    signature: string
+    walletAddress: string
+    signerAddress: string
+    deviceData: DeviceData
+    publicKeyId?: string
+    publicKeyX?: string
+    publicKeyY?: string
+  }): Promise<string> {
+    const body = {
+      message,
+      signature,
+      walletAddress,
+      signerAddress,
+      deviceData,
+      publicKeyId,
+      publicKeyX,
+      publicKeyY
+    }
+
+    const response = await this.api.post(`/wallets/import`, body)
+
+    return response?.data.signerAddress
   }
 
   /**

@@ -1,10 +1,11 @@
 import { JsonRpcSigner, StaticJsonRpcProvider } from '@ethersproject/providers'
 import { BigNumber, Bytes, ethers, Wallet } from 'ethers'
-import { encodeMulti } from 'ethers-multisend'
+import { encodeMulti, MetaTransaction } from 'ethers-multisend'
 
 import {
   ADD_OWNER_FUNCTION_SELECTOR,
-  DEFAULT_BASE_GAS,
+  DEFAULT_BASE_GAS_LOCAL_WALLET,
+  DEFAULT_BASE_GAS_WEBAUTHN,
   DEFAULT_REWARD_PERCENTILE,
   EIP712_SAFE_MESSAGE_TYPE,
   EIP712_SAFE_TX_TYPES,
@@ -13,6 +14,7 @@ import {
 import { API } from '../services'
 import gasService from '../services/gasService'
 import safeService from '../services/safeService'
+import simulateTxService from '../services/simulateTxService'
 import { GasModal } from '../ui'
 import { AUTHAdapter } from './adapters'
 import { WebAuthnSigner } from './signers/WebAuthnSigner'
@@ -57,7 +59,7 @@ export class ComethWallet {
     this.provider = new StaticJsonRpcProvider(
       rpcUrl ? rpcUrl : networks[this.chainId].RPCUrl
     )
-    this.BASE_GAS = DEFAULT_BASE_GAS
+    this.BASE_GAS = DEFAULT_BASE_GAS_WEBAUTHN
     this.REWARD_PERCENTILE = DEFAULT_REWARD_PERCENTILE
   }
 
@@ -74,10 +76,13 @@ export class ComethWallet {
 
     this.projectParams = await this.API.getProjectParams()
     this.signer = this.authAdapter.getSigner()
-    this.walletAddress = await this.authAdapter.getWalletAddress()
+    this.walletAddress = this.authAdapter.getWalletAddress()
 
     if (!this.signer) throw new Error('No signer found')
     if (!this.walletAddress) throw new Error('No walletAddress found')
+
+    if (this.signer instanceof Wallet)
+      this.BASE_GAS = DEFAULT_BASE_GAS_LOCAL_WALLET
 
     this.sponsoredAddresses = await this.API.getSponsoredAddresses()
     this.connected = true
@@ -201,13 +206,10 @@ export class ComethWallet {
   }
 
   public async sendTransaction(
-    safeTxData: MetaTransactionData
+    safeTxData: MetaTransaction
   ): Promise<SendTransactionResponse> {
-    const safeTxGas = await gasService.estimateSafeTxGas(
-      this.getAddress(),
-      [safeTxData],
-      this.provider
-    )
+    if (!this.projectParams) throw new Error('Project params are null')
+    if (!this.projectParams) throw new Error('Project params are null')
 
     const safeTxDataTyped = {
       ...(await this._prepareTransaction(
@@ -218,6 +220,15 @@ export class ComethWallet {
     }
 
     if (!(await this._isSponsoredTransaction([safeTxDataTyped]))) {
+      const safeTxGas = await simulateTxService.estimateSafeTxGasWithSimulate(
+        this.getAddress(),
+        this.provider,
+        safeTxData,
+        this.projectParams.multisendContractAddress,
+        this.projectParams.singletonAddress,
+        this.projectParams.simulateTxAcessorAddress
+      )
+
       const gasPrice = await gasService.getGasPrice(
         this.provider,
         this.REWARD_PERCENTILE
@@ -245,29 +256,38 @@ export class ComethWallet {
   }
 
   public async sendBatchTransactions(
-    safeTxData: MetaTransactionData[]
+    safeTxData: MetaTransaction[]
   ): Promise<SendTransactionResponse> {
     if (safeTxData.length === 0) {
       throw new Error('Empty array provided, no transaction to send')
     }
+
     if (!this.projectParams) throw new Error('Project params are null')
 
-    const safeTxGas = await gasService.estimateSafeTxGas(
-      this.getAddress(),
+    const multisendData = encodeMulti(
       safeTxData,
-      this.provider
-    )
+      this.projectParams.multisendContractAddress
+    ).data
 
     const safeTxDataTyped = {
       ...(await this._prepareTransaction(
         this.projectParams.multisendContractAddress,
         '0',
-        encodeMulti(safeTxData).data,
+        multisendData,
         1
       ))
     }
 
     if (!(await this._isSponsoredTransaction(safeTxData))) {
+      const safeTxGas = await simulateTxService.estimateSafeTxGasWithSimulate(
+        this.getAddress(),
+        this.provider,
+        safeTxData,
+        this.projectParams.multisendContractAddress,
+        this.projectParams.singletonAddress,
+        this.projectParams.simulateTxAcessorAddress
+      )
+
       const txValue = await safeService.getTransactionsTotalValue(safeTxData)
       const gasPrice = await gasService.getGasPrice(
         this.provider,
@@ -282,7 +302,7 @@ export class ComethWallet {
         txValue
       )
       if (this.uiConfig.displayValidationModal) {
-        this.displayModal(safeTxGas, gasPrice)
+        await this.displayModal(safeTxGas, gasPrice)
       }
 
       safeTxDataTyped.safeTxGas = +safeTxGas
@@ -317,7 +337,8 @@ export class ComethWallet {
     if (
       !(await new GasModal().initModal(
         displayedTotalBalance,
-        displayedTotalGasCost
+        displayedTotalGasCost,
+        networks[this.chainId].currency
       ))
     ) {
       throw new Error('Transaction denied')
