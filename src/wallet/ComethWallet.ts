@@ -209,10 +209,11 @@ export class ComethWallet {
     safeTxData: MetaTransaction
   ): Promise<SendTransactionResponse> {
     if (!this.projectParams) throw new Error('Project params are null')
-    if (!this.projectParams) throw new Error('Project params are null')
 
-    const safeTxDataTyped = {
-      ...(await this._prepareTransaction(
+    const safeTxDataTyped = await this.constructTransaction(safeTxData)
+
+    /*  const safeTxDataTyped = {
+      ...(await this._formatTransaction(
         safeTxData.to,
         safeTxData.value,
         safeTxData.data
@@ -248,7 +249,7 @@ export class ComethWallet {
       safeTxDataTyped.safeTxGas = +safeTxGas
       safeTxDataTyped.baseGas = this.BASE_GAS
       safeTxDataTyped.gasPrice = +gasPrice
-    }
+    } */
 
     const safeTxHash = await this._signAndSendTransaction(safeTxDataTyped)
 
@@ -264,13 +265,15 @@ export class ComethWallet {
 
     if (!this.projectParams) throw new Error('Project params are null')
 
-    const multisendData = encodeMulti(
+    const safeTxDataTyped = await this.constructTransaction(safeTxData)
+
+    /*  const multisendData = encodeMulti(
       safeTxData,
       this.projectParams.multisendContractAddress
     ).data
 
     const safeTxDataTyped = {
-      ...(await this._prepareTransaction(
+      ...(await this._formatTransaction(
         this.projectParams.multisendContractAddress,
         '0',
         multisendData,
@@ -308,7 +311,7 @@ export class ComethWallet {
       safeTxDataTyped.safeTxGas = +safeTxGas
       safeTxDataTyped.baseGas = this.BASE_GAS
       safeTxDataTyped.gasPrice = +gasPrice
-    }
+    } */
 
     const safeTxHash = await this._signAndSendTransaction(safeTxDataTyped)
 
@@ -345,7 +348,7 @@ export class ComethWallet {
     }
   }
 
-  public async _prepareTransaction(
+  public async _formatTransaction(
     to: string,
     value: string,
     data: string,
@@ -363,5 +366,79 @@ export class ComethWallet {
       refundReceiver: ethers.constants.AddressZero,
       nonce: await safeService.getNonce(this.getAddress(), this.getProvider())
     }
+  }
+
+  _isMetaTransactionArray = (
+    safeTransactions: MetaTransaction | MetaTransaction[]
+  ): safeTransactions is MetaTransaction[] => {
+    return (safeTransactions as MetaTransaction[])?.length !== undefined
+  }
+
+  public async constructTransaction(
+    safeTxData: MetaTransaction | MetaTransaction[]
+  ): Promise<SafeTransactionDataPartial> {
+    if (!this.projectParams) throw new Error('Project params are null')
+
+    let safeTxDataTyped
+
+    if (this._isMetaTransactionArray(safeTxData)) {
+      const multisendData = encodeMulti(
+        safeTxData,
+        this.projectParams.multisendContractAddress
+      ).data
+
+      safeTxDataTyped = {
+        ...(await this._formatTransaction(
+          this.projectParams.multisendContractAddress,
+          '0',
+          multisendData,
+          1
+        ))
+      }
+    } else {
+      safeTxDataTyped = {
+        ...(await this._formatTransaction(
+          safeTxData.to,
+          safeTxData.value,
+          safeTxData.data
+        ))
+      }
+    }
+
+    if (!(await this._isSponsoredTransaction([safeTxDataTyped]))) {
+      const safeTxGas = await simulateTxService.estimateSafeTxGasWithSimulate(
+        this.getAddress(),
+        this.provider,
+        safeTxData,
+        this.projectParams.multisendContractAddress,
+        this.projectParams.singletonAddress,
+        this.projectParams.simulateTxAcessorAddress
+      )
+
+      const gasPrice = await gasService.getGasPrice(
+        this.provider,
+        this.REWARD_PERCENTILE
+      )
+      const txValue = this._isMetaTransactionArray(safeTxData)
+        ? await safeService.getTransactionsTotalValue(safeTxData)
+        : safeTxData.value
+
+      await gasService.verifyHasEnoughBalance(
+        this.provider,
+        this.getAddress(),
+        safeTxGas,
+        gasPrice,
+        this.BASE_GAS,
+        txValue
+      )
+      if (this.uiConfig.displayValidationModal) {
+        await this.displayModal(safeTxGas, gasPrice)
+      }
+
+      safeTxDataTyped.safeTxGas = +safeTxGas
+      safeTxDataTyped.baseGas = this.BASE_GAS
+      safeTxDataTyped.gasPrice = +gasPrice
+    }
+    return safeTxDataTyped
   }
 }

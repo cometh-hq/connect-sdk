@@ -58,6 +58,7 @@
     "webpack-cli": "^5.0.2"
   },
   "dependencies": {
+    "@alchemy/aa-core": "^1.2.0",
     "@alembic/ui": "^1.5.4",
     "@ethersproject/abstract-provider": "^5.7.0",
     "@ethersproject/abstract-signer": "^5.7.0",
@@ -78,6 +79,6 @@
     "react-dom": "^18.0.0",
     "siwe": "^1.1.6",
     "uuid": "^9.0.0",
-    "viem": "^1.16.5"
+    "viem": "^1.16.2"
   }
 }
