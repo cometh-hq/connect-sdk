@@ -17,14 +17,13 @@ const _catchSuccessEvent = async (
   safeTxHash: Hash,
   currentBlockNumber: GetBlockNumberReturnType
 ): Promise<any> => {
-  /* eslint-disable */
   /* @ts-ignore */
   const successTransactionLogs = await client.getLogs({
     address,
     event: parseAbiItem(
       'event ExecutionSuccess(bytes32 txHash, uint256 payment)'
     ),
-    fromBlock: currentBlockNumber - BigInt(300)
+    fromBlock: currentBlockNumber - 300n
   })
 
   const filteredTransactionEvent = successTransactionLogs.find(
@@ -40,14 +39,13 @@ const _catchFailureEvent = async (
   safeTxHash: Hash,
   currentBlockNumber: GetBlockNumberReturnType
 ): Promise<any> => {
-  /* eslint-disable */
   /* @ts-ignore */
   const successTransactionLogs = await client.getLogs({
     address,
     event: parseAbiItem(
       'event ExecutionFailure(bytes32 txHash, uint256 payment)'
     ),
-    fromBlock: currentBlockNumber - BigInt(300)
+    fromBlock: currentBlockNumber - 300n
   })
 
   const filteredTransactionEvent = successTransactionLogs.find(
@@ -62,7 +60,6 @@ export const getTransaction = async (
   wallet: ComethWallet,
   safeTxHash: Hash
 ): Promise<RpcTransactionReceipt> => {
-  /* eslint-disable */
   /* @ts-ignore */
   const currentBlockNumber = await client.getBlockNumber()
   const from = (await wallet.getAddress()) as Address
@@ -90,7 +87,6 @@ export const getTransaction = async (
     let txResponse: RpcTransactionReceipt | null = null
     while (txResponse === null) {
       try {
-        /* eslint-disable */
         /* @ts-ignore */
         txResponse = await client.getTransactionReceipt({
           hash: txSuccessEvent.transactionHash as Hash
@@ -108,7 +104,6 @@ export const getTransaction = async (
     let txResponse: RpcTransactionReceipt | null = null
     while (txResponse === null) {
       try {
-        /* eslint-disable */
         /* @ts-ignore */
         txResponse = await client.getTransactionReceipt({
           hash: txSuccessEvent.transactionHash as Hash

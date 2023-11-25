@@ -34,7 +34,6 @@ export const getViemAccount = async (
       return await ComethWallet.signTransaction(safeTxDataTyped)
     },
 
-    /* eslint-disable */
     /* @ts-ignore */
     async signTypedData({ domain, types, primaryType, message }) {
       throw new Error('method not available')

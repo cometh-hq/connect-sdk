@@ -1,6 +1,5 @@
 import { defineChain } from 'viem'
 
-/* eslint-disable */
 /* @ts-ignore */
 export const musterTestnet = defineChain({
   id: 2121337,
