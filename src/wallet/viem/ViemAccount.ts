@@ -1,20 +1,21 @@
-import { utils } from 'ethers'
 import {
-  AccountSource,
   Address,
   CustomSource,
   Hash,
-  SignableMessage
+  PrivateKeyAccount,
+  SignableMessage,
+  toHex
 } from 'viem'
 import { toAccount } from 'viem/accounts'
 
 import { ComethWallet } from '../ComethWallet'
 
-export async function ViemAccount(
+export const getViemAccount = async (
   ComethWallet: ComethWallet
-): Promise<AccountSource> {
+): Promise<PrivateKeyAccount> => {
+  const address = (await ComethWallet.getAddress()) as Address
   const source: CustomSource = {
-    address: (await ComethWallet.getAddress()) as Address,
+    address,
     async signMessage({
       message
     }: {
@@ -26,7 +27,7 @@ export async function ViemAccount(
     async signTransaction(transaction): Promise<any> {
       const safeTxDataTyped = await ComethWallet.constructTransaction({
         to: transaction.to as string,
-        value: utils.hexlify(transaction.value as bigint),
+        value: toHex(transaction.value as bigint),
         data: transaction.data as string
       })
 
@@ -40,5 +41,9 @@ export async function ViemAccount(
     }
   }
 
-  return toAccount(source)
+  return {
+    ...toAccount(source),
+    publicKey: address,
+    source: 'privateKey'
+  }
 }

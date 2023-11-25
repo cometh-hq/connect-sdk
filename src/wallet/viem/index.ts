@@ -1,2 +1,2 @@
 export * from './ViemAccount'
-export * from './ViemProvider'
+export * from './ViemClient'
