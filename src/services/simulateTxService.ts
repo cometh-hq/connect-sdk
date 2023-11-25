@@ -12,6 +12,7 @@ import {
 import { MultisendInterface } from '../contracts/types/Multisend'
 import { SafeInterface } from '../contracts/types/Safe'
 import { SimulateTxAcessorInterface } from '../contracts/types/SimulateTxAcessor'
+import * as utils from '../utils/utils'
 import safeService from './safeService'
 
 const MultisendContract: MultisendInterface =
@@ -39,12 +40,6 @@ const _addExtraGasForSafety = (safeTxGas: string): string => {
   return Math.round(Number(safeTxGas) * INCREASE_GAS_FACTOR).toString()
 }
 
-const _isMetaTransactionArray = (
-  safeTransactions: MetaTransaction | MetaTransaction[]
-): safeTransactions is MetaTransaction[] => {
-  return (safeTransactions as MetaTransaction[])?.length !== undefined
-}
-
 const estimateSafeTxGasWithSimulate = async (
   walletAddress: string,
   provider: StaticJsonRpcProvider,
@@ -55,7 +50,7 @@ const estimateSafeTxGasWithSimulate = async (
 ): Promise<BigNumber> => {
   let transaction: MetaTransaction
 
-  if (_isMetaTransactionArray(safeTxData) && safeTxData.length !== 1) {
+  if (utils.isMetaTransactionArray(safeTxData) && safeTxData.length !== 1) {
     const multisendData = encodeMultiSendDataForEstimate(safeTxData)
 
     transaction = {

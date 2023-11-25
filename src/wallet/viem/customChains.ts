@@ -2,7 +2,7 @@ import { defineChain } from 'viem'
 
 /* eslint-disable */
 /* @ts-ignore */
-export const muster = defineChain({
+export const musterTestnet = defineChain({
   id: 2121337,
   name: 'Muster Testnet',
   network: 'musterTestnet',

@@ -25,7 +25,7 @@ export const getViemAccount = async (
       return `0x${signedMessage}`
     },
     async signTransaction(transaction): Promise<any> {
-      const safeTxDataTyped = await ComethWallet.constructTransaction({
+      const safeTxDataTyped = await ComethWallet.buildTransaction({
         to: transaction.to as string,
         value: toHex(transaction.value as bigint),
         data: transaction.data as string

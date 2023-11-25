@@ -19,7 +19,7 @@ import {
 
 import { ComethWallet } from '../ComethWallet'
 import { comethWalletActions } from './customActions'
-import { muster } from './customChains'
+import { musterTestnet } from './customChains'
 
 const supportedChains = [
   polygon,
@@ -30,7 +30,7 @@ const supportedChains = [
   gnosisChiado,
   polygonZkEvm,
   polygonZkEvmTestnet,
-  muster
+  musterTestnet
 ]
 
 export const ViemClient = async (

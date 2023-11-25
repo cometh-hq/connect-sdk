@@ -16,6 +16,7 @@ import gasService from '../services/gasService'
 import safeService from '../services/safeService'
 import simulateTxService from '../services/simulateTxService'
 import { GasModal } from '../ui'
+import * as utils from '../utils/utils'
 import { AUTHAdapter } from './adapters'
 import { WebAuthnSigner } from './signers/WebAuthnSigner'
 import {
@@ -208,48 +209,7 @@ export class ComethWallet {
   public async sendTransaction(
     safeTxData: MetaTransaction
   ): Promise<SendTransactionResponse> {
-    if (!this.projectParams) throw new Error('Project params are null')
-
-    const safeTxDataTyped = await this.constructTransaction(safeTxData)
-
-    /*  const safeTxDataTyped = {
-      ...(await this._formatTransaction(
-        safeTxData.to,
-        safeTxData.value,
-        safeTxData.data
-      ))
-    }
-
-    if (!(await this._isSponsoredTransaction([safeTxDataTyped]))) {
-      const safeTxGas = await simulateTxService.estimateSafeTxGasWithSimulate(
-        this.getAddress(),
-        this.provider,
-        safeTxData,
-        this.projectParams.multisendContractAddress,
-        this.projectParams.singletonAddress,
-        this.projectParams.simulateTxAcessorAddress
-      )
-
-      const gasPrice = await gasService.getGasPrice(
-        this.provider,
-        this.REWARD_PERCENTILE
-      )
-      await gasService.verifyHasEnoughBalance(
-        this.provider,
-        this.getAddress(),
-        safeTxGas,
-        gasPrice,
-        this.BASE_GAS,
-        safeTxData.value
-      )
-      if (this.uiConfig.displayValidationModal) {
-        await this.displayModal(safeTxGas, gasPrice)
-      }
-
-      safeTxDataTyped.safeTxGas = +safeTxGas
-      safeTxDataTyped.baseGas = this.BASE_GAS
-      safeTxDataTyped.gasPrice = +gasPrice
-    } */
+    const safeTxDataTyped = await this.buildTransaction(safeTxData)
 
     const safeTxHash = await this._signAndSendTransaction(safeTxDataTyped)
 
@@ -262,56 +222,7 @@ export class ComethWallet {
     if (safeTxData.length === 0) {
       throw new Error('Empty array provided, no transaction to send')
     }
-
-    if (!this.projectParams) throw new Error('Project params are null')
-
-    const safeTxDataTyped = await this.constructTransaction(safeTxData)
-
-    /*  const multisendData = encodeMulti(
-      safeTxData,
-      this.projectParams.multisendContractAddress
-    ).data
-
-    const safeTxDataTyped = {
-      ...(await this._formatTransaction(
-        this.projectParams.multisendContractAddress,
-        '0',
-        multisendData,
-        1
-      ))
-    }
-
-    if (!(await this._isSponsoredTransaction(safeTxData))) {
-      const safeTxGas = await simulateTxService.estimateSafeTxGasWithSimulate(
-        this.getAddress(),
-        this.provider,
-        safeTxData,
-        this.projectParams.multisendContractAddress,
-        this.projectParams.singletonAddress,
-        this.projectParams.simulateTxAcessorAddress
-      )
-
-      const txValue = await safeService.getTransactionsTotalValue(safeTxData)
-      const gasPrice = await gasService.getGasPrice(
-        this.provider,
-        this.REWARD_PERCENTILE
-      )
-      await gasService.verifyHasEnoughBalance(
-        this.provider,
-        this.getAddress(),
-        safeTxGas,
-        gasPrice,
-        this.BASE_GAS,
-        txValue
-      )
-      if (this.uiConfig.displayValidationModal) {
-        await this.displayModal(safeTxGas, gasPrice)
-      }
-
-      safeTxDataTyped.safeTxGas = +safeTxGas
-      safeTxDataTyped.baseGas = this.BASE_GAS
-      safeTxDataTyped.gasPrice = +gasPrice
-    } */
+    const safeTxDataTyped = await this.buildTransaction(safeTxData)
 
     const safeTxHash = await this._signAndSendTransaction(safeTxDataTyped)
 
@@ -368,20 +279,14 @@ export class ComethWallet {
     }
   }
 
-  _isMetaTransactionArray = (
-    safeTransactions: MetaTransaction | MetaTransaction[]
-  ): safeTransactions is MetaTransaction[] => {
-    return (safeTransactions as MetaTransaction[])?.length !== undefined
-  }
-
-  public async constructTransaction(
+  public async buildTransaction(
     safeTxData: MetaTransaction | MetaTransaction[]
   ): Promise<SafeTransactionDataPartial> {
     if (!this.projectParams) throw new Error('Project params are null')
 
     let safeTxDataTyped
 
-    if (this._isMetaTransactionArray(safeTxData)) {
+    if (utils.isMetaTransactionArray(safeTxData)) {
       const multisendData = encodeMulti(
         safeTxData,
         this.projectParams.multisendContractAddress
@@ -419,7 +324,7 @@ export class ComethWallet {
         this.provider,
         this.REWARD_PERCENTILE
       )
-      const txValue = this._isMetaTransactionArray(safeTxData)
+      const txValue = utils.isMetaTransactionArray(safeTxData)
         ? await safeService.getTransactionsTotalValue(safeTxData)
         : safeTxData.value
 

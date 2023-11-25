@@ -12,7 +12,7 @@ import { getTransaction } from '../customActions/getTransaction'
 import { sendTransaction } from '../customActions/sendTransaction'
 
 export type ComethWalletActions = {
-  sendTransaction: (args: MetaTransaction) => Promise<Hash>
+  sendTransaction: (args: MetaTransaction | MetaTransaction[]) => Promise<Hash>
   getTransaction: (args: Hash) => Promise<RpcTransactionReceipt>
 }
 
