@@ -60,6 +60,7 @@
   "dependencies": {
     "@alchemy/aa-core": "^1.2.0",
     "@alembic/ui": "^1.5.4",
+    "@babel/traverse": "^7.23.4",
     "@ethersproject/abstract-provider": "^5.7.0",
     "@ethersproject/abstract-signer": "^5.7.0",
     "@ethersproject/providers": "^5.7.2",
