@@ -285,6 +285,7 @@ export class ComethWallet {
     if (!this.projectParams) throw new Error('Project params are null')
 
     let safeTxDataTyped
+    let isSponsoredTransaction: boolean
 
     if (utils.isMetaTransactionArray(safeTxData)) {
       const multisendData = encodeMulti(
@@ -300,6 +301,9 @@ export class ComethWallet {
           1
         ))
       }
+      isSponsoredTransaction = await this._isSponsoredTransaction(
+        safeTxDataTyped
+      )
     } else {
       safeTxDataTyped = {
         ...(await this._formatTransaction(
@@ -308,9 +312,12 @@ export class ComethWallet {
           safeTxData.data
         ))
       }
+      isSponsoredTransaction = await this._isSponsoredTransaction([
+        safeTxDataTyped
+      ])
     }
 
-    if (!(await this._isSponsoredTransaction([safeTxDataTyped]))) {
+    if (!isSponsoredTransaction) {
       const safeTxGas = await simulateTxService.estimateSafeTxGasWithSimulate(
         this.getAddress(),
         this.provider,

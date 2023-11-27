@@ -37,17 +37,15 @@ export const ViemClient = async (
   wallet: ComethWallet,
   rpc?: string
 ): Promise<PublicClient<Transport, Chain>> => {
-  /* @ts-ignore */
   const chain: Chain = extractChain({
     chains: supportedChains,
     id: wallet.chainId as any
   })
 
-  const client = createPublicClient({
+  return createPublicClient({
     chain,
     transport: http(rpc)
+    /* eslint-disable */
     /* @ts-ignore */
   }).extend(comethWalletActions(wallet))
-
-  return client
 }

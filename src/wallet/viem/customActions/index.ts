@@ -1,11 +1,5 @@
 import { MetaTransaction } from 'ethers-multisend'
-import {
-  Chain,
-  Hash,
-  PublicClient,
-  RpcTransactionReceipt,
-  Transport
-} from 'viem'
+import { Chain, Hash, PublicClient, TransactionReceipt, Transport } from 'viem'
 
 import { ComethWallet } from '../../ComethWallet'
 import { getTransaction } from '../customActions/getTransaction'
@@ -13,7 +7,7 @@ import { sendTransaction } from '../customActions/sendTransaction'
 
 export type ComethWalletActions = {
   sendTransaction: (args: MetaTransaction | MetaTransaction[]) => Promise<Hash>
-  getTransaction: (args: Hash) => Promise<RpcTransactionReceipt>
+  getTransaction: (args: Hash) => Promise<TransactionReceipt>
 }
 
 export const comethWalletActions = (

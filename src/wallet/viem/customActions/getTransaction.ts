@@ -5,7 +5,7 @@ import {
   Hash,
   parseAbiItem,
   PublicClient,
-  RpcTransactionReceipt,
+  TransactionReceipt,
   Transport
 } from 'viem'
 
@@ -17,7 +17,6 @@ const _catchSuccessEvent = async (
   safeTxHash: Hash,
   currentBlockNumber: GetBlockNumberReturnType
 ): Promise<any> => {
-  /* @ts-ignore */
   const successTransactionLogs = await client.getLogs({
     address,
     event: parseAbiItem(
@@ -39,7 +38,6 @@ const _catchFailureEvent = async (
   safeTxHash: Hash,
   currentBlockNumber: GetBlockNumberReturnType
 ): Promise<any> => {
-  /* @ts-ignore */
   const successTransactionLogs = await client.getLogs({
     address,
     event: parseAbiItem(
@@ -59,8 +57,7 @@ export const getTransaction = async (
   client: PublicClient<Transport, Chain>,
   wallet: ComethWallet,
   safeTxHash: Hash
-): Promise<RpcTransactionReceipt> => {
-  /* @ts-ignore */
+): Promise<TransactionReceipt> => {
   const currentBlockNumber = await client.getBlockNumber()
   const from = (await wallet.getAddress()) as Address
 
@@ -84,10 +81,9 @@ export const getTransaction = async (
   }
 
   if (txSuccessEvent) {
-    let txResponse: RpcTransactionReceipt | null = null
+    let txResponse: TransactionReceipt | null = null
     while (txResponse === null) {
       try {
-        /* @ts-ignore */
         txResponse = await client.getTransactionReceipt({
           hash: txSuccessEvent.transactionHash as Hash
         })
@@ -101,10 +97,9 @@ export const getTransaction = async (
     return txResponse
   }
   if (txFailureEvent) {
-    let txResponse: RpcTransactionReceipt | null = null
+    let txResponse: TransactionReceipt | null = null
     while (txResponse === null) {
       try {
-        /* @ts-ignore */
         txResponse = await client.getTransactionReceipt({
           hash: txSuccessEvent.transactionHash as Hash
         })

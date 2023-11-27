@@ -1,6 +1,5 @@
 import { defineChain } from 'viem'
 
-/* @ts-ignore */
 export const musterTestnet = defineChain({
   id: 2121337,
   name: 'Muster Testnet',

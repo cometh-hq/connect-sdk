@@ -4,12 +4,13 @@ import { Hash } from 'viem'
 
 import { isMetaTransactionArray } from '../../../utils/utils'
 import { ComethWallet } from '../../ComethWallet'
+import { SendTransactionResponse } from '../../types'
 
 export const sendTransaction = async (
   wallet: ComethWallet,
   safeTxData: MetaTransaction | MetaTransaction[]
 ): Promise<Hash> => {
-  let result
+  let result: SendTransactionResponse
   if (isMetaTransactionArray(safeTxData)) {
     result = await wallet.sendBatchTransactions(deepHexlify(safeTxData))
   } else {
