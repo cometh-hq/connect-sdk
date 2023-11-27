@@ -12,7 +12,7 @@ import {
 import { MultisendInterface } from '../contracts/types/Multisend'
 import { SafeInterface } from '../contracts/types/Safe'
 import { SimulateTxAcessorInterface } from '../contracts/types/SimulateTxAcessor'
-import * as utils from '../utils/utils'
+import { isMetaTransactionArray } from '../utils/utils'
 import safeService from './safeService'
 
 const MultisendContract: MultisendInterface =
@@ -50,7 +50,7 @@ const estimateSafeTxGasWithSimulate = async (
 ): Promise<BigNumber> => {
   let transaction: MetaTransaction
 
-  if (utils.isMetaTransactionArray(safeTxData) && safeTxData.length !== 1) {
+  if (isMetaTransactionArray(safeTxData) && safeTxData.length !== 1) {
     const multisendData = encodeMultiSendDataForEstimate(safeTxData)
 
     transaction = {

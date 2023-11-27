@@ -16,7 +16,7 @@ import gasService from '../services/gasService'
 import safeService from '../services/safeService'
 import simulateTxService from '../services/simulateTxService'
 import { GasModal } from '../ui'
-import * as utils from '../utils/utils'
+import { isMetaTransactionArray } from '../utils/utils'
 import { AUTHAdapter } from './adapters'
 import { WebAuthnSigner } from './signers/WebAuthnSigner'
 import {
@@ -287,7 +287,7 @@ export class ComethWallet {
     let safeTxDataTyped
     let isSponsoredTransaction: boolean
 
-    if (utils.isMetaTransactionArray(safeTxData)) {
+    if (isMetaTransactionArray(safeTxData)) {
       const multisendData = encodeMulti(
         safeTxData,
         this.projectParams.multisendContractAddress
@@ -331,7 +331,7 @@ export class ComethWallet {
         this.provider,
         this.REWARD_PERCENTILE
       )
-      const txValue = utils.isMetaTransactionArray(safeTxData)
+      const txValue = isMetaTransactionArray(safeTxData)
         ? await safeService.getTransactionsTotalValue(safeTxData)
         : safeTxData.value
 
