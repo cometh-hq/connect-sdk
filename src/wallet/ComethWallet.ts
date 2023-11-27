@@ -16,6 +16,7 @@ import gasService from '../services/gasService'
 import safeService from '../services/safeService'
 import simulateTxService from '../services/simulateTxService'
 import { GasModal } from '../ui'
+import { isMetaTransactionArray } from '../utils/utils'
 import { AUTHAdapter } from './adapters'
 import { WebAuthnSigner } from './signers/WebAuthnSigner'
 import {
@@ -45,7 +46,7 @@ export class ComethWallet {
   private provider: StaticJsonRpcProvider
   private sponsoredAddresses?: SponsoredTransaction[]
   private walletAddress?: string
-  private signer?: JsonRpcSigner | Wallet | WebAuthnSigner
+  public signer?: JsonRpcSigner | Wallet | WebAuthnSigner
   private projectParams?: ProjectParams
 
   private uiConfig: UIConfig = {
@@ -208,47 +209,7 @@ export class ComethWallet {
   public async sendTransaction(
     safeTxData: MetaTransaction
   ): Promise<SendTransactionResponse> {
-    if (!this.projectParams) throw new Error('Project params are null')
-    if (!this.projectParams) throw new Error('Project params are null')
-
-    const safeTxDataTyped = {
-      ...(await this._prepareTransaction(
-        safeTxData.to,
-        safeTxData.value,
-        safeTxData.data
-      ))
-    }
-
-    if (!(await this._isSponsoredTransaction([safeTxDataTyped]))) {
-      const safeTxGas = await simulateTxService.estimateSafeTxGasWithSimulate(
-        this.getAddress(),
-        this.provider,
-        safeTxData,
-        this.projectParams.multisendContractAddress,
-        this.projectParams.singletonAddress,
-        this.projectParams.simulateTxAcessorAddress
-      )
-
-      const gasPrice = await gasService.getGasPrice(
-        this.provider,
-        this.REWARD_PERCENTILE
-      )
-      await gasService.verifyHasEnoughBalance(
-        this.provider,
-        this.getAddress(),
-        safeTxGas,
-        gasPrice,
-        this.BASE_GAS,
-        safeTxData.value
-      )
-      if (this.uiConfig.displayValidationModal) {
-        await this.displayModal(safeTxGas, gasPrice)
-      }
-
-      safeTxDataTyped.safeTxGas = +safeTxGas
-      safeTxDataTyped.baseGas = this.BASE_GAS
-      safeTxDataTyped.gasPrice = +gasPrice
-    }
+    const safeTxDataTyped = await this.buildTransaction(safeTxData)
 
     const safeTxHash = await this._signAndSendTransaction(safeTxDataTyped)
 
@@ -261,54 +222,7 @@ export class ComethWallet {
     if (safeTxData.length === 0) {
       throw new Error('Empty array provided, no transaction to send')
     }
-
-    if (!this.projectParams) throw new Error('Project params are null')
-
-    const multisendData = encodeMulti(
-      safeTxData,
-      this.projectParams.multisendContractAddress
-    ).data
-
-    const safeTxDataTyped = {
-      ...(await this._prepareTransaction(
-        this.projectParams.multisendContractAddress,
-        '0',
-        multisendData,
-        1
-      ))
-    }
-
-    if (!(await this._isSponsoredTransaction(safeTxData))) {
-      const safeTxGas = await simulateTxService.estimateSafeTxGasWithSimulate(
-        this.getAddress(),
-        this.provider,
-        safeTxData,
-        this.projectParams.multisendContractAddress,
-        this.projectParams.singletonAddress,
-        this.projectParams.simulateTxAcessorAddress
-      )
-
-      const txValue = await safeService.getTransactionsTotalValue(safeTxData)
-      const gasPrice = await gasService.getGasPrice(
-        this.provider,
-        this.REWARD_PERCENTILE
-      )
-      await gasService.verifyHasEnoughBalance(
-        this.provider,
-        this.getAddress(),
-        safeTxGas,
-        gasPrice,
-        this.BASE_GAS,
-        txValue
-      )
-      if (this.uiConfig.displayValidationModal) {
-        await this.displayModal(safeTxGas, gasPrice)
-      }
-
-      safeTxDataTyped.safeTxGas = +safeTxGas
-      safeTxDataTyped.baseGas = this.BASE_GAS
-      safeTxDataTyped.gasPrice = +gasPrice
-    }
+    const safeTxDataTyped = await this.buildTransaction(safeTxData)
 
     const safeTxHash = await this._signAndSendTransaction(safeTxDataTyped)
 
@@ -345,7 +259,7 @@ export class ComethWallet {
     }
   }
 
-  public async _prepareTransaction(
+  public async _formatTransaction(
     to: string,
     value: string,
     data: string,
@@ -363,5 +277,80 @@ export class ComethWallet {
       refundReceiver: ethers.constants.AddressZero,
       nonce: await safeService.getNonce(this.getAddress(), this.getProvider())
     }
+  }
+
+  public async buildTransaction(
+    safeTxData: MetaTransaction | MetaTransaction[]
+  ): Promise<SafeTransactionDataPartial> {
+    if (!this.projectParams) throw new Error('Project params are null')
+
+    let safeTxDataTyped
+    let isSponsoredTransaction: boolean
+
+    if (isMetaTransactionArray(safeTxData)) {
+      const multisendData = encodeMulti(
+        safeTxData,
+        this.projectParams.multisendContractAddress
+      ).data
+
+      safeTxDataTyped = {
+        ...(await this._formatTransaction(
+          this.projectParams.multisendContractAddress,
+          '0',
+          multisendData,
+          1
+        ))
+      }
+      isSponsoredTransaction = await this._isSponsoredTransaction(
+        safeTxDataTyped
+      )
+    } else {
+      safeTxDataTyped = {
+        ...(await this._formatTransaction(
+          safeTxData.to,
+          safeTxData.value,
+          safeTxData.data
+        ))
+      }
+      isSponsoredTransaction = await this._isSponsoredTransaction([
+        safeTxDataTyped
+      ])
+    }
+
+    if (!isSponsoredTransaction) {
+      const safeTxGas = await simulateTxService.estimateSafeTxGasWithSimulate(
+        this.getAddress(),
+        this.provider,
+        safeTxData,
+        this.projectParams.multisendContractAddress,
+        this.projectParams.singletonAddress,
+        this.projectParams.simulateTxAcessorAddress
+      )
+
+      const gasPrice = await gasService.getGasPrice(
+        this.provider,
+        this.REWARD_PERCENTILE
+      )
+      const txValue = isMetaTransactionArray(safeTxData)
+        ? await safeService.getTransactionsTotalValue(safeTxData)
+        : safeTxData.value
+
+      await gasService.verifyHasEnoughBalance(
+        this.provider,
+        this.getAddress(),
+        safeTxGas,
+        gasPrice,
+        this.BASE_GAS,
+        txValue
+      )
+      if (this.uiConfig.displayValidationModal) {
+        await this.displayModal(safeTxGas, gasPrice)
+      }
+
+      safeTxDataTyped.safeTxGas = +safeTxGas
+      safeTxDataTyped.baseGas = this.BASE_GAS
+      safeTxDataTyped.gasPrice = +gasPrice
+    }
+    return safeTxDataTyped
   }
 }
