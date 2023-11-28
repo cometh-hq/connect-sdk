@@ -9,7 +9,8 @@ export enum SupportedNetworks {
   FUJI = '0xa869',
   GNOSIS = '0x64',
   CHIADO = '0x27d8',
-  MUSTER_TESTNET = '0x205e79'
+  MUSTER_TESTNET = '0x205e79',
+  REDSTONE_HOLESKY = '0x4269'
 }
 
 export declare enum OperationType {
