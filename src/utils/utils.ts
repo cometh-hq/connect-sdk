@@ -1,3 +1,5 @@
+import { MetaTransaction } from 'ethers-multisend'
+
 export const hexArrayStr = (array): string =>
   new Uint8Array(array).reduce(
     (acc, v) => acc + v.toString(16).padStart(2, '0'),
@@ -61,4 +63,10 @@ export const bufferToHex = (s: ArrayBuffer): string => {
 
 export const decodeSafeTxGas = (encodedSafeTxGas: string): string => {
   return Number(`0x${encodedSafeTxGas.slice(184).slice(0, 10)}`).toString()
+}
+
+export const isMetaTransactionArray = (
+  safeTransactions: MetaTransaction | MetaTransaction[]
+): safeTransactions is MetaTransaction[] => {
+  return (safeTransactions as MetaTransaction[])?.length !== undefined
 }

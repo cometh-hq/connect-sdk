@@ -50,6 +50,13 @@ export const networks = {
       'https://muster-anytrust.alt.technology',
     networkName: 'Muster Testnet',
     currency: 'ETH'
+  },
+  17001: {
+    RPCUrl:
+      process.env.RPC_URL_REDSTONE_HOLESKY ||
+      'https://rpc.holesky.redstone.xyz',
+    networkName: 'Redstone Holesky',
+    currency: 'ETH'
   }
 }
 export const GAS_GAP_TOLERANCE = 10
