@@ -120,63 +120,34 @@ export class ConnectAdaptor implements AUTHAdapter {
     return await webAuthnService.retrieveWalletAddressFromSigner(this.API)
   }
 
-  async importSafe(
-    walletAddress: string,
-    message: string,
-    signature: string
-  ): Promise<string> {
-    if (message !== importSafeMessage) throw new Error('Wrong message signed')
-
-    const safeVersion = await safeService.getSafeVersion(
+  async importSafe(signerRequest: NewSignerRequestBody): Promise<string> {
+    const {
       walletAddress,
-      this.provider
-    )
-    if (safeVersion !== '1.3.0') throw new Error('Safe version should be 1.3.0')
+      signerAddress,
+      deviceData,
+      type,
+      publicKeyId,
+      publicKeyX,
+      publicKeyY
+    } = signerRequest
 
     const wallet = await this.getWalletInfos(walletAddress)
 
     if (wallet) {
       return wallet.initiatorAddress
     } else {
-      let requestBody
-
-      const isWebAuthnCompatible = await webAuthnService.isWebAuthnCompatible()
-
-      if (!isWebAuthnCompatible) {
-        const { signer } = await burnerWalletService.createSigner({
-          API: this.API,
-          walletAddress
-        })
-        requestBody = { signerAddress: signer.address }
-      } else {
-        try {
-          requestBody = await webAuthnService.createSigner({
-            API: this.API,
-            walletAddress,
-            passkeyName: this.passkeyName
-          })
-        } catch {
-          throw new Error('Error in webAuthn creation')
-        }
-      }
-
-      const signerAddress = await this.API.importExternalSafe({
-        message,
-        signature,
+      await this.API.importExternalSafe({
         walletAddress,
-        signerAddress: requestBody.signerAddress,
-        deviceData: requestBody.deviceData,
-        publicKeyId: requestBody.publicKeyId,
-        publicKeyX: requestBody.publicKeyX,
-        publicKeyY: requestBody.publicKeyY
+        signerAddress,
+        deviceData,
+        type,
+        publicKeyId,
+        publicKeyX,
+        publicKeyY
       })
 
       return signerAddress
     }
-  }
-
-  getImportSafeMessage(): string {
-    return importSafeMessage
   }
 
   async getWalletInfos(walletAddress: string): Promise<WalletInfos> {
@@ -250,8 +221,9 @@ export class ConnectAdaptor implements AUTHAdapter {
     return addNewSignerRequest
   }
 
-  async getNewSignerRequests(): Promise<NewSignerRequest[] | null> {
-    const walletAddress = this.getWalletAddress()
+  async getNewSignerRequests(
+    walletAddress: string
+  ): Promise<NewSignerRequest[] | null> {
     return await this.API.getNewSignerRequests(walletAddress)
   }
 
