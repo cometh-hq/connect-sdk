@@ -13,45 +13,52 @@ import {
   NewSignerRequestBody,
   NewSignerRequestType,
   ProjectParams,
-  SupportedNetworks,
   WalletInfos
 } from '../types'
 import { AUTHAdapter } from './types'
 
 export interface ConnectAdaptorConfig {
-  chainId: SupportedNetworks
   apiKey: string
+  disableLocal?: boolean
   passkeyName?: string
   rpcUrl?: string
   baseUrl?: string
 }
 
 export class ConnectAdaptor implements AUTHAdapter {
-  private signer?: WebAuthnSigner | Wallet
-  readonly chainId: SupportedNetworks
+  private disableLocal: boolean
   private API: API
-  private provider: StaticJsonRpcProvider
+  private signer?: WebAuthnSigner | Wallet
+  public chainId?: string
+  private rpcUrl?: string
+  private provider?: StaticJsonRpcProvider
   private walletAddress?: string
   private passkeyName?: string
   private projectParams?: ProjectParams
 
   constructor({
-    chainId,
     apiKey,
+    disableLocal = false,
     passkeyName,
     rpcUrl,
     baseUrl
   }: ConnectAdaptorConfig) {
-    this.chainId = chainId
+    this.disableLocal = disableLocal
     this.passkeyName = passkeyName
-    this.API = new API(apiKey, +chainId, baseUrl)
+    this.API = new API(apiKey, baseUrl)
+    this.rpcUrl = rpcUrl
+  }
+
+  async initialize(): Promise<void> {
+    this.projectParams = await this.API.getProjectParams()
+    this.chainId = this.projectParams.chainId
     this.provider = new StaticJsonRpcProvider(
-      rpcUrl ? rpcUrl : networks[+this.chainId].RPCUrl
+      this.rpcUrl ?? networks[+this.chainId].RPCUrl
     )
   }
 
   async connect(walletAddress?: string): Promise<void> {
-    this.projectParams = await this.API.getProjectParams()
+    if (!this.provider) throw new Error('adaptor not initialized yet')
 
     const isWebAuthnCompatible = await webAuthnService.isWebAuthnCompatible()
 
@@ -68,6 +75,8 @@ export class ConnectAdaptor implements AUTHAdapter {
         })
         this.signer = new WebAuthnSigner(publicKeyId, signerAddress)
       } else {
+        this._isLocalDisable()
+
         this.signer = await burnerWalletService.getSigner({
           API: this.API,
           provider: this.provider,
@@ -101,6 +110,8 @@ export class ConnectAdaptor implements AUTHAdapter {
           deviceData
         })
       } else {
+        this._isLocalDisable()
+
         const { signer, walletAddress } =
           await burnerWalletService.createSigner({
             API: this.API
@@ -116,6 +127,11 @@ export class ConnectAdaptor implements AUTHAdapter {
     }
   }
 
+  _isLocalDisable(): void {
+    if (this.disableLocal)
+      throw new Error('Passkeys are not compatible with your device')
+  }
+
   async retrieveWalletAddressFromSigner(): Promise<string> {
     return await webAuthnService.retrieveWalletAddressFromSigner(this.API)
   }
@@ -125,6 +141,7 @@ export class ConnectAdaptor implements AUTHAdapter {
     message: string,
     signature: string
   ): Promise<string> {
+    if (!this.provider) throw new Error('adaptor not initialized yet')
     if (message !== importSafeMessage) throw new Error('Wrong message signed')
 
     const safeVersion = await safeService.getSafeVersion(
@@ -259,6 +276,7 @@ export class ConnectAdaptor implements AUTHAdapter {
     publicKey_X: string,
     publicKey_Y: string
   ): Promise<void> {
+    if (!this.provider) throw new Error('adaptor not initialized yet')
     if (!this.projectParams) throw new Error('No project Params found')
 
     await webAuthnService.waitWebAuthnSignerDeployment(

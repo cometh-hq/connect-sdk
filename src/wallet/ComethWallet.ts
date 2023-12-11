@@ -55,8 +55,12 @@ export class ComethWallet {
 
   constructor({ authAdapter, apiKey, rpcUrl, baseUrl }: WalletConfig) {
     this.authAdapter = authAdapter
-    this.chainId = +authAdapter.chainId
-    this.API = new API(apiKey, this.chainId, baseUrl)
+
+    const adaptorChainId = this.authAdapter.chainId
+    if (!adaptorChainId) throw new Error('adaptor not initialized yet')
+
+    this.chainId = +adaptorChainId
+    this.API = new API(apiKey, baseUrl)
     this.provider = new StaticJsonRpcProvider(
       rpcUrl ? rpcUrl : networks[this.chainId].RPCUrl
     )
