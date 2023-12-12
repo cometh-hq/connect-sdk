@@ -21,12 +21,14 @@ import { AUTHAdapter } from './types'
 export interface ConnectAdaptorConfig {
   chainId: SupportedNetworks
   apiKey: string
+  disableLocal?: boolean
   passkeyName?: string
   rpcUrl?: string
   baseUrl?: string
 }
 
 export class ConnectAdaptor implements AUTHAdapter {
+  private disableLocal: boolean
   private signer?: WebAuthnSigner | Wallet
   readonly chainId: SupportedNetworks
   private API: API
@@ -38,10 +40,12 @@ export class ConnectAdaptor implements AUTHAdapter {
   constructor({
     chainId,
     apiKey,
+    disableLocal = false,
     passkeyName,
     rpcUrl,
     baseUrl
   }: ConnectAdaptorConfig) {
+    this.disableLocal = disableLocal
     this.chainId = chainId
     this.passkeyName = passkeyName
     this.API = new API(apiKey, +chainId, baseUrl)
@@ -68,6 +72,8 @@ export class ConnectAdaptor implements AUTHAdapter {
         })
         this.signer = new WebAuthnSigner(publicKeyId, signerAddress)
       } else {
+        this._isLocalDisable()
+
         this.signer = await burnerWalletService.getSigner({
           API: this.API,
           provider: this.provider,
@@ -101,6 +107,8 @@ export class ConnectAdaptor implements AUTHAdapter {
           deviceData
         })
       } else {
+        this._isLocalDisable()
+
         const { signer, walletAddress } =
           await burnerWalletService.createSigner({
             API: this.API
@@ -114,6 +122,11 @@ export class ConnectAdaptor implements AUTHAdapter {
         })
       }
     }
+  }
+
+  _isLocalDisable(): void {
+    if (this.disableLocal)
+      throw new Error('Passkeys are not compatible with your device')
   }
 
   async retrieveWalletAddressFromSigner(): Promise<string> {

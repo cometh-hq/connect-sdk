@@ -20,12 +20,14 @@ export interface ConnectWithJwtAdaptorConfig {
   chainId: SupportedNetworks
   jwtToken: string
   apiKey: string
+  disableLocal?: boolean
   passkeyName?: string
   rpcUrl?: string
   baseUrl?: string
 }
 
 export class ConnectWithJwtAdaptor implements AUTHAdapter {
+  private disableLocal: boolean
   private signer?: WebAuthnSigner | Wallet
   readonly chainId: SupportedNetworks
   private API: API
@@ -39,10 +41,12 @@ export class ConnectWithJwtAdaptor implements AUTHAdapter {
     chainId,
     jwtToken,
     apiKey,
+    disableLocal = false,
     passkeyName,
     rpcUrl,
     baseUrl
   }: ConnectWithJwtAdaptorConfig) {
+    this.disableLocal = disableLocal
     this.chainId = chainId
     this.jwtToken = jwtToken
     this.passkeyName = passkeyName
@@ -70,6 +74,8 @@ export class ConnectWithJwtAdaptor implements AUTHAdapter {
         })
         this.signer = new WebAuthnSigner(publicKeyId, signerAddress)
       } else {
+        this._isLocalDisable()
+
         await burnerWalletService.getSigner({
           API: this.API,
           provider: this.provider,
@@ -102,6 +108,8 @@ export class ConnectWithJwtAdaptor implements AUTHAdapter {
         this.signer = new WebAuthnSigner(publicKeyId, signerAddress)
         this.walletAddress = walletAddress
       } else {
+        this._isLocalDisable()
+
         const { signer, walletAddress } =
           await burnerWalletService.createSigner({
             API: this.API
@@ -116,6 +124,11 @@ export class ConnectWithJwtAdaptor implements AUTHAdapter {
         })
       }
     }
+  }
+
+  _isLocalDisable(): void {
+    if (this.disableLocal)
+      throw new Error('Passkeys are not compatible with your device')
   }
 
   async logout(): Promise<void> {
