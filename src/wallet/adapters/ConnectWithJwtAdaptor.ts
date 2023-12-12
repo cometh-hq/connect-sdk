@@ -50,7 +50,7 @@ export class ConnectWithJwtAdaptor implements AUTHAdapter {
     this.chainId = chainId
     this.jwtToken = jwtToken
     this.passkeyName = passkeyName
-    this.API = new API(apiKey, +chainId, baseUrl)
+    this.API = new API(apiKey, baseUrl)
     this.provider = new StaticJsonRpcProvider(
       rpcUrl ? rpcUrl : networks[+this.chainId].RPCUrl
     )
@@ -224,6 +224,8 @@ export class ConnectWithJwtAdaptor implements AUTHAdapter {
   async validateNewSignerRequest(
     newSignerRequest: NewSignerRequest
   ): Promise<string> {
+    if (!this.provider) throw new Error('adaptor not initialized yet')
+
     if (!this.projectParams) throw new Error('Project params are null')
 
     await this.deleteNewSignerRequest(newSignerRequest.signerAddress)
