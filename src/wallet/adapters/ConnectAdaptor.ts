@@ -3,8 +3,8 @@ import { ethers, Wallet } from 'ethers'
 
 import { importSafeMessage, networks } from '../../constants'
 import { API } from '../../services'
-import burnerWalletService from '../../services/burnerWalletService'
 import deviceService from '../../services/deviceService'
+import eoaFallbackService from '../../services/eoaFallbackService'
 import safeService from '../../services/safeService'
 import webAuthnService from '../../services/webAuthnService'
 import { WebAuthnSigner } from '../signers/WebAuthnSigner'
@@ -21,12 +21,14 @@ import { AUTHAdapter } from './types'
 export interface ConnectAdaptorConfig {
   chainId: SupportedNetworks
   apiKey: string
+  disableEoaFallback?: boolean
   passkeyName?: string
   rpcUrl?: string
   baseUrl?: string
 }
 
 export class ConnectAdaptor implements AUTHAdapter {
+  private disableEoaFallback: boolean
   private signer?: WebAuthnSigner | Wallet
   readonly chainId: SupportedNetworks
   private API: API
@@ -38,15 +40,17 @@ export class ConnectAdaptor implements AUTHAdapter {
   constructor({
     chainId,
     apiKey,
+    disableEoaFallback = false,
     passkeyName,
     rpcUrl,
     baseUrl
   }: ConnectAdaptorConfig) {
+    this.disableEoaFallback = disableEoaFallback
     this.chainId = chainId
     this.passkeyName = passkeyName
-    this.API = new API(apiKey, +chainId, baseUrl)
+    this.API = new API(apiKey, baseUrl)
     this.provider = new StaticJsonRpcProvider(
-      rpcUrl ? rpcUrl : networks[+this.chainId].RPCUrl
+      rpcUrl ?? networks[+this.chainId].RPCUrl
     )
   }
 
@@ -68,7 +72,8 @@ export class ConnectAdaptor implements AUTHAdapter {
         })
         this.signer = new WebAuthnSigner(publicKeyId, signerAddress)
       } else {
-        this.signer = await burnerWalletService.getSigner({
+        this._throwErrorWhenEoaFallbackDisabled()
+        this.signer = await eoaFallbackService.getSigner({
           API: this.API,
           provider: this.provider,
           walletAddress
@@ -101,10 +106,13 @@ export class ConnectAdaptor implements AUTHAdapter {
           deviceData
         })
       } else {
-        const { signer, walletAddress } =
-          await burnerWalletService.createSigner({
+        this._throwErrorWhenEoaFallbackDisabled()
+
+        const { signer, walletAddress } = await eoaFallbackService.createSigner(
+          {
             API: this.API
-          })
+          }
+        )
 
         this.signer = signer
         this.walletAddress = walletAddress
@@ -114,6 +122,11 @@ export class ConnectAdaptor implements AUTHAdapter {
         })
       }
     }
+  }
+
+  _throwErrorWhenEoaFallbackDisabled(): void {
+    if (this.disableEoaFallback)
+      throw new Error('Passkeys are not compatible with your device')
   }
 
   async retrieveWalletAddressFromSigner(): Promise<string> {
@@ -143,7 +156,7 @@ export class ConnectAdaptor implements AUTHAdapter {
       const isWebAuthnCompatible = await webAuthnService.isWebAuthnCompatible()
 
       if (!isWebAuthnCompatible) {
-        const { signer } = await burnerWalletService.createSigner({
+        const { signer } = await eoaFallbackService.createSigner({
           API: this.API,
           walletAddress
         })
