@@ -9,7 +9,7 @@ export interface AUTHAdapter {
   getAccount(): Promise<string | null>
   getSigner(): JsonRpcSigner | Wallet | WebAuthnSigner
   getWalletAddress(): string
-  chainId?: string
+  readonly chainId: string
 }
 
 export type Constructor<T> = new (...args: any[]) => T
