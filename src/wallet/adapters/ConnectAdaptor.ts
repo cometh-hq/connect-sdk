@@ -68,26 +68,26 @@ export class ConnectAdaptor implements AUTHAdapter {
 
       if (!wallet) throw new Error('Wallet does not exists')
 
-      /*  if (isWebAuthnCompatible) {
+      if (isWebAuthnCompatible) {
         const { publicKeyId, signerAddress } = await webAuthnService.getSigner({
           API: this.API,
           walletAddress,
           provider: this.provider
         })
         this.signer = new WebAuthnSigner(publicKeyId, signerAddress)
-      } else { */
-      this._throwErrorWhenEoaFallbackDisabled()
-      this.signer = await eoaFallbackService.getSigner({
-        API: this.API,
-        provider: this.provider,
-        walletAddress,
-        encryptionSalt: this.encryptionSalt
-      })
-      /*      } */
+      } else {
+        this._throwErrorWhenEoaFallbackDisabled()
+        this.signer = await eoaFallbackService.getSigner({
+          API: this.API,
+          provider: this.provider,
+          walletAddress,
+          encryptionSalt: this.encryptionSalt
+        })
+      }
 
       this.walletAddress = walletAddress
     } else {
-      /*    if (isWebAuthnCompatible) {
+      if (isWebAuthnCompatible) {
         const {
           publicKeyX,
           publicKeyY,
@@ -110,21 +110,23 @@ export class ConnectAdaptor implements AUTHAdapter {
           publicKeyY,
           deviceData
         })
-      } else { */
-      this._throwErrorWhenEoaFallbackDisabled()
+      } else {
+        this._throwErrorWhenEoaFallbackDisabled()
 
-      const { signer, walletAddress } = await eoaFallbackService.createSigner({
-        API: this.API,
-        encryptionSalt: this.encryptionSalt
-      })
+        const { signer, walletAddress } = await eoaFallbackService.createSigner(
+          {
+            API: this.API,
+            encryptionSalt: this.encryptionSalt
+          }
+        )
 
-      this.signer = signer
-      this.walletAddress = walletAddress
+        this.signer = signer
+        this.walletAddress = walletAddress
 
-      await this.API.initWallet({
-        ownerAddress: signer.address
-      })
-      /*       } */
+        await this.API.initWallet({
+          ownerAddress: signer.address
+        })
+      }
     }
   }
 
