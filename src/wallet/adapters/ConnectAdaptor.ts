@@ -22,6 +22,7 @@ export interface ConnectAdaptorConfig {
   chainId: SupportedNetworks
   apiKey: string
   disableEoaFallback?: boolean
+  encryptionSalt?: string
   passkeyName?: string
   rpcUrl?: string
   baseUrl?: string
@@ -29,6 +30,7 @@ export interface ConnectAdaptorConfig {
 
 export class ConnectAdaptor implements AUTHAdapter {
   private disableEoaFallback: boolean
+  private encryptionSalt?: string
   private signer?: WebAuthnSigner | Wallet
   readonly chainId: SupportedNetworks
   private API: API
@@ -41,11 +43,13 @@ export class ConnectAdaptor implements AUTHAdapter {
     chainId,
     apiKey,
     disableEoaFallback = false,
+    encryptionSalt,
     passkeyName,
     rpcUrl,
     baseUrl
   }: ConnectAdaptorConfig) {
     this.disableEoaFallback = disableEoaFallback
+    this.encryptionSalt = encryptionSalt
     this.chainId = chainId
     this.passkeyName = passkeyName
     this.API = new API(apiKey, baseUrl)
@@ -64,25 +68,26 @@ export class ConnectAdaptor implements AUTHAdapter {
 
       if (!wallet) throw new Error('Wallet does not exists')
 
-      if (isWebAuthnCompatible) {
+      /*  if (isWebAuthnCompatible) {
         const { publicKeyId, signerAddress } = await webAuthnService.getSigner({
           API: this.API,
           walletAddress,
           provider: this.provider
         })
         this.signer = new WebAuthnSigner(publicKeyId, signerAddress)
-      } else {
-        this._throwErrorWhenEoaFallbackDisabled()
-        this.signer = await eoaFallbackService.getSigner({
-          API: this.API,
-          provider: this.provider,
-          walletAddress
-        })
-      }
+      } else { */
+      this._throwErrorWhenEoaFallbackDisabled()
+      this.signer = await eoaFallbackService.getSigner({
+        API: this.API,
+        provider: this.provider,
+        walletAddress,
+        encryptionSalt: this.encryptionSalt
+      })
+      /*      } */
 
       this.walletAddress = walletAddress
     } else {
-      if (isWebAuthnCompatible) {
+      /*    if (isWebAuthnCompatible) {
         const {
           publicKeyX,
           publicKeyY,
@@ -105,22 +110,21 @@ export class ConnectAdaptor implements AUTHAdapter {
           publicKeyY,
           deviceData
         })
-      } else {
-        this._throwErrorWhenEoaFallbackDisabled()
+      } else { */
+      this._throwErrorWhenEoaFallbackDisabled()
 
-        const { signer, walletAddress } = await eoaFallbackService.createSigner(
-          {
-            API: this.API
-          }
-        )
+      const { signer, walletAddress } = await eoaFallbackService.createSigner({
+        API: this.API,
+        encryptionSalt: this.encryptionSalt
+      })
 
-        this.signer = signer
-        this.walletAddress = walletAddress
+      this.signer = signer
+      this.walletAddress = walletAddress
 
-        await this.API.initWallet({
-          ownerAddress: signer.address
-        })
-      }
+      await this.API.initWallet({
+        ownerAddress: signer.address
+      })
+      /*       } */
     }
   }
 
