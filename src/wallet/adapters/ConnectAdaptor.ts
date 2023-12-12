@@ -144,7 +144,6 @@ export class ConnectAdaptor implements AUTHAdapter {
     message: string,
     signature: string
   ): Promise<string> {
-    if (!this.provider) throw new Error('adaptor not initialized yet')
     if (message !== importSafeMessage) throw new Error('Wrong message signed')
 
     const safeVersion = await safeService.getSafeVersion(
@@ -279,7 +278,6 @@ export class ConnectAdaptor implements AUTHAdapter {
     publicKey_X: string,
     publicKey_Y: string
   ): Promise<void> {
-    if (!this.provider) throw new Error('adaptor not initialized yet')
     if (!this.projectParams) throw new Error('No project Params found')
 
     await webAuthnService.waitWebAuthnSignerDeployment(
