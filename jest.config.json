@@ -1,6 +1,6 @@
 {
   "roots": ["<rootDir>/"],
-  "testMatch": ["**/?(*.)+(spec|test).+(ts|tsx|js)"],
+  "testMatch": ["**/?(*.)+(spec|test).+(ts|tsx)"],
   "transform": {
     "\\.(ts)$": "ts-jest"
   },

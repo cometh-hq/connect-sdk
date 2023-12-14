@@ -1,3 +1,5 @@
+import * as utils from '../utils/utils'
+
 export const getRandomValues = (arr: Uint8Array): Uint8Array => {
   return window.crypto.getRandomValues(arr)
 }
@@ -62,4 +64,28 @@ export const decryptAESCBC = async (
 
 export const sha512 = async (data: ArrayBuffer): Promise<ArrayBuffer> => {
   return await window.crypto.subtle.digest('SHA-512', data)
+}
+
+export const getRandomIV = (): Uint8Array => {
+  const array = new Uint8Array(16)
+  getRandomValues(array)
+  return array
+}
+
+export const encodeWalletAddressToUTF8 = (
+  walletAddress: string
+): ArrayBuffer => {
+  return utils.encodeUTF8(walletAddress)
+}
+
+export const encodeSaltToUTF8 = (salt: string): ArrayBuffer => {
+  return utils.encodeUTF8(salt)
+}
+
+export const encodePrivateKeyToUTF8 = (privateKey: string): ArrayBuffer => {
+  return utils.encodeUTF8(privateKey)
+}
+
+export const decodePrivateKeyFromUTF8 = (privateKey: ArrayBuffer): string => {
+  return utils.decodeUTF8(privateKey)
 }

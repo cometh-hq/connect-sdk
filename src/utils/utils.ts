@@ -44,11 +44,11 @@ export const findSequence = (arr, seq): number => {
   return -1
 }
 
-export const _decodeUTF8 = (b: ArrayBuffer): string => {
+export const decodeUTF8 = (b: ArrayBuffer): string => {
   return new TextDecoder().decode(b)
 }
 
-export const _encodeUTF8 = (s: string): ArrayBuffer => {
+export const encodeUTF8 = (s: string): ArrayBuffer => {
   return new TextEncoder().encode(s)
 }
 

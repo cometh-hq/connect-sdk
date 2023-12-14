@@ -7,18 +7,12 @@ import * as utils from '../utils/utils'
 import { API } from './API'
 import safeService from './safeService'
 
-const getRandomIV = (): Uint8Array => {
-  const array = new Uint8Array(16)
-  cryptolib.getRandomValues(array)
-  return array
-}
-
 export const _setSignerLocalStorage = async (
   walletAddress: string,
   privateKey: string,
   salt?: string
 ): Promise<void> => {
-  const { encryptedPrivateKey, iv } = await _encryptEoaFallback(
+  const { encryptedPrivateKey, iv } = await encryptEoaFallback(
     walletAddress,
     privateKey,
     salt || defaultEncryptionSalt
@@ -57,7 +51,7 @@ export const _getSignerLocalStorage = async (
   if (localStorageV2) {
     const { encryptedPrivateKey, iv } = JSON.parse(localStorageV2)
 
-    const privateKey = await _decryptEoaFallback(
+    const privateKey = await decryptEoaFallback(
       walletAddress,
       utils.base64ToArrayBuffer(encryptedPrivateKey),
       utils.base64toUint8Array(iv),
@@ -130,13 +124,14 @@ export const getSigner = async ({
   return storageSigner
 }
 
-const _encryptEoaFallback = async (
+const encryptEoaFallback = async (
   walletAddress: string,
   privateKey: string,
   salt: string
 ): Promise<{ encryptedPrivateKey: string; iv: string }> => {
-  const encodedWalletAddress = utils._encodeUTF8(walletAddress)
-  const encodedSalt = utils._encodeUTF8(salt)
+  const encodedWalletAddress =
+    cryptolib.encodeWalletAddressToUTF8(walletAddress)
+  const encodedSalt = cryptolib.encodeSaltToUTF8(salt)
 
   const encryptionKey = await cryptolib.pbkdf2(
     encodedWalletAddress,
@@ -144,9 +139,9 @@ const _encryptEoaFallback = async (
     Pbkdf2Iterations
   )
 
-  const encodedPrivateKey = utils._encodeUTF8(privateKey)
+  const encodedPrivateKey = cryptolib.encodePrivateKeyToUTF8(privateKey)
 
-  const iv = getRandomIV()
+  const iv = cryptolib.getRandomIV()
 
   const encryptedPrivateKey = await cryptolib.encryptAESCBC(
     encryptionKey,
@@ -160,14 +155,15 @@ const _encryptEoaFallback = async (
   }
 }
 
-const _decryptEoaFallback = async (
+const decryptEoaFallback = async (
   walletAddress: string,
   encryptedPrivateKey: ArrayBuffer,
   iv: ArrayBuffer,
   salt: string
 ): Promise<string> => {
-  const encodedWalletAddress = utils._encodeUTF8(walletAddress)
-  const encodedSalt = utils._encodeUTF8(salt)
+  const encodedWalletAddress =
+    cryptolib.encodeWalletAddressToUTF8(walletAddress)
+  const encodedSalt = cryptolib.encodeSaltToUTF8(salt)
 
   const encryptionKey = await cryptolib.pbkdf2(
     encodedWalletAddress,
@@ -181,10 +177,12 @@ const _decryptEoaFallback = async (
     encryptedPrivateKey
   )
 
-  return utils._decodeUTF8(privateKey)
+  return cryptolib.decodePrivateKeyFromUTF8(privateKey)
 }
 
 export default {
   createSigner,
-  getSigner
+  getSigner,
+  encryptEoaFallback,
+  decryptEoaFallback
 }
