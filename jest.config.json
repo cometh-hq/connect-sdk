@@ -9,6 +9,7 @@
       "isolatedModules": true
     }
   },
+  "setupFiles": ["<rootDir>/jest.setup.ts"],
   "modulePathIgnorePatterns": ["<rootDir>/build"],
   "moduleNameMapper": {
     "@/(.*)": "<rootDir>/src/$1"

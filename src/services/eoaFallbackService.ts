@@ -5,6 +5,7 @@ import { defaultEncryptionSalt, Pbkdf2Iterations } from '../constants'
 import * as cryptolib from '../services/cryptoService'
 import * as utils from '../utils/utils'
 import { API } from './API'
+import { getRandomIV } from './randomIvService'
 import safeService from './safeService'
 
 export const _setSignerLocalStorage = async (
@@ -77,14 +78,22 @@ export const createSigner = async ({
 
   // if import external safe wallet
   if (walletAddress) {
-    await _setSignerLocalStorage(walletAddress, signer.privateKey)
+    await _setSignerLocalStorage(
+      walletAddress,
+      signer.privateKey,
+      encryptionSalt
+    )
     return { signer, walletAddress }
   }
 
   // if safe created by cometh wallet SDK
   const predictedWalletAddress = await API.getWalletAddress(signer.address)
 
-  await _setSignerLocalStorage(predictedWalletAddress, signer.privateKey)
+  await _setSignerLocalStorage(
+    predictedWalletAddress,
+    signer.privateKey,
+    encryptionSalt
+  )
 
   return { signer, walletAddress: predictedWalletAddress }
 }
@@ -100,7 +109,10 @@ export const getSigner = async ({
   walletAddress: string
   encryptionSalt?: string
 }): Promise<Wallet> => {
-  const storagePrivateKey = await _getSignerLocalStorage(walletAddress)
+  const storagePrivateKey = await _getSignerLocalStorage(
+    walletAddress,
+    encryptionSalt
+  )
 
   if (!storagePrivateKey)
     throw new Error(
@@ -129,9 +141,8 @@ const encryptEoaFallback = async (
   privateKey: string,
   salt: string
 ): Promise<{ encryptedPrivateKey: string; iv: string }> => {
-  const encodedWalletAddress =
-    cryptolib.encodeWalletAddressToUTF8(walletAddress)
-  const encodedSalt = cryptolib.encodeSaltToUTF8(salt)
+  const encodedWalletAddress = utils.encodeUTF8(walletAddress)
+  const encodedSalt = utils.encodeUTF8(salt)
 
   const encryptionKey = await cryptolib.pbkdf2(
     encodedWalletAddress,
@@ -139,9 +150,9 @@ const encryptEoaFallback = async (
     Pbkdf2Iterations
   )
 
-  const encodedPrivateKey = cryptolib.encodePrivateKeyToUTF8(privateKey)
+  const encodedPrivateKey = utils.encodeUTF8(privateKey)
 
-  const iv = cryptolib.getRandomIV()
+  const iv = getRandomIV()
 
   const encryptedPrivateKey = await cryptolib.encryptAESCBC(
     encryptionKey,
@@ -161,9 +172,8 @@ const decryptEoaFallback = async (
   iv: ArrayBuffer,
   salt: string
 ): Promise<string> => {
-  const encodedWalletAddress =
-    cryptolib.encodeWalletAddressToUTF8(walletAddress)
-  const encodedSalt = cryptolib.encodeSaltToUTF8(salt)
+  const encodedWalletAddress = utils.encodeUTF8(walletAddress)
+  const encodedSalt = utils.encodeUTF8(salt)
 
   const encryptionKey = await cryptolib.pbkdf2(
     encodedWalletAddress,
@@ -177,7 +187,7 @@ const decryptEoaFallback = async (
     encryptedPrivateKey
   )
 
-  return cryptolib.decodePrivateKeyFromUTF8(privateKey)
+  return utils.decodeUTF8(privateKey)
 }
 
 export default {

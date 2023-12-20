@@ -1,26 +1,18 @@
-import { defaultEncryptionSalt, Pbkdf2Iterations } from '../constants'
-import * as cryptolib from '../services/cryptoService'
+/** @jest-environment jsdom */
+import { defaultEncryptionSalt } from '../constants'
 import { getFunctionMock } from '../tests/unit/utils'
 import * as utils from '../utils/utils'
 import eoaFallbackService from './eoaFallbackService'
+import { getRandomIV } from './randomIvService'
 
 const WALLET_ADDRESS = '0x5B76Bb156C4E9Aa322143d0061AFBd856482648D'
-const encryptedPrivateKey = new ArrayBuffer(0)
 
-jest.mock('../services/cryptoService', () => ({
-  pbkdf2: jest.fn(),
-  encryptAESCBC: jest.fn(),
-  decryptAESCBC: jest.fn(),
-  getRandomIV: jest.fn(),
-  encodeWalletAddressToUTF8: jest.fn(),
-  encodeSaltToUTF8: jest.fn(),
-  encodePrivateKeyToUTF8: jest.fn(),
-  decodePrivateKeyFromUTF8: jest.fn()
-}))
+const testIV = new Uint8Array([
+  74, 70, 19, 207, 45, 206, 152, 66, 214, 94, 45, 178, 126, 78, 230, 34
+])
 
-jest.mock('../utils/utils', () => ({
-  arrayBufferToBase64: jest.fn(),
-  uint8ArrayToBase64: jest.fn()
+jest.mock('./randomIvService', () => ({
+  getRandomIV: jest.fn()
 }))
 
 describe('eoaFallbackService', () => {
@@ -33,86 +25,41 @@ describe('eoaFallbackService', () => {
   })
 
   beforeEach(() => {
-    getFunctionMock(cryptolib.pbkdf2).mockResolvedValue('encryption_key')
-    getFunctionMock(cryptolib.encryptAESCBC).mockResolvedValue(
-      encryptedPrivateKey
-    )
-    getFunctionMock(cryptolib.getRandomIV).mockReturnValue('iv')
-
-    getFunctionMock(cryptolib.decryptAESCBC).mockResolvedValue('decrypted_key')
-    getFunctionMock(cryptolib.encodeWalletAddressToUTF8).mockReturnValue(
-      'encoded_walletAddress'
-    )
-    getFunctionMock(cryptolib.encodeSaltToUTF8).mockReturnValue('encoded_salt')
-    getFunctionMock(cryptolib.encodePrivateKeyToUTF8).mockReturnValue(
-      'encoded_privateKey'
-    )
-    getFunctionMock(cryptolib.decodePrivateKeyFromUTF8).mockReturnValue(
-      'decoded_privateKey'
-    )
-    getFunctionMock(utils.arrayBufferToBase64).mockReturnValue({})
-    getFunctionMock(utils.uint8ArrayToBase64).mockReturnValue({})
+    getFunctionMock(getRandomIV).mockReturnValue(testIV)
   })
+
   describe('encryptEoaFallback', () => {
     const privateKey =
       '0x58476d0865927d3536ee46ad35d36899e5e362cf0825800f453f6ef7c8547dbe'
-    it('Given a walletAddress with transactionData, when predicting transaction Hash, then return the correct safe txHash', async () => {
-      await eoaFallbackService.encryptEoaFallback(
-        WALLET_ADDRESS,
-        privateKey,
-        defaultEncryptionSalt
-      )
+    it('Given a walletAddress privateKey and base salt, when encrypting privateKey, then return the correct encrypted key', async () => {
+      const { encryptedPrivateKey } =
+        await eoaFallbackService.encryptEoaFallback(
+          WALLET_ADDRESS,
+          privateKey,
+          defaultEncryptionSalt
+        )
 
-      expect(cryptolib.encodeWalletAddressToUTF8).toHaveBeenCalledWith(
-        WALLET_ADDRESS
-      )
-      expect(cryptolib.encodeSaltToUTF8).toHaveBeenCalledWith(
-        defaultEncryptionSalt
-      )
-      expect(cryptolib.pbkdf2).toHaveBeenCalledWith(
-        'encoded_walletAddress',
-        'encoded_salt',
-        Pbkdf2Iterations
-      )
-      expect(cryptolib.encodePrivateKeyToUTF8).toHaveBeenCalledWith(privateKey)
-      expect(cryptolib.encryptAESCBC).toHaveBeenCalledWith(
-        'encryption_key',
-        'iv',
-        'encoded_privateKey'
+      expect(encryptedPrivateKey).toBe(
+        '93OuZvzQhfsUPuxGnJ4FLIw0P4wrGFw3E0HiaH1rfRqWQFvXoYRREWG00g5FpahVSEfU+xBGnQf/WjkCyq0LFpXtYbjzakyxiqDYsoPdtlU='
       )
     })
   })
 
   describe('decryptEoaFallback', () => {
-    const encryptedPrivateKey = new ArrayBuffer(0)
-    const iv = new ArrayBuffer(0)
+    const encryptedPrivateKey = utils.base64ToArrayBuffer(
+      '93OuZvzQhfsUPuxGnJ4FLIw0P4wrGFw3E0HiaH1rfRqWQFvXoYRREWG00g5FpahVSEfU+xBGnQf/WjkCyq0LFpXtYbjzakyxiqDYsoPdtlU='
+    )
 
-    it('Given a walletAddress with transactionData, when predicting transaction Hash, then return the correct safe txHash', async () => {
-      await eoaFallbackService.decryptEoaFallback(
+    it('Given decryption params, when decrypting the encrypted privateKey, then return the correct privateKey as Hex', async () => {
+      const privateKey = await eoaFallbackService.decryptEoaFallback(
         WALLET_ADDRESS,
         encryptedPrivateKey,
-        iv,
+        testIV,
         defaultEncryptionSalt
       )
 
-      expect(cryptolib.encodeWalletAddressToUTF8).toHaveBeenCalledWith(
-        WALLET_ADDRESS
-      )
-      expect(cryptolib.encodeSaltToUTF8).toHaveBeenCalledWith(
-        defaultEncryptionSalt
-      )
-      expect(cryptolib.pbkdf2).toHaveBeenCalledWith(
-        'encoded_walletAddress',
-        'encoded_salt',
-        Pbkdf2Iterations
-      )
-      expect(cryptolib.decryptAESCBC).toHaveBeenCalledWith(
-        'encryption_key',
-        iv,
-        encryptedPrivateKey
-      )
-      expect(cryptolib.decodePrivateKeyFromUTF8).toHaveBeenCalledWith(
-        'decrypted_key'
+      expect(privateKey).toBe(
+        '0x58476d0865927d3536ee46ad35d36899e5e362cf0825800f453f6ef7c8547dbe'
       )
     })
   })
