@@ -32,7 +32,7 @@ describe('eoaFallbackService', () => {
     const privateKey =
       '0x58476d0865927d3536ee46ad35d36899e5e362cf0825800f453f6ef7c8547dbe'
     it('Given a walletAddress privateKey and base salt, when encrypting privateKey, then return the correct encrypted key', async () => {
-      const { encryptedPrivateKey } =
+      const { encryptedPrivateKey, iv } =
         await eoaFallbackService.encryptEoaFallback(
           WALLET_ADDRESS,
           privateKey,
@@ -42,6 +42,8 @@ describe('eoaFallbackService', () => {
       expect(encryptedPrivateKey).toBe(
         '93OuZvzQhfsUPuxGnJ4FLIw0P4wrGFw3E0HiaH1rfRqWQFvXoYRREWG00g5FpahVSEfU+xBGnQf/WjkCyq0LFpXtYbjzakyxiqDYsoPdtlU='
       )
+
+      expect(iv).toBe('SkYTzy3OmELWXi2yfk7mIg==')
     })
   })
 
