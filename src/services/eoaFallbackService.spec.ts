@@ -69,7 +69,7 @@ describe('eoaFallbackService', () => {
     const encryptedPrivateKey =
       '93OuZvzQhfsUPuxGnJ4FLIw0P4wrGFw3E0HiaH1rfRqWQFvXoYRREWG00g5FpahVSEfU'
     const iv = 'SkYTzy3OmELWXi2yfk7mIg=='
-    it('Given a walletAddress privateKey and base salt, when encrypting privateKey, then return the correct encrypted key', async () => {
+    it('Given a encrypted key value, when formatting for localstorage, then return the right format', async () => {
       const storageValue = eoaFallbackService.formatStorageValue(
         encryptedPrivateKey,
         iv
@@ -85,7 +85,7 @@ describe('eoaFallbackService', () => {
     const iv = 'SkYTzy3OmELWXi2yfk7mIg=='
     const storageValue = JSON.stringify({ encryptedPrivateKey, iv })
 
-    it('Given a walletAddress privateKey and base salt, when encrypting privateKey, then return the correct encrypted key', async () => {
+    it('Given a fallbackLocalStorage value, when unformatting the value, then return the right format', async () => {
       const unformattedStorageValue =
         eoaFallbackService.unFormatStorageValue(storageValue)
 
