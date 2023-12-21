@@ -22,6 +22,7 @@ export interface ConnectAdaptorConfig {
   chainId: SupportedNetworks
   apiKey: string
   disableEoaFallback?: boolean
+  encryptionSalt?: string
   passkeyName?: string
   rpcUrl?: string
   baseUrl?: string
@@ -29,6 +30,7 @@ export interface ConnectAdaptorConfig {
 
 export class ConnectAdaptor implements AUTHAdapter {
   private disableEoaFallback: boolean
+  private encryptionSalt?: string
   private signer?: WebAuthnSigner | Wallet
   readonly chainId: SupportedNetworks
   private API: API
@@ -41,11 +43,13 @@ export class ConnectAdaptor implements AUTHAdapter {
     chainId,
     apiKey,
     disableEoaFallback = false,
+    encryptionSalt,
     passkeyName,
     rpcUrl,
     baseUrl
   }: ConnectAdaptorConfig) {
     this.disableEoaFallback = disableEoaFallback
+    this.encryptionSalt = encryptionSalt
     this.chainId = chainId
     this.passkeyName = passkeyName
     this.API = new API(apiKey, baseUrl)
@@ -76,7 +80,8 @@ export class ConnectAdaptor implements AUTHAdapter {
         this.signer = await eoaFallbackService.getSigner({
           API: this.API,
           provider: this.provider,
-          walletAddress
+          walletAddress,
+          encryptionSalt: this.encryptionSalt
         })
       }
 
@@ -110,7 +115,8 @@ export class ConnectAdaptor implements AUTHAdapter {
 
         const { signer, walletAddress } = await eoaFallbackService.createSigner(
           {
-            API: this.API
+            API: this.API,
+            encryptionSalt: this.encryptionSalt
           }
         )
 

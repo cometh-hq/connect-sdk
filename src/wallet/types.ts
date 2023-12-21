@@ -124,3 +124,8 @@ export type ProjectParams = {
   singletonAddress: string
   simulateTxAcessorAddress: string
 }
+
+export type fallbackStorageValues = {
+  encryptedPrivateKey: string
+  iv: string
+}

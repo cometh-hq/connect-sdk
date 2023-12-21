@@ -87,3 +87,6 @@ export const challengePrefix = '226368616c6c656e6765223a'
 export const importSafeMessage = 'Use my wallet with Cometh Connect'
 
 export const ADD_OWNER_FUNCTION_SELECTOR = '0x0d582f13'
+
+export const defaultEncryptionSalt = 'COMETH-CONNECT'
+export const Pbkdf2Iterations = 1000000
