@@ -4,6 +4,7 @@ import { ethers, Wallet } from 'ethers'
 import { defaultEncryptionSalt, Pbkdf2Iterations } from '../constants'
 import * as cryptolib from '../services/cryptoService'
 import * as utils from '../utils/utils'
+import { fallbackStorageValues } from '../wallet/types'
 import { API } from './API'
 import { getRandomIV } from './randomIvService'
 import safeService from './safeService'
@@ -19,12 +20,11 @@ export const _setSignerLocalStorage = async (
     salt || defaultEncryptionSalt
   )
 
+  const storageValue = formatStorageValue(encryptedPrivateKey, iv)
+
   window.localStorage.setItem(
     `cometh-connect-fallback-${walletAddress}`,
-    JSON.stringify({
-      encryptedPrivateKey,
-      iv
-    })
+    storageValue
   )
 }
 
@@ -50,7 +50,7 @@ export const _getSignerLocalStorage = async (
   }
 
   if (localStorageV2) {
-    const { encryptedPrivateKey, iv } = JSON.parse(localStorageV2)
+    const { encryptedPrivateKey, iv } = unFormatStorageValue(localStorageV2)
 
     const privateKey = await decryptEoaFallback(
       walletAddress,
@@ -190,9 +190,25 @@ const decryptEoaFallback = async (
   return utils.decodeUTF8(privateKey)
 }
 
+const formatStorageValue = (
+  encryptedPrivateKey: string,
+  iv: string
+): string => {
+  return JSON.stringify({
+    encryptedPrivateKey,
+    iv
+  })
+}
+
+const unFormatStorageValue = (storageValue: string): fallbackStorageValues => {
+  return JSON.parse(storageValue)
+}
+
 export default {
   createSigner,
   getSigner,
   encryptEoaFallback,
-  decryptEoaFallback
+  decryptEoaFallback,
+  formatStorageValue,
+  unFormatStorageValue
 }

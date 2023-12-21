@@ -6,7 +6,8 @@ import eoaFallbackService from './eoaFallbackService'
 import { getRandomIV } from './randomIvService'
 
 const WALLET_ADDRESS = '0x5B76Bb156C4E9Aa322143d0061AFBd856482648D'
-
+const privateKey =
+  '0x58476d0865927d3536ee46ad35d36899e5e362cf0825800f453f6ef7c8547dbe'
 const testIV = new Uint8Array([
   74, 70, 19, 207, 45, 206, 152, 66, 214, 94, 45, 178, 126, 78, 230, 34
 ])
@@ -29,8 +30,6 @@ describe('eoaFallbackService', () => {
   })
 
   describe('encryptEoaFallback', () => {
-    const privateKey =
-      '0x58476d0865927d3536ee46ad35d36899e5e362cf0825800f453f6ef7c8547dbe'
     it('Given a walletAddress privateKey and base salt, when encrypting privateKey, then return the correct encrypted key', async () => {
       const { encryptedPrivateKey, iv } =
         await eoaFallbackService.encryptEoaFallback(
@@ -63,6 +62,34 @@ describe('eoaFallbackService', () => {
       expect(privateKey).toBe(
         '0x58476d0865927d3536ee46ad35d36899e5e362cf0825800f453f6ef7c8547dbe'
       )
+    })
+  })
+
+  describe('formatStorageValue', () => {
+    const encryptedPrivateKey =
+      '93OuZvzQhfsUPuxGnJ4FLIw0P4wrGFw3E0HiaH1rfRqWQFvXoYRREWG00g5FpahVSEfU'
+    const iv = 'SkYTzy3OmELWXi2yfk7mIg=='
+    it('Given a walletAddress privateKey and base salt, when encrypting privateKey, then return the correct encrypted key', async () => {
+      const storageValue = eoaFallbackService.formatStorageValue(
+        encryptedPrivateKey,
+        iv
+      )
+
+      expect(storageValue).toEqual(JSON.stringify({ encryptedPrivateKey, iv }))
+    })
+  })
+
+  describe('unformatStorageValue', () => {
+    const encryptedPrivateKey =
+      '93OuZvzQhfsUPuxGnJ4FLIw0P4wrGFw3E0HiaH1rfRqWQFvXoYRREWG00g5FpahVSEfU'
+    const iv = 'SkYTzy3OmELWXi2yfk7mIg=='
+    const storageValue = JSON.stringify({ encryptedPrivateKey, iv })
+
+    it('Given a walletAddress privateKey and base salt, when encrypting privateKey, then return the correct encrypted key', async () => {
+      const unformattedStorageValue =
+        eoaFallbackService.unFormatStorageValue(storageValue)
+
+      expect(unformattedStorageValue).toEqual(JSON.parse(storageValue))
     })
   })
 })
