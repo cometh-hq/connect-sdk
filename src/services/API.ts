@@ -16,10 +16,9 @@ import {
 export class API {
   private readonly api: AxiosInstance
 
-  constructor(apiKey: string, chainId: number, baseUrl?: string) {
+  constructor(apiKey: string, baseUrl?: string) {
     this.api = axios.create({ baseURL: baseUrl || API_URL })
     this.api.defaults.headers.common['apikey'] = apiKey
-    this.api.defaults.headers.common['chainId'] = chainId
   }
 
   async getProjectParams(): Promise<{

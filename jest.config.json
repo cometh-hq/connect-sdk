@@ -1,6 +1,6 @@
 {
   "roots": ["<rootDir>/"],
-  "testMatch": ["**/?(*.)+(spec|test).+(ts|tsx|js)"],
+  "testMatch": ["**/?(*.)+(spec|test).+(ts|tsx)"],
   "transform": {
     "\\.(ts)$": "ts-jest"
   },
@@ -9,6 +9,7 @@
       "isolatedModules": true
     }
   },
+  "setupFiles": ["<rootDir>/jest.setup.ts"],
   "modulePathIgnorePatterns": ["<rootDir>/build"],
   "moduleNameMapper": {
     "@/(.*)": "<rootDir>/src/$1"

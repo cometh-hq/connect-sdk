@@ -12,7 +12,7 @@ export class IConnectionSigning {
 
   constructor(chainId: string, apiKey: string, baseUrl?: string) {
     this.chainId = chainId!
-    this.API = new API(apiKey, +chainId, baseUrl)
+    this.API = new API(apiKey, baseUrl)
   }
 
   async signAndConnect(
