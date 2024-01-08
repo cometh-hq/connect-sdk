@@ -48,12 +48,17 @@ export class ComethWallet {
   private walletAddress?: string
   public signer?: JsonRpcSigner | Wallet | WebAuthnSigner
   private projectParams?: ProjectParams
+  private uiConfig: UIConfig
 
-  private uiConfig: UIConfig = {
-    displayValidationModal: true
-  }
-
-  constructor({ authAdapter, apiKey, rpcUrl, baseUrl }: WalletConfig) {
+  constructor({
+    authAdapter,
+    apiKey,
+    rpcUrl,
+    baseUrl,
+    uiConfig = {
+      displayValidationModal: true
+    }
+  }: WalletConfig) {
     this.authAdapter = authAdapter
     this.chainId = +authAdapter.chainId
     this.API = new API(apiKey, baseUrl)
@@ -62,6 +67,7 @@ export class ComethWallet {
     )
     this.BASE_GAS = DEFAULT_BASE_GAS_WEBAUTHN
     this.REWARD_PERCENTILE = DEFAULT_REWARD_PERCENTILE
+    this.uiConfig = uiConfig
   }
 
   /**
