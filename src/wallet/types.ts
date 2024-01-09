@@ -72,6 +72,7 @@ export type WebAuthnSigner = {
   publicKeyY: string
   signerAddress: string
   deviceData: DeviceData
+  deploymentParams: WebAuthnDeploymentParams
 }
 
 export type UIConfig = {
@@ -128,4 +129,16 @@ export type ProjectParams = {
 export type fallbackStorageValues = {
   encryptedPrivateKey: string
   iv: string
+}
+
+export enum WebauthnVersion {
+  V1 = 'v1.0',
+  V2 = 'v2.0'
+}
+
+export type WebAuthnDeploymentParams = {
+  version: WebauthnVersion
+  P256FactoryContract: string
+  P256SignerContractAddress?: string
+  P256SignerCreationCode?: string
 }

@@ -12,7 +12,6 @@ import {
   NewSignerRequest,
   NewSignerRequestBody,
   NewSignerRequestType,
-  ProjectParams,
   SupportedNetworks,
   WalletInfos
 } from '../types'
@@ -37,7 +36,6 @@ export class ConnectAdaptor implements AUTHAdapter {
   private provider: StaticJsonRpcProvider
   private walletAddress?: string
   private passkeyName?: string
-  private projectParams?: ProjectParams
 
   constructor({
     chainId,
@@ -59,8 +57,6 @@ export class ConnectAdaptor implements AUTHAdapter {
   }
 
   async connect(walletAddress?: string): Promise<void> {
-    this.projectParams = await this.API.getProjectParams()
-
     const isWebAuthnCompatible = await webAuthnService.isWebAuthnCompatible()
 
     if (walletAddress) {
@@ -275,13 +271,16 @@ export class ConnectAdaptor implements AUTHAdapter {
   }
 
   async waitWebAuthnSignerDeployment(
+    publicKey_Id: string,
     publicKey_X: string,
     publicKey_Y: string
   ): Promise<void> {
-    if (!this.projectParams) throw new Error('No project Params found')
+    const webAuthnSigner = await this.API.getWebAuthnSignerByPublicKeyId(
+      publicKey_Id
+    )
 
     await webAuthnService.waitWebAuthnSignerDeployment(
-      this.projectParams.P256FactoryContractAddress,
+      webAuthnSigner.deploymentParams.P256FactoryContract,
       publicKey_X,
       publicKey_Y,
       this.provider
