@@ -270,19 +270,15 @@ export class ConnectAdaptor implements AUTHAdapter {
     return await this.API.getNewSignerRequests(walletAddress)
   }
 
-  async waitWebAuthnSignerDeployment(
-    publicKey_Id: string,
-    publicKey_X: string,
-    publicKey_Y: string
-  ): Promise<void> {
+  async waitWebAuthnSignerDeployment(publicKeyId: string): Promise<void> {
     const webAuthnSigner = await this.API.getWebAuthnSignerByPublicKeyId(
-      publicKey_Id
+      publicKeyId
     )
 
     await webAuthnService.waitWebAuthnSignerDeployment(
       webAuthnSigner.deploymentParams.P256FactoryContract,
-      publicKey_X,
-      publicKey_Y,
+      webAuthnSigner.publicKeyX,
+      webAuthnSigner.publicKeyY,
       this.provider
     )
   }
