@@ -4,7 +4,7 @@ export enum RelayStatus {
 
 export enum SupportedNetworks {
   POLYGON = '0x89',
-  MUMBAI = '0x013881',
+  MUMBAI = '0x13881',
   AVALANCHE = '0xa86a',
   FUJI = '0xa869',
   GNOSIS = '0x64',
