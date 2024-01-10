@@ -62,6 +62,10 @@ export interface WalletUiConfig {
   displayValidationModal: boolean
 }
 
+export type WebAuthnDeploymentParams = {
+  P256FactoryContract: string
+}
+
 export type WebAuthnSigner = {
   projectId: string
   userId: string
@@ -72,6 +76,7 @@ export type WebAuthnSigner = {
   publicKeyY: string
   signerAddress: string
   deviceData: DeviceData
+  deploymentParams: WebAuthnDeploymentParams
 }
 
 export type UIConfig = {
