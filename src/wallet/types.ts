@@ -94,18 +94,27 @@ export enum WebAuthnAuthenticatorAttachment {
   CROSS_PLATFORM = 'cross-platform'
 }
 
-export enum WebAuthnResidentKeyRequirement {
-  REQUIRED = 'required',
-  DISCOURAGED = 'discouraged',
-  PREFERRED = 'preferred'
-}
+export type WebAuthnResidentKeyRequirement =
+  | 'required'
+  | 'discouraged'
+  | 'preferred'
+
+export type WebAuthnUserVerification = 'required' | 'discouraged' | 'preferred'
+
+export type WebAuthnUserVerificationRequirement =
+  | 'discouraged'
+  | 'preferred'
+  | 'required'
 
 export interface webAuthnOptions {
   name?: string
   authenticatorSelection?: {
     authenticatorAttachment?: WebAuthnAuthenticatorAttachment
+    userVerification?: WebAuthnUserVerificationRequirement
+    requireResidentKey?: boolean
     residentKey?: WebAuthnResidentKeyRequirement
   }
+  extensions?: AuthenticationExtensionsClientInputs
 }
 
 export type DeviceData = {

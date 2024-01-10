@@ -43,8 +43,9 @@ const createCredential = async (
   const challenge = new TextEncoder().encode('credentialCreation')
   const name = webAuthnOptions?.name || 'Cometh Connect'
   const authenticatorSelection = webAuthnOptions?.authenticatorSelection || {
-    authenticatorAttachment: 'platform'
+    authenticatorAttachment: WebAuthnAuthenticatorAttachment.PLATFORM
   }
+  const extensions = webAuthnOptions?.extensions
 
   const webAuthnCredentials: any = await navigator.credentials.create({
     publicKey: {
@@ -57,7 +58,8 @@ const createCredential = async (
       authenticatorSelection,
       timeout: 20000,
       challenge,
-      pubKeyCredParams: [{ alg: -7, type: 'public-key' }]
+      pubKeyCredParams: [{ alg: -7, type: 'public-key' }],
+      extensions
     }
   })
 
@@ -85,6 +87,7 @@ const sign = async (
       challenge,
       rpId: _formatSigningRpId(),
       allowCredentials: publicKeyCredential || [],
+      userVerification: 'required',
       timeout: 20000
     }
   })
@@ -160,8 +163,9 @@ const isWebAuthnCompatible = async (
     if (!window.PublicKeyCredential) return false
 
     if (
-      webAuthnOptions?.authenticatorSelection?.authenticatorAttachment !==
-      WebAuthnAuthenticatorAttachment.CROSS_PLATFORM
+      !webAuthnOptions?.authenticatorSelection?.authenticatorAttachment ||
+      webAuthnOptions?.authenticatorSelection?.authenticatorAttachment ===
+        WebAuthnAuthenticatorAttachment.PLATFORM
     ) {
       const isUserVerifyingPlatformAuthenticatorAvailable =
         await PublicKeyCredential.isUserVerifyingPlatformAuthenticatorAvailable()
