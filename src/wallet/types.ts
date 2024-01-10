@@ -72,6 +72,11 @@ export type SendTransactionResponse = {
   safeTxHash: string
 }
 
+export type TransactionStatus = {
+  hash: string
+  status: string
+}
+
 export type WebAuthnDeploymentParams = {
   P256FactoryContract: string
 }

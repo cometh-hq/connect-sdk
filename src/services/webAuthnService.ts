@@ -58,10 +58,9 @@ const createCredential = async (
       },
       attestation: 'none',
       authenticatorSelection,
-      timeout: 20000,
+      timeout: 30000,
       challenge,
       pubKeyCredParams: [{ alg: -7, type: 'public-key' }]
-      /*       extensions: { credProps: true } */
     }
   })
 
@@ -90,7 +89,7 @@ const sign = async (
       rpId: _formatSigningRpId(),
       allowCredentials: publicKeyCredential || [],
       userVerification: 'required',
-      timeout: 20000
+      timeout: 30000
     }
   })
 
