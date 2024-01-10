@@ -125,6 +125,26 @@ const prepareRemoveOwnerTx = async (
   owner: string,
   provider: StaticJsonRpcProvider
 ): Promise<MetaTransaction> => {
+  const prevOwner = await getSafePreviousOwner(walletAddress, owner, provider)
+
+  const tx = {
+    to: walletAddress,
+    value: '0x0',
+    data: SafeInterface.encodeFunctionData('removeOwner', [
+      prevOwner,
+      owner,
+      1
+    ]),
+    operation: 0
+  }
+  return tx
+}
+
+const getSafePreviousOwner = async (
+  walletAddress: string,
+  owner: string,
+  provider: StaticJsonRpcProvider
+): Promise<string> => {
   const ownerList = await getOwners(walletAddress, provider)
   const index = ownerList.findIndex((ownerToFind) => ownerToFind == owner)
 
@@ -138,17 +158,7 @@ const prepareRemoveOwnerTx = async (
     prevOwner = getAddress(hexZeroPad(SAFE_SENTINEL_OWNERS, 20))
   }
 
-  const tx = {
-    to: walletAddress,
-    value: '0x0',
-    data: SafeInterface.encodeFunctionData('removeOwner', [
-      prevOwner,
-      owner,
-      1
-    ]),
-    operation: 0
-  }
-  return tx
+  return prevOwner
 }
 
 const formatWebAuthnSignatureForSafe = (
@@ -252,6 +262,7 @@ export default {
   isSafeOwner,
   getOwners,
   prepareAddOwnerTx,
+  getSafePreviousOwner,
   prepareRemoveOwnerTx,
   formatWebAuthnSignatureForSafe,
   getSafeTransactionHash,
