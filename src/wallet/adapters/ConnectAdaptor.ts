@@ -58,17 +58,8 @@ export class ConnectAdaptor implements AUTHAdapter {
       rpcUrl ?? networks[+this.chainId].RPCUrl
     )
     this.passKeyName = passKeyName
-    if (!webAuthnOptions) {
-      this.webAuthnOptions = {
-        authenticatorSelection: {
-          authenticatorAttachment: 'platform',
-          residentKey: 'preferred',
-          userVerification: 'preferred'
-        }
-      }
-    } else {
-      this.webAuthnOptions = webAuthnOptions
-    }
+    this.webAuthnOptions =
+      webAuthnOptions || webAuthnService.DEFAULT_WEBAUTHN_OPTIONS
   }
 
   async connect(walletAddress?: string): Promise<void> {

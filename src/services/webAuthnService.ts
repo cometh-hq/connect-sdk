@@ -15,6 +15,14 @@ import { ComethProvider } from '../wallet/ComethProvider'
 import deviceService from './deviceService'
 import safeService from './safeService'
 
+const DEFAULT_WEBAUTHN_OPTIONS: webAuthnOptions = {
+  authenticatorSelection: {
+    authenticatorAttachment: 'platform',
+    residentKey: 'preferred',
+    userVerification: 'preferred'
+  }
+}
+
 const _formatCreatingRpId = (): { name: string; id?: string } => {
   return psl.parse(window.location.host).domain
     ? {
@@ -385,6 +393,7 @@ const retrieveWalletAddressFromSigner = async (API: API): Promise<string> => {
 }
 
 export default {
+  DEFAULT_WEBAUTHN_OPTIONS,
   createCredential,
   sign,
   getWebAuthnSignature,
