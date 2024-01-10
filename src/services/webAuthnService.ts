@@ -10,7 +10,7 @@ import { BLOCK_EVENT_GAP, challengePrefix } from '../constants'
 import { P256SignerFactory__factory } from '../contracts/types/factories'
 import { API } from '../services'
 import * as utils from '../utils/utils'
-import { DeviceData, WebAuthnSigner } from '../wallet'
+import { DeviceData, webAuthnOptions, WebAuthnSigner } from '../wallet'
 import { ComethProvider } from '../wallet/ComethProvider'
 import deviceService from './deviceService'
 import safeService from './safeService'
@@ -25,33 +25,36 @@ const _formatCreatingRpId = (): { name: string; id?: string } => {
 }
 
 const _formatSigningRpId = (): string | undefined => {
-  return (
-    psl.parse(window.location.host).domain &&
-    psl.parse(window.location.host).domain
-  )
+  return psl.parse(window.location.host).domain || undefined
 }
 
 const createCredential = async (
-  passkeyName?: string
+  webAuthnOptions: webAuthnOptions,
+  passKeyName?: string
 ): Promise<{
   point: any
   id: string
 }> => {
   const curve = new EC('p256')
   const challenge = new TextEncoder().encode('credentialCreation')
+  const name = passKeyName || 'Cometh Connect'
+  const authenticatorSelection = webAuthnOptions?.authenticatorSelection
+  const extensions = webAuthnOptions?.extensions
 
   const webAuthnCredentials: any = await navigator.credentials.create({
     publicKey: {
       rp: _formatCreatingRpId(),
       user: {
         id: new TextEncoder().encode(v4()),
-        name: passkeyName ? passkeyName : 'Cometh Connect',
-        displayName: passkeyName ? passkeyName : 'Cometh Connect'
+        name,
+        displayName: name
       },
-      authenticatorSelection: { authenticatorAttachment: 'platform' },
-      timeout: 20000,
+      attestation: 'none',
+      authenticatorSelection,
+      timeout: 30000,
       challenge,
-      pubKeyCredParams: [{ alg: -7, type: 'public-key' }]
+      pubKeyCredParams: [{ alg: -7, type: 'public-key' }],
+      extensions
     }
   })
 
@@ -79,7 +82,8 @@ const sign = async (
       challenge,
       rpId: _formatSigningRpId(),
       allowCredentials: publicKeyCredential || [],
-      timeout: 20000
+      userVerification: 'required',
+      timeout: 30000
     }
   })
 
@@ -147,14 +151,21 @@ const waitWebAuthnSignerDeployment = async (
   return signerDeploymentEvent[0].args.signer
 }
 
-const isWebAuthnCompatible = async (): Promise<boolean> => {
+const isWebAuthnCompatible = async (
+  webAuthnOptions: webAuthnOptions
+): Promise<boolean> => {
   try {
     if (!window.PublicKeyCredential) return false
 
-    const isUserVerifyingPlatformAuthenticatorAvailable =
-      await PublicKeyCredential.isUserVerifyingPlatformAuthenticatorAvailable()
+    if (
+      webAuthnOptions?.authenticatorSelection?.authenticatorAttachment ===
+      'platform'
+    ) {
+      const isUserVerifyingPlatformAuthenticatorAvailable =
+        await PublicKeyCredential.isUserVerifyingPlatformAuthenticatorAvailable()
 
-    if (!isUserVerifyingPlatformAuthenticatorAvailable) return false
+      if (!isUserVerifyingPlatformAuthenticatorAvailable) return false
+    }
 
     return true
   } catch {
@@ -210,12 +221,14 @@ const _getWebauthnCredentialsInStorage = (
 
 const createSigner = async ({
   API,
+  webAuthnOptions,
   walletAddress,
-  passkeyName
+  passKeyName
 }: {
   API: API
+  webAuthnOptions: webAuthnOptions
   walletAddress?: string
-  passkeyName?: string
+  passKeyName?: string
 }): Promise<{
   publicKeyX: string
   publicKeyY: string
@@ -225,15 +238,20 @@ const createSigner = async ({
   walletAddress: string
 }> => {
   try {
-    const webAuthnCredentials = await createCredential(passkeyName)
+    const webAuthnCredentials = await createCredential(
+      webAuthnOptions,
+      passKeyName
+    )
 
     const publicKeyX = `0x${webAuthnCredentials.point.getX().toString(16)}`
     const publicKeyY = `0x${webAuthnCredentials.point.getY().toString(16)}`
     const publicKeyId = webAuthnCredentials.id
+
     const signerAddress = await API.predictWebAuthnSignerAddress({
       publicKeyX,
       publicKeyY
     })
+
     const deviceData = deviceService.getDeviceData()
     walletAddress = walletAddress
       ? walletAddress

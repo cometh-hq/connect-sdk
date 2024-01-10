@@ -13,7 +13,8 @@ import {
   NewSignerRequestBody,
   NewSignerRequestType,
   SupportedNetworks,
-  WalletInfos
+  WalletInfos,
+  webAuthnOptions
 } from '../types'
 import { AUTHAdapter } from './types'
 
@@ -22,42 +23,58 @@ export interface ConnectAdaptorConfig {
   apiKey: string
   disableEoaFallback?: boolean
   encryptionSalt?: string
-  passkeyName?: string
+  webAuthnOptions?: webAuthnOptions
+  passKeyName?: string
   rpcUrl?: string
   baseUrl?: string
 }
 
 export class ConnectAdaptor implements AUTHAdapter {
   private disableEoaFallback: boolean
+  private webAuthnOptions: webAuthnOptions
   private encryptionSalt?: string
   private signer?: WebAuthnSigner | Wallet
   readonly chainId: SupportedNetworks
   private API: API
   private provider: StaticJsonRpcProvider
   private walletAddress?: string
-  private passkeyName?: string
+  private passKeyName?: string
 
   constructor({
     chainId,
     apiKey,
     disableEoaFallback = false,
     encryptionSalt,
-    passkeyName,
+    passKeyName,
+    webAuthnOptions,
     rpcUrl,
     baseUrl
   }: ConnectAdaptorConfig) {
     this.disableEoaFallback = disableEoaFallback
     this.encryptionSalt = encryptionSalt
     this.chainId = chainId
-    this.passkeyName = passkeyName
     this.API = new API(apiKey, baseUrl)
     this.provider = new StaticJsonRpcProvider(
       rpcUrl ?? networks[+this.chainId].RPCUrl
     )
+    this.passKeyName = passKeyName
+    if (!webAuthnOptions) {
+      this.webAuthnOptions = {
+        authenticatorSelection: {
+          authenticatorAttachment: 'platform',
+          residentKey: 'preferred',
+          userVerification: 'preferred'
+        }
+      }
+    } else {
+      this.webAuthnOptions = webAuthnOptions
+    }
   }
 
   async connect(walletAddress?: string): Promise<void> {
-    const isWebAuthnCompatible = await webAuthnService.isWebAuthnCompatible()
+    const isWebAuthnCompatible = await webAuthnService.isWebAuthnCompatible(
+      this.webAuthnOptions
+    )
 
     if (walletAddress) {
       const wallet = await this.getWalletInfos(walletAddress)
@@ -93,7 +110,8 @@ export class ConnectAdaptor implements AUTHAdapter {
           walletAddress
         } = await webAuthnService.createSigner({
           API: this.API,
-          passkeyName: this.passkeyName
+          webAuthnOptions: this.webAuthnOptions,
+          passKeyName: this.passKeyName
         })
 
         this.signer = new WebAuthnSigner(publicKeyId, signerAddress)
@@ -155,7 +173,9 @@ export class ConnectAdaptor implements AUTHAdapter {
     } else {
       let requestBody
 
-      const isWebAuthnCompatible = await webAuthnService.isWebAuthnCompatible()
+      const isWebAuthnCompatible = await webAuthnService.isWebAuthnCompatible(
+        this.webAuthnOptions
+      )
 
       if (!isWebAuthnCompatible) {
         const { signer } = await eoaFallbackService.createSigner({
@@ -168,7 +188,7 @@ export class ConnectAdaptor implements AUTHAdapter {
           requestBody = await webAuthnService.createSigner({
             API: this.API,
             walletAddress,
-            passkeyName: this.passkeyName
+            webAuthnOptions: this.webAuthnOptions
           })
         } catch {
           throw new Error('Error in webAuthn creation')
@@ -224,9 +244,11 @@ export class ConnectAdaptor implements AUTHAdapter {
 
   async initNewSignerRequest(
     walletAddress: string,
-    passkeyName?: string
+    passKeyName?: string
   ): Promise<NewSignerRequestBody> {
-    const isWebAuthnCompatible = await webAuthnService.isWebAuthnCompatible()
+    const isWebAuthnCompatible = await webAuthnService.isWebAuthnCompatible(
+      this.webAuthnOptions
+    )
 
     let addNewSignerRequest
 
@@ -235,7 +257,8 @@ export class ConnectAdaptor implements AUTHAdapter {
         await webAuthnService.createSigner({
           API: this.API,
           walletAddress,
-          passkeyName
+          webAuthnOptions: this.webAuthnOptions,
+          passKeyName
         })
 
       addNewSignerRequest = {
