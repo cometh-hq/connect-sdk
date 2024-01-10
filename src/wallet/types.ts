@@ -101,7 +101,7 @@ export interface webAuthnOptions {
     requireResidentKey?: boolean
     residentKey?: ResidentKeyRequirement
   }
-  extensions?: AuthenticationExtensionsClientInputs
+  extensions?: any
 }
 
 export type DeviceData = {
