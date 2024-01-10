@@ -94,30 +94,12 @@ export type WebAuthnSigner = {
   deploymentParams: WebAuthnDeploymentParams
 }
 
-export enum WebAuthnAuthenticatorAttachment {
-  PLATFORM = 'platform',
-  CROSS_PLATFORM = 'cross-platform'
-}
-
-export type WebAuthnResidentKeyRequirement =
-  | 'required'
-  | 'discouraged'
-  | 'preferred'
-
-export type WebAuthnUserVerification = 'required' | 'discouraged' | 'preferred'
-
-export type WebAuthnUserVerificationRequirement =
-  | 'discouraged'
-  | 'preferred'
-  | 'required'
-
 export interface webAuthnOptions {
-  name?: string
   authenticatorSelection?: {
-    authenticatorAttachment?: WebAuthnAuthenticatorAttachment
-    userVerification?: WebAuthnUserVerificationRequirement
+    authenticatorAttachment?: AuthenticatorAttachment
+    userVerification?: UserVerificationRequirement
     requireResidentKey?: boolean
-    residentKey?: WebAuthnResidentKeyRequirement
+    residentKey?: ResidentKeyRequirement
   }
   extensions?: AuthenticationExtensionsClientInputs
 }
