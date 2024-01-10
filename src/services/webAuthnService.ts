@@ -43,9 +43,10 @@ const createCredential = async (
   const challenge = new TextEncoder().encode('credentialCreation')
   const name = webAuthnOptions?.name || 'Cometh Connect'
   const authenticatorSelection = webAuthnOptions?.authenticatorSelection || {
-    authenticatorAttachment: WebAuthnAuthenticatorAttachment.PLATFORM
+    authenticatorAttachment: WebAuthnAuthenticatorAttachment.PLATFORM,
+    residentKey: 'required',
+    userVerification: 'required'
   }
-  const extensions = webAuthnOptions?.extensions
 
   const webAuthnCredentials: any = await navigator.credentials.create({
     publicKey: {
@@ -55,11 +56,12 @@ const createCredential = async (
         name,
         displayName: name
       },
+      attestation: 'none',
       authenticatorSelection,
       timeout: 20000,
       challenge,
       pubKeyCredParams: [{ alg: -7, type: 'public-key' }],
-      extensions
+      extensions: { credProps: true }
     }
   })
 
