@@ -2,9 +2,14 @@ import { arrayify } from '@ethersproject/bytes'
 import { StaticJsonRpcProvider } from '@ethersproject/providers'
 import { pack as solidityPack } from '@ethersproject/solidity'
 import { ethers } from 'ethers'
+import { getAddress, hexZeroPad } from 'ethers/lib/utils'
 import { MetaTransaction } from 'ethers-multisend'
 
-import { BLOCK_EVENT_GAP, EIP712_SAFE_TX_TYPES } from '../constants'
+import {
+  BLOCK_EVENT_GAP,
+  EIP712_SAFE_TX_TYPES,
+  SAFE_SENTINEL_OWNERS
+} from '../constants'
 import { Safe__factory } from '../contracts/types/factories'
 import { SafeInterface } from '../contracts/types/Safe'
 import { ComethProvider } from '../wallet/ComethProvider'
@@ -110,14 +115,50 @@ const prepareAddOwnerTx = async (
       newOwner,
       1
     ]),
-    operation: 0,
-    safeTxGas: 0,
-    baseGas: 0,
-    gasPrice: 0,
-    gasToken: ethers.constants.AddressZero,
-    refundReceiver: ethers.constants.AddressZero
+    operation: 0
   }
   return tx
+}
+
+const prepareRemoveOwnerTx = async (
+  walletAddress: string,
+  owner: string,
+  provider: StaticJsonRpcProvider
+): Promise<MetaTransaction> => {
+  const prevOwner = await getSafePreviousOwner(walletAddress, owner, provider)
+
+  const tx = {
+    to: walletAddress,
+    value: '0x0',
+    data: SafeInterface.encodeFunctionData('removeOwner', [
+      prevOwner,
+      owner,
+      1
+    ]),
+    operation: 0
+  }
+  return tx
+}
+
+const getSafePreviousOwner = async (
+  walletAddress: string,
+  owner: string,
+  provider: StaticJsonRpcProvider
+): Promise<string> => {
+  const ownerList = await getOwners(walletAddress, provider)
+  const index = ownerList.findIndex((ownerToFind) => ownerToFind == owner)
+
+  if (index === -1) throw new Error('Address is not an owner of the wallet')
+
+  let prevOwner: string
+
+  if (index !== 0) {
+    prevOwner = getAddress(ownerList[index - 1])
+  } else {
+    prevOwner = getAddress(hexZeroPad(SAFE_SENTINEL_OWNERS, 20))
+  }
+
+  return prevOwner
 }
 
 const formatWebAuthnSignatureForSafe = (
@@ -221,6 +262,8 @@ export default {
   isSafeOwner,
   getOwners,
   prepareAddOwnerTx,
+  getSafePreviousOwner,
+  prepareRemoveOwnerTx,
   formatWebAuthnSignatureForSafe,
   getSafeTransactionHash,
   getTransactionsTotalValue,

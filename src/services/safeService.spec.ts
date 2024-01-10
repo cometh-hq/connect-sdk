@@ -1,5 +1,8 @@
+import { StaticJsonRpcProvider } from '@ethersproject/providers'
 import { BigNumber, ethers } from 'ethers'
+import { getAddress } from 'ethers/lib/utils'
 
+import { networks } from '../constants'
 import safeService from './safeService'
 
 const WALLET_ADDRESS = '0x5B76Bb156C4E9Aa322143d0061AFBd856482648D'
@@ -68,6 +71,65 @@ describe('safeService', () => {
       )
 
       expect(totalValue).toEqual((parseInt(value) * 3).toString())
+    })
+  })
+
+  describe('getSafePreviousOwner', () => {
+    const provider = new StaticJsonRpcProvider(networks[137].RPCUrl)
+
+    it('Given a walletAddress and owner to delete, when getting the previous owner, then return the right previous owner', async () => {
+      const walletAddress = '0x2702129f7a54d934Bd17C339332262CA648B81E6'
+
+      const owners = [
+        '0x7F76A0Db112E0609fD7a51C57227C2a0579e9E2F',
+        '0xe92899b2f663BA710Cc3bBc4552e248985fD8B85',
+        '0x858dacceb13da460e7a2e54171345C22A7F65aa8',
+        '0x65245F19c92ac5Adce53244406Ad126398EF203A'
+      ]
+
+      const ownerToDelete = owners[1]
+
+      const expectedPreviousOwner = getAddress(
+        '0x7f76a0db112e0609fd7a51c57227c2a0579e9e2f'
+      )
+
+      const prevOwner = await safeService.getSafePreviousOwner(
+        walletAddress,
+        ownerToDelete,
+        provider
+      )
+
+      expect(prevOwner).toEqual(expectedPreviousOwner)
+    })
+
+    it('Given a walletAddress and owner to delete, when getting the previous owner, then return the safe sentinel owner', async () => {
+      const walletAddress = '0x7760306C27AFbc4068bDfD4464ce54De5B7f62bc'
+
+      const owners = ['0x9Fe6efA832BbBcd7b4F23bDaC0032ba20CC40174']
+
+      const ownerToDelete = owners[0]
+
+      const expectedPreviousOwner = getAddress(
+        '0x0000000000000000000000000000000000000001'
+      )
+
+      const prevOwner = await safeService.getSafePreviousOwner(
+        walletAddress,
+        ownerToDelete,
+        provider
+      )
+
+      expect(prevOwner).toEqual(expectedPreviousOwner)
+    })
+
+    it('Given a walletAddress and owner to delete, when getting the previous owner from an invalid owner address, then throw the appropriate error', async () => {
+      const walletAddress = '0x7760306C27AFbc4068bDfD4464ce54De5B7f62bc'
+
+      const ownerToDelete = '0x0000000000000000000000000000000000000001'
+
+      await expect(
+        safeService.getSafePreviousOwner(walletAddress, ownerToDelete, provider)
+      ).rejects.toThrow(new Error('Address is not an owner of the wallet'))
     })
   })
 })
