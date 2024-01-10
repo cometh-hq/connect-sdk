@@ -13,7 +13,8 @@ import {
   NewSignerRequestBody,
   NewSignerRequestType,
   SupportedNetworks,
-  WalletInfos
+  WalletInfos,
+  webAuthnOptions
 } from '../types'
 import { AUTHAdapter } from './types'
 
@@ -22,7 +23,7 @@ export interface ConnectAdaptorConfig {
   apiKey: string
   disableEoaFallback?: boolean
   encryptionSalt?: string
-  passkeyName?: string
+  webAuthnOptions?: webAuthnOptions
   rpcUrl?: string
   baseUrl?: string
 }
@@ -35,21 +36,21 @@ export class ConnectAdaptor implements AUTHAdapter {
   private API: API
   private provider: StaticJsonRpcProvider
   private walletAddress?: string
-  private passkeyName?: string
+  private webAuthnOptions?: webAuthnOptions
 
   constructor({
     chainId,
     apiKey,
     disableEoaFallback = false,
     encryptionSalt,
-    passkeyName,
+    webAuthnOptions,
     rpcUrl,
     baseUrl
   }: ConnectAdaptorConfig) {
     this.disableEoaFallback = disableEoaFallback
     this.encryptionSalt = encryptionSalt
     this.chainId = chainId
-    this.passkeyName = passkeyName
+    this.webAuthnOptions = webAuthnOptions
     this.API = new API(apiKey, baseUrl)
     this.provider = new StaticJsonRpcProvider(
       rpcUrl ?? networks[+this.chainId].RPCUrl
@@ -57,7 +58,9 @@ export class ConnectAdaptor implements AUTHAdapter {
   }
 
   async connect(walletAddress?: string): Promise<void> {
-    const isWebAuthnCompatible = await webAuthnService.isWebAuthnCompatible()
+    const isWebAuthnCompatible = await webAuthnService.isWebAuthnCompatible(
+      this.webAuthnOptions
+    )
 
     if (walletAddress) {
       const wallet = await this.getWalletInfos(walletAddress)
@@ -93,7 +96,7 @@ export class ConnectAdaptor implements AUTHAdapter {
           walletAddress
         } = await webAuthnService.createSigner({
           API: this.API,
-          passkeyName: this.passkeyName
+          webAuthnOptions: this.webAuthnOptions
         })
 
         this.signer = new WebAuthnSigner(publicKeyId, signerAddress)
@@ -168,7 +171,7 @@ export class ConnectAdaptor implements AUTHAdapter {
           requestBody = await webAuthnService.createSigner({
             API: this.API,
             walletAddress,
-            passkeyName: this.passkeyName
+            webAuthnOptions: this.webAuthnOptions
           })
         } catch {
           throw new Error('Error in webAuthn creation')
@@ -224,7 +227,7 @@ export class ConnectAdaptor implements AUTHAdapter {
 
   async initNewSignerRequest(
     walletAddress: string,
-    passkeyName?: string
+    webAuthnOptions?: webAuthnOptions
   ): Promise<NewSignerRequestBody> {
     const isWebAuthnCompatible = await webAuthnService.isWebAuthnCompatible()
 
@@ -235,7 +238,7 @@ export class ConnectAdaptor implements AUTHAdapter {
         await webAuthnService.createSigner({
           API: this.API,
           walletAddress,
-          passkeyName
+          webAuthnOptions
         })
 
       addNewSignerRequest = {

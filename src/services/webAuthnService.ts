@@ -10,7 +10,12 @@ import { BLOCK_EVENT_GAP, challengePrefix } from '../constants'
 import { P256SignerFactory__factory } from '../contracts/types/factories'
 import { API } from '../services'
 import * as utils from '../utils/utils'
-import { DeviceData, WebAuthnSigner } from '../wallet'
+import {
+  DeviceData,
+  WebAuthnAuthenticatorAttachment,
+  webAuthnOptions,
+  WebAuthnSigner
+} from '../wallet'
 import { ComethProvider } from '../wallet/ComethProvider'
 import deviceService from './deviceService'
 import safeService from './safeService'
@@ -25,30 +30,31 @@ const _formatCreatingRpId = (): { name: string; id?: string } => {
 }
 
 const _formatSigningRpId = (): string | undefined => {
-  return (
-    psl.parse(window.location.host).domain &&
-    psl.parse(window.location.host).domain
-  )
+  return psl.parse(window.location.host).domain || undefined
 }
 
 const createCredential = async (
-  passkeyName?: string
+  webAuthnOptions?: webAuthnOptions
 ): Promise<{
   point: any
   id: string
 }> => {
   const curve = new EC('p256')
   const challenge = new TextEncoder().encode('credentialCreation')
+  const name = webAuthnOptions?.name || 'Cometh Connect'
+  const authenticatorSelection = webAuthnOptions?.authenticatorSelection || {
+    authenticatorAttachment: 'platform'
+  }
 
   const webAuthnCredentials: any = await navigator.credentials.create({
     publicKey: {
       rp: _formatCreatingRpId(),
       user: {
         id: new TextEncoder().encode(v4()),
-        name: passkeyName ? passkeyName : 'Cometh Connect',
-        displayName: passkeyName ? passkeyName : 'Cometh Connect'
+        name,
+        displayName: name
       },
-      authenticatorSelection: { authenticatorAttachment: 'platform' },
+      authenticatorSelection,
       timeout: 20000,
       challenge,
       pubKeyCredParams: [{ alg: -7, type: 'public-key' }]
@@ -147,14 +153,21 @@ const waitWebAuthnSignerDeployment = async (
   return signerDeploymentEvent[0].args.signer
 }
 
-const isWebAuthnCompatible = async (): Promise<boolean> => {
+const isWebAuthnCompatible = async (
+  webAuthnOptions?: webAuthnOptions
+): Promise<boolean> => {
   try {
     if (!window.PublicKeyCredential) return false
 
-    const isUserVerifyingPlatformAuthenticatorAvailable =
-      await PublicKeyCredential.isUserVerifyingPlatformAuthenticatorAvailable()
+    if (
+      webAuthnOptions?.authenticatorSelection?.authenticatorAttachment !==
+      WebAuthnAuthenticatorAttachment.CROSS_PLATFORM
+    ) {
+      const isUserVerifyingPlatformAuthenticatorAvailable =
+        await PublicKeyCredential.isUserVerifyingPlatformAuthenticatorAvailable()
 
-    if (!isUserVerifyingPlatformAuthenticatorAvailable) return false
+      if (!isUserVerifyingPlatformAuthenticatorAvailable) return false
+    }
 
     return true
   } catch {
@@ -211,11 +224,11 @@ const _getWebauthnCredentialsInStorage = (
 const createSigner = async ({
   API,
   walletAddress,
-  passkeyName
+  webAuthnOptions
 }: {
   API: API
   walletAddress?: string
-  passkeyName?: string
+  webAuthnOptions?: webAuthnOptions
 }): Promise<{
   publicKeyX: string
   publicKeyY: string
@@ -225,15 +238,21 @@ const createSigner = async ({
   walletAddress: string
 }> => {
   try {
-    const webAuthnCredentials = await createCredential(passkeyName)
+    const webAuthnCredentials = await createCredential(webAuthnOptions)
+    console.log({ webAuthnCredentials })
 
     const publicKeyX = `0x${webAuthnCredentials.point.getX().toString(16)}`
     const publicKeyY = `0x${webAuthnCredentials.point.getY().toString(16)}`
     const publicKeyId = webAuthnCredentials.id
+    console.log({ publicKeyX })
+    console.log({ publicKeyY })
+    console.log({ publicKeyId })
     const signerAddress = await API.predictWebAuthnSignerAddress({
       publicKeyX,
       publicKeyY
     })
+
+    console.log({ signerAddress })
     const deviceData = deviceService.getDeviceData()
     walletAddress = walletAddress
       ? walletAddress

@@ -1,5 +1,32 @@
-export enum RelayStatus {
-  MINED = 'mined'
+export type UIConfig = {
+  displayValidationModal: boolean
+}
+
+export type UserNonceType = {
+  walletAddress: string
+  connectionNonce: string
+}
+
+export type SponsoredTransaction = {
+  projectId: string
+  targetAddress: string
+}
+
+export type WalletInfos = {
+  address: string
+  connectionDate: Date
+  creationDate: Date
+  userId: string
+  initiatorAddress: string
+  initiatorAddressType: NewSignerRequestType
+}
+
+export type ProjectParams = {
+  chainId: string
+  P256FactoryContractAddress: string
+  multisendContractAddress: string
+  singletonAddress: string
+  simulateTxAcessorAddress: string
 }
 
 export enum SupportedNetworks {
@@ -35,31 +62,14 @@ export interface SafeTransactionDataPartial extends MetaTransactionData {
   readonly nonce?: number | string
 }
 
-export type UserNonceType = {
-  walletAddress: string
-  connectionNonce: string
-}
-export type SponsoredTransaction = {
-  projectId: string
-  targetAddress: string
-}
 export type RelayTransactionType = {
   safeTxData: SafeTransactionDataPartial
   signatures: string
   walletAddress: string
 }
 
-export type TransactionStatus = {
-  hash: string
-  status: string
-}
-
 export type SendTransactionResponse = {
   safeTxHash: string
-}
-
-export interface WalletUiConfig {
-  displayValidationModal: boolean
 }
 
 export type WebAuthnDeploymentParams = {
@@ -79,17 +89,23 @@ export type WebAuthnSigner = {
   deploymentParams: WebAuthnDeploymentParams
 }
 
-export type UIConfig = {
-  displayValidationModal: boolean
+export enum WebAuthnAuthenticatorAttachment {
+  PLATFORM = 'platform',
+  CROSS_PLATFORM = 'cross-platform'
 }
 
-export type WalletInfos = {
-  address: string
-  connectionDate: Date
-  creationDate: Date
-  userId: string
-  initiatorAddress: string
-  initiatorAddressType: NewSignerRequestType
+export enum WebAuthnResidentKeyRequirement {
+  REQUIRED = 'required',
+  DISCOURAGED = 'discouraged',
+  PREFERRED = 'preferred'
+}
+
+export interface webAuthnOptions {
+  name?: string
+  authenticatorSelection?: {
+    authenticatorAttachment?: WebAuthnAuthenticatorAttachment
+    residentKey?: WebAuthnResidentKeyRequirement
+  }
 }
 
 export type DeviceData = {
@@ -120,14 +136,6 @@ export type NewSignerRequest = NewSignerRequestBody & {
   projectId: string
   userId: string
   chainId: string
-}
-
-export type ProjectParams = {
-  chainId: string
-  P256FactoryContractAddress: string
-  multisendContractAddress: string
-  singletonAddress: string
-  simulateTxAcessorAddress: string
 }
 
 export type fallbackStorageValues = {
