@@ -239,20 +239,16 @@ const createSigner = async ({
 }> => {
   try {
     const webAuthnCredentials = await createCredential(webAuthnOptions)
-    console.log({ webAuthnCredentials })
 
     const publicKeyX = `0x${webAuthnCredentials.point.getX().toString(16)}`
     const publicKeyY = `0x${webAuthnCredentials.point.getY().toString(16)}`
     const publicKeyId = webAuthnCredentials.id
-    console.log({ publicKeyX })
-    console.log({ publicKeyY })
-    console.log({ publicKeyId })
+
     const signerAddress = await API.predictWebAuthnSignerAddress({
       publicKeyX,
       publicKeyY
     })
 
-    console.log({ signerAddress })
     const deviceData = deviceService.getDeviceData()
     walletAddress = walletAddress
       ? walletAddress
