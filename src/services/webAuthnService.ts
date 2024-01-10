@@ -29,7 +29,7 @@ const _formatSigningRpId = (): string | undefined => {
 }
 
 const createCredential = async (
-  webAuthnOptions?: webAuthnOptions,
+  webAuthnOptions: webAuthnOptions,
   passKeyName?: string
 ): Promise<{
   point: any
@@ -152,7 +152,7 @@ const waitWebAuthnSignerDeployment = async (
 }
 
 const isWebAuthnCompatible = async (
-  webAuthnOptions?: webAuthnOptions
+  webAuthnOptions: webAuthnOptions
 ): Promise<boolean> => {
   try {
     if (!window.PublicKeyCredential) return false
@@ -221,13 +221,13 @@ const _getWebauthnCredentialsInStorage = (
 
 const createSigner = async ({
   API,
-  walletAddress,
   webAuthnOptions,
+  walletAddress,
   passKeyName
 }: {
   API: API
+  webAuthnOptions: webAuthnOptions
   walletAddress?: string
-  webAuthnOptions?: webAuthnOptions
   passKeyName?: string
 }): Promise<{
   publicKeyX: string

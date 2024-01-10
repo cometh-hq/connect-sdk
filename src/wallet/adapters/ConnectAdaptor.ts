@@ -31,6 +31,7 @@ export interface ConnectAdaptorConfig {
 
 export class ConnectAdaptor implements AUTHAdapter {
   private disableEoaFallback: boolean
+  private webAuthnOptions: webAuthnOptions
   private encryptionSalt?: string
   private signer?: WebAuthnSigner | Wallet
   readonly chainId: SupportedNetworks
@@ -38,7 +39,6 @@ export class ConnectAdaptor implements AUTHAdapter {
   private provider: StaticJsonRpcProvider
   private walletAddress?: string
   private passKeyName?: string
-  private webAuthnOptions?: webAuthnOptions
 
   constructor({
     chainId,
@@ -173,7 +173,9 @@ export class ConnectAdaptor implements AUTHAdapter {
     } else {
       let requestBody
 
-      const isWebAuthnCompatible = await webAuthnService.isWebAuthnCompatible()
+      const isWebAuthnCompatible = await webAuthnService.isWebAuthnCompatible(
+        this.webAuthnOptions
+      )
 
       if (!isWebAuthnCompatible) {
         const { signer } = await eoaFallbackService.createSigner({
@@ -244,7 +246,9 @@ export class ConnectAdaptor implements AUTHAdapter {
     walletAddress: string,
     passKeyName?: string
   ): Promise<NewSignerRequestBody> {
-    const isWebAuthnCompatible = await webAuthnService.isWebAuthnCompatible()
+    const isWebAuthnCompatible = await webAuthnService.isWebAuthnCompatible(
+      this.webAuthnOptions
+    )
 
     let addNewSignerRequest
 
