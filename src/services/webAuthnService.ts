@@ -44,8 +44,8 @@ const createCredential = async (
   const name = webAuthnOptions?.name || 'Cometh Connect'
   const authenticatorSelection = webAuthnOptions?.authenticatorSelection || {
     authenticatorAttachment: WebAuthnAuthenticatorAttachment.PLATFORM,
-    residentKey: 'required',
-    userVerification: 'required'
+    residentKey: 'preferred',
+    userVerification: 'preferred'
   }
 
   const webAuthnCredentials: any = await navigator.credentials.create({
@@ -60,8 +60,8 @@ const createCredential = async (
       authenticatorSelection,
       timeout: 20000,
       challenge,
-      pubKeyCredParams: [{ alg: -7, type: 'public-key' }],
-      extensions: { credProps: true }
+      pubKeyCredParams: [{ alg: -7, type: 'public-key' }]
+      /*       extensions: { credProps: true } */
     }
   })
 
@@ -165,7 +165,7 @@ const isWebAuthnCompatible = async (
     if (!window.PublicKeyCredential) return false
 
     if (
-      !webAuthnOptions?.authenticatorSelection?.authenticatorAttachment ||
+      !webAuthnOptions?.authenticatorSelection ||
       webAuthnOptions?.authenticatorSelection?.authenticatorAttachment ===
         WebAuthnAuthenticatorAttachment.PLATFORM
     ) {
