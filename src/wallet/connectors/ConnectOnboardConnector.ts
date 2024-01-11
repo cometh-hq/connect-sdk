@@ -4,7 +4,7 @@ import { ethers } from 'ethers'
 import { AUTHAdapter } from '../adapters'
 import { ComethProvider } from '../ComethProvider'
 import { ComethWallet } from '../ComethWallet'
-import { WalletUiConfig } from '../types'
+import { UIConfig } from '../types'
 
 export type ConnectorConfig = {
   apiKey: string
@@ -12,7 +12,7 @@ export type ConnectorConfig = {
   walletAddress?: string
   rpcUrl?: string
   baseUrl?: string
-  uiConfig?: WalletUiConfig
+  uiConfig?: UIConfig
 }
 
 export function ConnectOnboardConnector({

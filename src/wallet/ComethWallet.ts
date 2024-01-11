@@ -119,13 +119,38 @@ export class ComethWallet {
   }
 
   public async addOwner(newOwner: string): Promise<SendTransactionResponse> {
-    const tx = await safeService.prepareAddOwnerTx(this.getAddress(), newOwner)
+    const tx = await safeService.prepareAddOwnerTx(
+      this.getAddress(),
+      newOwner,
+      this.provider
+    )
+
+    return await this.sendTransaction(tx)
+  }
+
+  public async removeOwner(owner: string): Promise<SendTransactionResponse> {
+    const tx = await safeService.prepareRemoveOwnerTx(
+      this.getAddress(),
+      owner,
+      this.provider
+    )
+
+    const localStorageSigner = window.localStorage.getItem(
+      `cometh-connect-${this.getAddress()}`
+    )
+
+    if (
+      localStorageSigner &&
+      JSON.parse(localStorageSigner).signerAddress === owner
+    )
+      window.localStorage.removeItem(`cometh-connect-${this.getAddress()}`)
 
     return await this.sendTransaction(tx)
   }
 
   public async getOwners(): Promise<string[]> {
-    if (!this.walletAddress) throw new Error('no wallet Address')
+    if (!this.walletAddress) throw new Error('wallet is not connected')
+
     return await safeService.getOwners(this.walletAddress, this.provider)
   }
 

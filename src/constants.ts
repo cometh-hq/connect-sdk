@@ -90,3 +90,5 @@ export const ADD_OWNER_FUNCTION_SELECTOR = '0x0d582f13'
 
 export const defaultEncryptionSalt = 'COMETH-CONNECT'
 export const Pbkdf2Iterations = 1000000
+
+export const SAFE_SENTINEL_OWNERS = '0x1'
