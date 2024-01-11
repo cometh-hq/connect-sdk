@@ -119,7 +119,11 @@ export class ComethWallet {
   }
 
   public async addOwner(newOwner: string): Promise<SendTransactionResponse> {
-    const tx = await safeService.prepareAddOwnerTx(this.getAddress(), newOwner)
+    const tx = await safeService.prepareAddOwnerTx(
+      this.getAddress(),
+      newOwner,
+      this.provider
+    )
 
     return await this.sendTransaction(tx)
   }

@@ -106,8 +106,14 @@ const getOwners = async (
 
 const prepareAddOwnerTx = async (
   walletAddress: string,
-  newOwner: string
+  newOwner: string,
+  provider: StaticJsonRpcProvider
 ): Promise<MetaTransaction> => {
+  const ownerList = await getOwners(walletAddress, provider)
+
+  if (ownerList.find((owner) => owner === newOwner))
+    throw new Error('Address is already owner of the smart wallet')
+
   const tx = {
     to: walletAddress,
     value: '0x0',
