@@ -99,10 +99,6 @@ export class ComethWallet {
     return this.sponsoredAddresses
   }
 
-  public getProjectParams(): ProjectParams | undefined {
-    return this.projectParams
-  }
-
   public getConnected(): boolean {
     return this.connected
   }
