@@ -95,6 +95,10 @@ export class ComethWallet {
     this.connected = true
   }
 
+  public getSponsoredAddresses(): SponsoredTransaction[] | undefined {
+    return this.sponsoredAddresses
+  }
+
   public getConnected(): boolean {
     return this.connected
   }
