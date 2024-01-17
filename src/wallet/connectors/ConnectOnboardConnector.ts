@@ -1,5 +1,4 @@
 import { WalletInit, WalletInterface, WalletModule } from '@web3-onboard/common'
-import { ethers } from 'ethers'
 
 import { AUTHAdapter } from '../adapters'
 import { ComethProvider } from '../ComethProvider'
@@ -36,7 +35,7 @@ export function ConnectOnboardConnector({
           apiKey,
           rpcUrl,
           baseUrl,
-          ...(uiConfig ?? { uiConfig })
+          uiConfig
         })
         const instanceProvider = new ComethProvider(instance)
 
@@ -50,7 +49,7 @@ export function ConnectOnboardConnector({
             return [address]
           },
           eth_chainId: async () => {
-            return ethers.utils.hexlify(instance.chainId)
+            return `0x${instance.chainId.toString(16)}`
           },
           eth_getBalance: async () => {
             const balance = await instanceProvider.getSigner().getBalance()

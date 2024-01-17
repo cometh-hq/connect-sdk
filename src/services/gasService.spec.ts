@@ -40,35 +40,29 @@ describe('gasService', () => {
   })
   describe('verifyHasEnoughBalance', () => {
     it('Given a low gas cost and txValue, when the wallet balance has enough to pay for gas and txValue, then resolve without throwing an error', async () => {
-      const safeTxGas = 10
-      const gasPrice = 10000000000
-      const baseGas = 80000
-      const txValue = '12345'
+      const totalGasCost = BigNumber.from(8000000)
+      const txValue = BigNumber.from('12345')
 
       await expect(
         gasService.verifyHasEnoughBalance(
           provider,
           WALLET_ADDRESS,
-          BigNumber.from(safeTxGas),
-          BigNumber.from(gasPrice),
-          baseGas,
-          txValue
+          BigNumber.from(totalGasCost),
+          BigNumber.from(txValue)
         )
       ).resolves.not.toThrow()
     })
     it('Given a low gas cost but high txValue, when the wallet balance does not have enough to pay for txValue, then throw an error', async () => {
-      const safeTxGas = 10
-      const gasPrice = 10
-      const baseGas = 80000
-      const txValue = ethers.utils.parseUnits('0.12345', 'ether').toString()
+      const totalGasCost = BigNumber.from(8000000)
+      const txValue = BigNumber.from(
+        ethers.utils.parseUnits('0.12345', 'ether').toString()
+      )
 
       await expect(
         gasService.verifyHasEnoughBalance(
           provider,
           WALLET_ADDRESS,
-          BigNumber.from(safeTxGas),
-          BigNumber.from(gasPrice),
-          baseGas,
+          totalGasCost,
           txValue
         )
       ).rejects.toThrow(
@@ -76,18 +70,16 @@ describe('gasService', () => {
       )
     })
     it('Given a high gas cost but low txValue, when the wallet balance does not have enough to pay for gas, then throw an error', async () => {
-      const safeTxGas = 10000000000
-      const gasPrice = 10000000000
-      const baseGas = 8000000000000000
-      const txValue = '12345'
+      const totalGasCost = BigNumber.from(800000000000000)
+      const txValue = BigNumber.from(
+        ethers.utils.parseUnits('0.12345', 'ether').toString()
+      )
 
       await expect(
         gasService.verifyHasEnoughBalance(
           provider,
           WALLET_ADDRESS,
-          BigNumber.from(safeTxGas),
-          BigNumber.from(gasPrice),
-          baseGas,
+          totalGasCost,
           txValue
         )
       ).rejects.toThrow(

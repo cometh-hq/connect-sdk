@@ -86,14 +86,12 @@ const estimateSafeTxGasWithSimulate = async (
     [simulateTxAcessorAddress, transactionDataToEstimate]
   )
 
-  const transactionToEstimateGas = {
-    to,
-    value: '0',
-    data: safeFunctionToEstimate
-  }
-
   try {
-    const encodedResponse = await provider.call(transactionToEstimateGas)
+    const encodedResponse = await provider.call({
+      to,
+      value: '0',
+      data: safeFunctionToEstimate
+    })
 
     const safeTxGas = _decodeSafeTxGas(encodedResponse)
 

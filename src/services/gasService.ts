@@ -36,14 +36,11 @@ const getTotalCost = async (
 const verifyHasEnoughBalance = async (
   provider: StaticJsonRpcProvider,
   walletAddress: string,
-  safeTxGas: BigNumber,
-  gasPrice: BigNumber,
-  baseGas: number,
-  txValue: string
+  totalGasCost: BigNumber,
+  txValue: BigNumber
 ): Promise<void> => {
   const walletBalance = await provider.getBalance(walletAddress)
-  const totalGasCost = await getTotalCost(safeTxGas, baseGas, gasPrice)
-  if (walletBalance.lt(totalGasCost.add(BigNumber.from(txValue))))
+  if (walletBalance.lt(totalGasCost.add(txValue)))
     throw new Error('Not enough balance to send this value and pay for gas')
 }
 
