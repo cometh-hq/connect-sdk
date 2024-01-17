@@ -265,22 +265,19 @@ export class ComethWallet {
   }
 
   public async displayModal(
-    safeTxGas: BigNumber,
-    gasPrice: BigNumber
+    totalGasCost: BigNumber,
+    txValue: BigNumber
   ): Promise<void> {
     const walletBalance = await this.provider.getBalance(this.getAddress())
-    const totalGasCost = await gasService.getTotalCost(
-      safeTxGas,
-      this.BASE_GAS,
-      gasPrice
-    )
+
+    const totalCost = totalGasCost.add(txValue)
 
     const displayedTotalBalance = (+ethers.utils.formatEther(
       ethers.utils.parseUnits(walletBalance.toString(), 'wei')
     )).toFixed(3)
 
     const displayedTotalGasCost = (+ethers.utils.formatEther(
-      ethers.utils.parseUnits(totalGasCost.toString(), 'wei')
+      ethers.utils.parseUnits(totalCost.toString(), 'wei')
     )).toFixed(3)
 
     if (
@@ -311,6 +308,49 @@ export class ComethWallet {
       gasToken: ethers.constants.AddressZero,
       refundReceiver: ethers.constants.AddressZero,
       nonce: await safeService.getNonce(this.getAddress(), this.getProvider())
+    }
+  }
+
+  public async estimateTxGasAndValue(
+    safeTxData: MetaTransaction | MetaTransaction[]
+  ): Promise<{
+    safeTxGas: BigNumber
+    gasPrice: BigNumber
+    totalGasCost: BigNumber
+    txValue: BigNumber
+  }> {
+    if (!this.projectParams) throw new Error('Project params are null')
+
+    const safeTxGas = await simulateTxService.estimateSafeTxGasWithSimulate(
+      this.getAddress(),
+      this.provider,
+      safeTxData,
+      this.projectParams.multisendContractAddress,
+      this.projectParams.singletonAddress,
+      this.projectParams.simulateTxAcessorAddress
+    )
+
+    const gasPrice = await gasService.getGasPrice(
+      this.provider,
+      this.REWARD_PERCENTILE
+    )
+    const txValue = BigNumber.from(
+      isMetaTransactionArray(safeTxData)
+        ? await safeService.getTransactionsTotalValue(safeTxData)
+        : safeTxData.value
+    )
+
+    const totalGasCost = await gasService.getTotalCost(
+      safeTxGas,
+      this.BASE_GAS,
+      gasPrice
+    )
+
+    return {
+      safeTxGas,
+      gasPrice,
+      totalGasCost,
+      txValue
     }
   }
 
@@ -353,33 +393,17 @@ export class ComethWallet {
     }
 
     if (!isSponsoredTransaction) {
-      const safeTxGas = await simulateTxService.estimateSafeTxGasWithSimulate(
-        this.getAddress(),
-        this.provider,
-        safeTxData,
-        this.projectParams.multisendContractAddress,
-        this.projectParams.singletonAddress,
-        this.projectParams.simulateTxAcessorAddress
-      )
-
-      const gasPrice = await gasService.getGasPrice(
-        this.provider,
-        this.REWARD_PERCENTILE
-      )
-      const txValue = isMetaTransactionArray(safeTxData)
-        ? await safeService.getTransactionsTotalValue(safeTxData)
-        : safeTxData.value
+      const { safeTxGas, gasPrice, totalGasCost, txValue } =
+        await this.estimateTxGasAndValue(safeTxData)
 
       await gasService.verifyHasEnoughBalance(
         this.provider,
         this.getAddress(),
-        safeTxGas,
-        gasPrice,
-        this.BASE_GAS,
+        totalGasCost,
         txValue
       )
       if (this.uiConfig.displayValidationModal) {
-        await this.displayModal(safeTxGas, gasPrice)
+        await this.displayModal(totalGasCost, txValue)
       }
 
       safeTxDataTyped.safeTxGas = +safeTxGas
