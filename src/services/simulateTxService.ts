@@ -94,11 +94,8 @@ const estimateSafeTxGasWithSimulate = async (
 
   try {
     const encodedResponse = await provider.call(transactionToEstimateGas)
-    console.log({ encodedResponse })
 
     const safeTxGas = _decodeSafeTxGas(encodedResponse)
-
-    console.log({ safeTxGas })
 
     return BigNumber.from(_addExtraGasForSafety(safeTxGas))
   } catch {
