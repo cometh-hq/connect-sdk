@@ -276,14 +276,14 @@ export class ComethWallet {
       ethers.utils.parseUnits(walletBalance.toString(), 'wei')
     )).toFixed(3)
 
-    const displayedTotalGasCost = (+ethers.utils.formatEther(
+    const displayedTotalCost = (+ethers.utils.formatEther(
       ethers.utils.parseUnits(totalCost.toString(), 'wei')
     )).toFixed(3)
 
     if (
       !(await new GasModal().initModal(
         displayedTotalBalance,
-        displayedTotalGasCost,
+        displayedTotalCost,
         networks[this.chainId].currency
       ))
     ) {
@@ -334,16 +334,17 @@ export class ComethWallet {
       this.provider,
       this.REWARD_PERCENTILE
     )
-    const txValue = BigNumber.from(
-      isMetaTransactionArray(safeTxData)
-        ? await safeService.getTransactionsTotalValue(safeTxData)
-        : safeTxData.value
-    )
 
     const totalGasCost = await gasService.getTotalCost(
       safeTxGas,
       this.BASE_GAS,
       gasPrice
+    )
+
+    const txValue = BigNumber.from(
+      isMetaTransactionArray(safeTxData)
+        ? await safeService.getTransactionsTotalValue(safeTxData)
+        : safeTxData.value
     )
 
     return {
@@ -352,6 +353,15 @@ export class ComethWallet {
       totalGasCost,
       txValue
     }
+  }
+
+  public async verifyHasEnoughBalance(totalGasCost, txValue): Promise<void> {
+    return await gasService.verifyHasEnoughBalance(
+      this.provider,
+      this.getAddress(),
+      totalGasCost,
+      txValue
+    )
   }
 
   public async buildTransaction(
@@ -396,12 +406,8 @@ export class ComethWallet {
       const { safeTxGas, gasPrice, totalGasCost, txValue } =
         await this.estimateTxGasAndValue(safeTxData)
 
-      await gasService.verifyHasEnoughBalance(
-        this.provider,
-        this.getAddress(),
-        totalGasCost,
-        txValue
-      )
+      await this.verifyHasEnoughBalance(totalGasCost, txValue)
+
       if (this.uiConfig.displayValidationModal) {
         await this.displayModal(totalGasCost, txValue)
       }
