@@ -99,7 +99,6 @@ const estimateSafeTxGasWithSimulate = async (
 
     return BigNumber.from(_addExtraGasForSafety(safeTxGas))
   } catch {
-    console.log('Impossible to determine gas...')
     throw new Error('Impossible to determine gas...')
   }
 }
