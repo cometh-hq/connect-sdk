@@ -99,6 +99,10 @@ export class ComethWallet {
     return this.sponsoredAddresses
   }
 
+  public getProjectParams(): ProjectParams | undefined {
+    return this.projectParams
+  }
+
   public getConnected(): boolean {
     return this.connected
   }
@@ -314,6 +318,49 @@ export class ComethWallet {
     }
   }
 
+  public async estimateTxGasAndValue(
+    safeTxData: MetaTransaction | MetaTransaction[]
+  ): Promise<{
+    safeTxGas: BigNumber
+    gasPrice: BigNumber
+    totalGasCost: BigNumber
+    txValue: BigNumber
+  }> {
+    if (!this.projectParams) throw new Error('Project params are null')
+
+    const safeTxGas = await simulateTxService.estimateSafeTxGasWithSimulate(
+      this.getAddress(),
+      this.provider,
+      safeTxData,
+      this.projectParams.multisendContractAddress,
+      this.projectParams.singletonAddress,
+      this.projectParams.simulateTxAcessorAddress
+    )
+
+    const gasPrice = await gasService.getGasPrice(
+      this.provider,
+      this.REWARD_PERCENTILE
+    )
+    const txValue = BigNumber.from(
+      isMetaTransactionArray(safeTxData)
+        ? await safeService.getTransactionsTotalValue(safeTxData)
+        : safeTxData.value
+    )
+
+    const totalGasCost = await gasService.getTotalCost(
+      safeTxGas,
+      this.BASE_GAS,
+      gasPrice
+    )
+
+    return {
+      safeTxGas,
+      gasPrice,
+      totalGasCost,
+      txValue
+    }
+  }
+
   public async buildTransaction(
     safeTxData: MetaTransaction | MetaTransaction[]
   ): Promise<SafeTransactionDataPartial> {
@@ -353,29 +400,13 @@ export class ComethWallet {
     }
 
     if (!isSponsoredTransaction) {
-      const safeTxGas = await simulateTxService.estimateSafeTxGasWithSimulate(
-        this.getAddress(),
-        this.provider,
-        safeTxData,
-        this.projectParams.multisendContractAddress,
-        this.projectParams.singletonAddress,
-        this.projectParams.simulateTxAcessorAddress
-      )
-
-      const gasPrice = await gasService.getGasPrice(
-        this.provider,
-        this.REWARD_PERCENTILE
-      )
-      const txValue = isMetaTransactionArray(safeTxData)
-        ? await safeService.getTransactionsTotalValue(safeTxData)
-        : safeTxData.value
+      const { safeTxGas, gasPrice, totalGasCost, txValue } =
+        await this.estimateTxGasAndValue(safeTxData)
 
       await gasService.verifyHasEnoughBalance(
         this.provider,
         this.getAddress(),
-        safeTxGas,
-        gasPrice,
-        this.BASE_GAS,
+        totalGasCost,
         txValue
       )
       if (this.uiConfig.displayValidationModal) {
