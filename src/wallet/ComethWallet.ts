@@ -265,22 +265,19 @@ export class ComethWallet {
   }
 
   public async displayModal(
-    safeTxGas: BigNumber,
-    gasPrice: BigNumber
+    totalGasCost: BigNumber,
+    txValue: BigNumber
   ): Promise<void> {
     const walletBalance = await this.provider.getBalance(this.getAddress())
-    const totalGasCost = await gasService.getTotalCost(
-      safeTxGas,
-      this.BASE_GAS,
-      gasPrice
-    )
+
+    const totalCost = totalGasCost.add(txValue)
 
     const displayedTotalBalance = (+ethers.utils.formatEther(
       ethers.utils.parseUnits(walletBalance.toString(), 'wei')
     )).toFixed(3)
 
     const displayedTotalGasCost = (+ethers.utils.formatEther(
-      ethers.utils.parseUnits(totalGasCost.toString(), 'wei')
+      ethers.utils.parseUnits(totalCost.toString(), 'wei')
     )).toFixed(3)
 
     if (
@@ -406,7 +403,7 @@ export class ComethWallet {
         txValue
       )
       if (this.uiConfig.displayValidationModal) {
-        await this.displayModal(safeTxGas, gasPrice)
+        await this.displayModal(totalGasCost, txValue)
       }
 
       safeTxDataTyped.safeTxGas = +safeTxGas
