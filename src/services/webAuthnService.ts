@@ -16,6 +16,7 @@ import deviceService from './deviceService'
 import safeService from './safeService'
 
 const DEFAULT_WEBAUTHN_OPTIONS: webAuthnOptions = {
+  // authenticatorSelection documentation can be found here: https://www.w3.org/TR/webauthn-2/#dictdef-authenticatorselectioncriteria
   authenticatorSelection: {
     authenticatorAttachment: 'platform',
     residentKey: 'preferred',
@@ -114,13 +115,7 @@ const getWebAuthnSignature = async (
 
   const rs = utils.derToRS(new Uint8Array(signature))
 
-  const challengeOffset =
-    utils.findSequence(
-      new Uint8Array(clientData),
-      utils.parseHex(challengePrefix)
-    ) +
-    12 +
-    1
+  const challengeOffset = utils.getChallengeOffset(clientData, challengePrefix)
 
   const encodedSignature = ethers.utils.defaultAbiCoder.encode(
     ['bytes', 'bytes', 'uint256', 'uint256[2]'],

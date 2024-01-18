@@ -44,6 +44,15 @@ export const findSequence = (arr, seq): number => {
   return -1
 }
 
+export const getChallengeOffset = (
+  clientData: any,
+  challengePrefix: string
+): number => {
+  return (
+    findSequence(new Uint8Array(clientData), parseHex(challengePrefix)) + 12 + 1
+  )
+}
+
 export const decodeUTF8 = (b: ArrayBuffer): string => {
   return new TextDecoder().decode(b)
 }
