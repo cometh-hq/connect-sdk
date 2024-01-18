@@ -1,5 +1,6 @@
 import { JsonRpcSigner } from '@ethersproject/providers'
-import { Bytes, ethers, Wallet } from 'ethers'
+import { Bytes, Wallet } from 'ethers'
+import { hashMessage } from 'ethers/lib/utils'
 import { SiweMessage } from 'siwe'
 
 import { EIP712_SAFE_MESSAGE_TYPE } from '../constants'
@@ -46,7 +47,7 @@ export class IConnectionSigning {
     signer: JsonRpcSigner | Wallet
   ): Promise<string> {
     if (typeof messageToSign === 'string') {
-      messageToSign = ethers.utils.hashMessage(messageToSign)
+      messageToSign = hashMessage(messageToSign)
     }
 
     if (!signer) throw new Error('Sign message: missing signer')

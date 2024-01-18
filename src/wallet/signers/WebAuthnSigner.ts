@@ -4,7 +4,8 @@ import {
   TypedDataDomain,
   TypedDataField
 } from '@ethersproject/abstract-signer'
-import { Bytes, ethers } from 'ethers'
+import { Bytes } from 'ethers'
+import { _TypedDataEncoder, keccak256 } from 'ethers/lib/utils'
 import _ from 'lodash'
 
 import { EIP712_SAFE_MESSAGE_TYPE, EIP712_SAFE_TX_TYPES } from '../../constants'
@@ -38,8 +39,8 @@ export class WebAuthnSigner extends Signer {
       throw new Error('types data not supported')
 
     const data = IS_SAFE_TX_TYPE
-      ? ethers.utils._TypedDataEncoder.hash(domain, types, value)
-      : ethers.utils.keccak256(value.message)
+      ? _TypedDataEncoder.hash(domain, types, value)
+      : keccak256(value.message)
 
     const publicKeyCredential: PublicKeyCredentialDescriptor[] = [
       {

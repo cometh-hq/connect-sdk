@@ -2,7 +2,7 @@ import { StaticJsonRpcProvider } from '@ethersproject/providers'
 import { parseAuthenticatorData } from '@simplewebauthn/server/helpers'
 import CBOR from 'cbor-js'
 import { ec as EC } from 'elliptic'
-import { ethers } from 'ethers'
+import { defaultAbiCoder, hashMessage, keccak256 } from 'ethers/lib/utils'
 import psl from 'psl'
 import { v4 } from 'uuid'
 
@@ -117,7 +117,7 @@ const getWebAuthnSignature = async (
 
   const challengeOffset = utils.getChallengeOffset(clientData, challengePrefix)
 
-  const encodedSignature = ethers.utils.defaultAbiCoder.encode(
+  const encodedSignature = defaultAbiCoder.encode(
     ['bytes', 'bytes', 'uint256', 'uint256[2]'],
     [
       utils.hexArrayStr(authenticatorData),
@@ -194,7 +194,7 @@ const signWithWebAuthn = async (
   }
 
   const { encodedSignature, publicKeyId } = await getWebAuthnSignature(
-    ethers.utils.keccak256(ethers.utils.hashMessage(challenge)),
+    keccak256(hashMessage(challenge)),
     publicKeyCredentials
   )
 
@@ -256,9 +256,7 @@ const createSigner = async ({
     })
 
     const deviceData = deviceService.getDeviceData()
-    walletAddress = walletAddress
-      ? walletAddress
-      : await API.getWalletAddress(signerAddress)
+    walletAddress = walletAddress || (await API.getWalletAddress(signerAddress))
 
     /* Store WebAuthn credentials in storage */
     _setWebauthnCredentialsInStorage(walletAddress, publicKeyId, signerAddress)

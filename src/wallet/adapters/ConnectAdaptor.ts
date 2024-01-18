@@ -1,5 +1,6 @@
 import { StaticJsonRpcProvider } from '@ethersproject/providers'
-import { ethers, Wallet } from 'ethers'
+import { Wallet } from 'ethers'
+import { isAddress } from 'ethers/lib/utils'
 
 import { importSafeMessage, networks } from '../../constants'
 import { API } from '../../services'
@@ -206,7 +207,7 @@ export class ConnectAdaptor implements AUTHAdapter {
   }
 
   async getWalletInfos(walletAddress: string): Promise<WalletInfos> {
-    if (!ethers.utils.isAddress(walletAddress)) {
+    if (!isAddress(walletAddress)) {
       throw new Error('Invalid address format')
     }
 
@@ -262,7 +263,7 @@ export class ConnectAdaptor implements AUTHAdapter {
         publicKeyY
       }
     } else {
-      this.signer = ethers.Wallet.createRandom()
+      this.signer = Wallet.createRandom()
       window.localStorage.setItem(
         `cometh-connect-${walletAddress}`,
         this.signer.privateKey

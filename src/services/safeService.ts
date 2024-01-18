@@ -1,8 +1,13 @@
 import { arrayify } from '@ethersproject/bytes'
 import { StaticJsonRpcProvider } from '@ethersproject/providers'
 import { pack as solidityPack } from '@ethersproject/solidity'
-import { ethers } from 'ethers'
-import { getAddress, hexValue, hexZeroPad } from 'ethers/lib/utils'
+import {
+  _TypedDataEncoder,
+  defaultAbiCoder,
+  getAddress,
+  hexValue,
+  hexZeroPad
+} from 'ethers/lib/utils'
 import { MetaTransaction } from 'ethers-multisend'
 
 import {
@@ -176,7 +181,7 @@ const formatWebAuthnSignatureForSafe = (
   const dataOffsetInBytes = 65
 
   // signature verifier and data position
-  const verifierAndDataPosition = ethers.utils.defaultAbiCoder.encode(
+  const verifierAndDataPosition = defaultAbiCoder.encode(
     ['uint256', 'uint256'],
     [signerAddress, dataOffsetInBytes]
   )
@@ -201,7 +206,7 @@ const getSafeTransactionHash = (
   transactionData: SafeTransactionDataPartial,
   chainId: number
 ): string => {
-  return ethers.utils._TypedDataEncoder.hash(
+  return _TypedDataEncoder.hash(
     {
       chainId,
       verifyingContract: walletAddress
