@@ -4,6 +4,7 @@ import { pack as solidityPack } from '@ethersproject/solidity'
 import { BigNumber } from 'ethers'
 import { MetaTransaction } from 'ethers-multisend'
 
+import { MAX_TRIES_SAFETXGAS } from '../constants'
 import {
   Multisend__factory,
   Safe__factory,
@@ -12,7 +13,7 @@ import {
 import { MultisendInterface } from '../contracts/types/Multisend'
 import { SafeInterface } from '../contracts/types/Safe'
 import { SimulateTxAcessorInterface } from '../contracts/types/SimulateTxAcessor'
-import { isMetaTransactionArray } from '../utils/utils'
+import { isMetaTransactionArray, wait } from '../utils/utils'
 import safeService from './safeService'
 
 const MultisendContract: MultisendInterface =
@@ -86,19 +87,25 @@ const estimateSafeTxGasWithSimulate = async (
     [simulateTxAcessorAddress, transactionDataToEstimate]
   )
 
-  try {
-    const encodedResponse = await provider.call({
+  let encodedResponse
+  let safeTxGasCalculationTries = 0
+
+  while (!encodedResponse && safeTxGasCalculationTries < MAX_TRIES_SAFETXGAS) {
+    await wait(1000)
+    safeTxGasCalculationTries++
+
+    encodedResponse = await provider.call({
       to,
       value: '0',
       data: safeFunctionToEstimate
     })
-
-    const safeTxGas = _decodeSafeTxGas(encodedResponse)
-
-    return BigNumber.from(_addExtraGasForSafety(safeTxGas))
-  } catch {
-    throw new Error('Impossible to determine gas...')
   }
+
+  if (!encodedResponse) throw new Error('Impossible to determine gas...')
+
+  const safeTxGas = _decodeSafeTxGas(encodedResponse)
+
+  return BigNumber.from(_addExtraGasForSafety(safeTxGas))
 }
 
 function _decodeSafeTxGas(encodedSafeTxGas: string): string {

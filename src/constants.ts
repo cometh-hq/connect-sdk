@@ -88,6 +88,7 @@ export const EIP712_SAFE_TX_TYPES = {
   ]
 }
 export const challengePrefix = '226368616c6c656e6765223a'
+export const MAX_TRIES_SAFETXGAS = 5
 
 export const importSafeMessage = 'Use my wallet with Cometh Connect'
 
