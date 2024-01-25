@@ -1,5 +1,5 @@
 import { StaticJsonRpcProvider } from '@ethersproject/providers'
-import { ethers, Wallet } from 'ethers'
+import { Wallet } from 'ethers'
 
 import { defaultEncryptionSalt, Pbkdf2Iterations } from '../constants'
 import * as cryptolib from '../services/cryptoService'
@@ -74,7 +74,7 @@ export const createSigner = async ({
   encryptionSalt?: string
   walletAddress?: string
 }): Promise<{ signer: Wallet; walletAddress: string }> => {
-  const signer = ethers.Wallet.createRandom()
+  const signer = Wallet.createRandom()
 
   // if import external safe wallet
   if (walletAddress) {
@@ -119,7 +119,7 @@ export const getSigner = async ({
       'New Domain detected. You need to add that domain as signer.'
     )
 
-  const storageSigner = new ethers.Wallet(storagePrivateKey)
+  const storageSigner = new Wallet(storagePrivateKey)
 
   const isOwner = await safeService.isSigner(
     storageSigner.address,

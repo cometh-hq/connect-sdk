@@ -1,4 +1,4 @@
-import { ethers, Wallet } from 'ethers'
+import { Wallet } from 'ethers'
 
 import { IConnectionSigning } from '../IConnectionSigning'
 import { SupportedNetworks } from '../types'
@@ -21,9 +21,9 @@ export class BurnerWalletAdaptor
     )
 
     if (currentPrivateKey) {
-      this.wallet = new ethers.Wallet(currentPrivateKey)
+      this.wallet = new Wallet(currentPrivateKey)
     } else {
-      this.wallet = ethers.Wallet.createRandom()
+      this.wallet = Wallet.createRandom()
       window.localStorage.setItem(
         'burner-wallet-private-key',
         this.wallet.privateKey

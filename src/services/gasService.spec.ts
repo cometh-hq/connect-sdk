@@ -3,7 +3,8 @@ jest.doMock('../constants', () => ({
   GAS_GAP_TOLERANCE
 }))
 
-import { BigNumber, ethers } from 'ethers'
+import { BigNumber } from 'ethers'
+import { parseUnits } from 'ethers/lib/utils'
 
 import stubProvider from '../tests/unit/stubProvider'
 import gasService from './gasService'
@@ -54,9 +55,7 @@ describe('gasService', () => {
     })
     it('Given a low gas cost but high txValue, when the wallet balance does not have enough to pay for txValue, then throw an error', async () => {
       const totalGasCost = BigNumber.from(8000000)
-      const txValue = BigNumber.from(
-        ethers.utils.parseUnits('0.12345', 'ether').toString()
-      )
+      const txValue = BigNumber.from(parseUnits('0.12345', 'ether').toString())
 
       await expect(
         gasService.verifyHasEnoughBalance(
@@ -71,9 +70,7 @@ describe('gasService', () => {
     })
     it('Given a high gas cost but low txValue, when the wallet balance does not have enough to pay for gas, then throw an error', async () => {
       const totalGasCost = BigNumber.from(800000000000000)
-      const txValue = BigNumber.from(
-        ethers.utils.parseUnits('0.12345', 'ether').toString()
-      )
+      const txValue = BigNumber.from(parseUnits('0.12345', 'ether').toString())
 
       await expect(
         gasService.verifyHasEnoughBalance(

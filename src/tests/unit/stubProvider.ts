@@ -1,5 +1,6 @@
 import { JsonRpcProvider } from '@ethersproject/providers'
-import { BigNumber, ethers } from 'ethers'
+import { BigNumber } from 'ethers'
+import { parseUnits } from 'ethers/lib/utils'
 
 //single count tx
 const encodedResponseSingleCount =
@@ -22,7 +23,7 @@ class StubProvider extends JsonRpcProvider {
     }
   }
   async getBalance(): Promise<BigNumber> {
-    return ethers.utils.parseUnits('0.12345', 'ether')
+    return parseUnits('0.12345', 'ether')
   }
 
   async call(): Promise<string> {

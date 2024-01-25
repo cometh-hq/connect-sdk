@@ -2,7 +2,7 @@ import { StaticJsonRpcProvider } from '@ethersproject/providers'
 import { parseAuthenticatorData } from '@simplewebauthn/server/helpers'
 import CBOR from 'cbor-js'
 import { ec as EC } from 'elliptic'
-import { ethers } from 'ethers'
+import { defaultAbiCoder, hashMessage, keccak256 } from 'ethers/lib/utils'
 import psl from 'psl'
 import { v4 } from 'uuid'
 
@@ -16,6 +16,7 @@ import deviceService from './deviceService'
 import safeService from './safeService'
 
 const DEFAULT_WEBAUTHN_OPTIONS: webAuthnOptions = {
+  // authenticatorSelection documentation can be found here: https://www.w3.org/TR/webauthn-2/#dictdef-authenticatorselectioncriteria
   authenticatorSelection: {
     authenticatorAttachment: 'platform',
     residentKey: 'preferred',
@@ -114,15 +115,9 @@ const getWebAuthnSignature = async (
 
   const rs = utils.derToRS(new Uint8Array(signature))
 
-  const challengeOffset =
-    utils.findSequence(
-      new Uint8Array(clientData),
-      utils.parseHex(challengePrefix)
-    ) +
-    12 +
-    1
+  const challengeOffset = utils.getChallengeOffset(clientData, challengePrefix)
 
-  const encodedSignature = ethers.utils.defaultAbiCoder.encode(
+  const encodedSignature = defaultAbiCoder.encode(
     ['bytes', 'bytes', 'uint256', 'uint256[2]'],
     [
       utils.hexArrayStr(authenticatorData),
@@ -199,14 +194,14 @@ const signWithWebAuthn = async (
   }
 
   const { encodedSignature, publicKeyId } = await getWebAuthnSignature(
-    ethers.utils.keccak256(ethers.utils.hashMessage(challenge)),
+    keccak256(hashMessage(challenge)),
     publicKeyCredentials
   )
 
   return { encodedSignature, publicKeyId }
 }
 
-const _setWebauthnCredentialsInStorage = (
+const setWebauthnCredentialsInStorage = (
   walletAddress: string,
   publicKeyId: string,
   signerAddress: string
@@ -261,12 +256,7 @@ const createSigner = async ({
     })
 
     const deviceData = deviceService.getDeviceData()
-    walletAddress = walletAddress
-      ? walletAddress
-      : await API.getWalletAddress(signerAddress)
-
-    /* Store WebAuthn credentials in storage */
-    _setWebauthnCredentialsInStorage(walletAddress, publicKeyId, signerAddress)
+    walletAddress = walletAddress || (await API.getWalletAddress(signerAddress))
 
     return {
       publicKeyX,
@@ -359,7 +349,7 @@ const getSigner = async ({
     )
 
   /* Store WebAuthn credentials in storage */
-  _setWebauthnCredentialsInStorage(
+  setWebauthnCredentialsInStorage(
     walletAddress,
     signatureParams.publicKeyId,
     signatureParams.signerAddress
@@ -387,7 +377,7 @@ const retrieveWalletAddressFromSigner = async (API: API): Promise<string> => {
 
   const { walletAddress, signerAddress } = signingWebAuthnSigner
 
-  _setWebauthnCredentialsInStorage(walletAddress, publicKeyId, signerAddress)
+  setWebauthnCredentialsInStorage(walletAddress, publicKeyId, signerAddress)
 
   return walletAddress
 }
@@ -402,5 +392,6 @@ export default {
   createSigner,
   signWithWebAuthn,
   getSigner,
-  retrieveWalletAddressFromSigner
+  retrieveWalletAddressFromSigner,
+  setWebauthnCredentialsInStorage
 }

@@ -1,5 +1,6 @@
 import { JsonRpcSigner, StaticJsonRpcProvider } from '@ethersproject/providers'
-import { BigNumber, Bytes, ethers, Wallet } from 'ethers'
+import { BigNumber, Bytes, constants, Wallet } from 'ethers'
+import { formatEther, hashMessage, parseUnits } from 'ethers/lib/utils'
 import { encodeMulti, MetaTransaction } from 'ethers-multisend'
 
 import {
@@ -164,7 +165,7 @@ export class ComethWallet {
 
   public async signMessage(messageToSign: string | Bytes): Promise<string> {
     if (typeof messageToSign === 'string') {
-      messageToSign = ethers.utils.hashMessage(messageToSign)
+      messageToSign = hashMessage(messageToSign)
     }
 
     if (!this.signer) throw new Error('Sign message: missing signer')
@@ -198,8 +199,8 @@ export class ComethWallet {
         safeTxGas: BigNumber.from(safeTxData.safeTxGas).toString(),
         baseGas: BigNumber.from(safeTxData.baseGas).toString(),
         gasPrice: BigNumber.from(safeTxData.gasPrice).toString(),
-        gasToken: ethers.constants.AddressZero,
-        refundReceiver: ethers.constants.AddressZero,
+        gasToken: constants.AddressZero,
+        refundReceiver: constants.AddressZero,
         nonce: BigNumber.from(
           safeTxData.nonce
             ? safeTxData.nonce
@@ -272,12 +273,12 @@ export class ComethWallet {
 
     const totalCost = totalGasCost.add(txValue)
 
-    const displayedTotalBalance = (+ethers.utils.formatEther(
-      ethers.utils.parseUnits(walletBalance.toString(), 'wei')
+    const displayedTotalBalance = (+formatEther(
+      parseUnits(walletBalance.toString(), 'wei')
     )).toFixed(3)
 
-    const displayedTotalCost = (+ethers.utils.formatEther(
-      ethers.utils.parseUnits(totalCost.toString(), 'wei')
+    const displayedTotalCost = (+formatEther(
+      parseUnits(totalCost.toString(), 'wei')
     )).toFixed(3)
 
     if (
@@ -305,8 +306,8 @@ export class ComethWallet {
       safeTxGas: 0,
       baseGas: 0,
       gasPrice: 0,
-      gasToken: ethers.constants.AddressZero,
-      refundReceiver: ethers.constants.AddressZero,
+      gasToken: constants.AddressZero,
+      refundReceiver: constants.AddressZero,
       nonce: await safeService.getNonce(this.getAddress(), this.getProvider())
     }
   }

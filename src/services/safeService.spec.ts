@@ -1,5 +1,5 @@
 import { StaticJsonRpcProvider } from '@ethersproject/providers'
-import { BigNumber, ethers } from 'ethers'
+import { BigNumber, constants } from 'ethers'
 import { getAddress } from 'ethers/lib/utils'
 
 import { networks } from '../constants'
@@ -22,8 +22,8 @@ describe('safeService', () => {
       safeTxGas: BigNumber.from(0).toString(),
       baseGas: BigNumber.from(0).toString(),
       gasPrice: BigNumber.from(0).toString(),
-      gasToken: ethers.constants.AddressZero,
-      refundReceiver: ethers.constants.AddressZero,
+      gasToken: constants.AddressZero,
+      refundReceiver: constants.AddressZero,
       nonce: BigNumber.from(128).toString()
     }
     it('Given a walletAddress with transactionData, when predicting transaction Hash, then return the correct safe txHash', async () => {

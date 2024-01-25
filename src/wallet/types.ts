@@ -37,6 +37,7 @@ export enum SupportedNetworks {
   GNOSIS = '0x64',
   CHIADO = '0x27d8',
   MUSTER_TESTNET = '0x205e79',
+  MUSTER = '0xfee',
   REDSTONE_HOLESKY = '0x4269'
 }
 

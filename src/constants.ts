@@ -51,6 +51,11 @@ export const networks = {
     networkName: 'Muster Testnet',
     currency: 'ETH'
   },
+  4078: {
+    RPCUrl: process.env.RPC_URL_MUSTER || 'https://muster.alt.technology/',
+    networkName: 'Muster',
+    currency: 'ETH'
+  },
   17001: {
     RPCUrl:
       process.env.RPC_URL_REDSTONE_HOLESKY ||
