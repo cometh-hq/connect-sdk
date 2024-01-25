@@ -1,5 +1,5 @@
 import { StaticJsonRpcProvider } from '@ethersproject/providers'
-import { Wallet } from 'ethers'
+import { Signer, Wallet } from 'ethers'
 import { isAddress } from 'ethers/lib/utils'
 
 import { importSafeMessage, networks } from '../../constants'
@@ -106,6 +106,12 @@ export class ConnectAdaptor implements AUTHAdapter {
           passKeyName: this.passKeyName
         })
 
+        webAuthnService.setWebauthnCredentialsInStorage(
+          walletAddress,
+          publicKeyId,
+          signerAddress
+        )
+
         this.signer = new WebAuthnSigner(publicKeyId, signerAddress)
         this.walletAddress = walletAddress
 
@@ -182,6 +188,12 @@ export class ConnectAdaptor implements AUTHAdapter {
             walletAddress,
             webAuthnOptions: this.webAuthnOptions
           })
+
+          webAuthnService.setWebauthnCredentialsInStorage(
+            walletAddress,
+            requestBody.publicKeyId,
+            requestBody.signerAddress
+          )
         } catch {
           throw new Error('Error in webAuthn creation')
         }
@@ -238,11 +250,50 @@ export class ConnectAdaptor implements AUTHAdapter {
     walletAddress: string,
     passKeyName?: string
   ): Promise<NewSignerRequestBody> {
+    const { addNewSignerRequest, localPrivateKey } =
+      await this.createSignerObject(walletAddress, passKeyName)
+
+    if (addNewSignerRequest.type === NewSignerRequestType.WEBAUTHN) {
+      webAuthnService.setWebauthnCredentialsInStorage(
+        walletAddress,
+        addNewSignerRequest.publicKeyId!,
+        addNewSignerRequest.signerAddress!
+      )
+    } else {
+      window.localStorage.setItem(
+        `cometh-connect-${walletAddress}`,
+        localPrivateKey!
+      )
+    }
+
+    return addNewSignerRequest
+  }
+
+  async initRecoveryRequest(
+    walletAddress: string,
+    passKeyName?: string
+  ): Promise<NewSignerRequestBody> {
+    const { addNewSignerRequest } = await this.createSignerObject(
+      walletAddress,
+      passKeyName
+    )
+
+    return addNewSignerRequest
+  }
+
+  private async createSignerObject(
+    walletAddress: string,
+    passKeyName?: string
+  ): Promise<{
+    addNewSignerRequest: NewSignerRequestBody
+    localPrivateKey?: string
+  }> {
     const isWebAuthnCompatible = await webAuthnService.isWebAuthnCompatible(
       this.webAuthnOptions
     )
 
     let addNewSignerRequest
+    let localPrivateKey
 
     if (isWebAuthnCompatible) {
       const { publicKeyX, publicKeyY, publicKeyId, signerAddress, deviceData } =
@@ -264,10 +315,7 @@ export class ConnectAdaptor implements AUTHAdapter {
       }
     } else {
       this.signer = Wallet.createRandom()
-      window.localStorage.setItem(
-        `cometh-connect-${walletAddress}`,
-        this.signer.privateKey
-      )
+      localPrivateKey = this.signer.privateKey
 
       addNewSignerRequest = {
         walletAddress,
@@ -277,7 +325,7 @@ export class ConnectAdaptor implements AUTHAdapter {
       }
     }
 
-    return addNewSignerRequest
+    return { addNewSignerRequest, localPrivateKey }
   }
 
   async getNewSignerRequests(): Promise<NewSignerRequest[] | null> {
