@@ -201,7 +201,7 @@ const signWithWebAuthn = async (
   return { encodedSignature, publicKeyId }
 }
 
-const _setWebauthnCredentialsInStorage = (
+const setWebauthnCredentialsInStorage = (
   walletAddress: string,
   publicKeyId: string,
   signerAddress: string
@@ -257,9 +257,6 @@ const createSigner = async ({
 
     const deviceData = deviceService.getDeviceData()
     walletAddress = walletAddress || (await API.getWalletAddress(signerAddress))
-
-    /* Store WebAuthn credentials in storage */
-    _setWebauthnCredentialsInStorage(walletAddress, publicKeyId, signerAddress)
 
     return {
       publicKeyX,
@@ -352,7 +349,7 @@ const getSigner = async ({
     )
 
   /* Store WebAuthn credentials in storage */
-  _setWebauthnCredentialsInStorage(
+  setWebauthnCredentialsInStorage(
     walletAddress,
     signatureParams.publicKeyId,
     signatureParams.signerAddress
@@ -380,7 +377,7 @@ const retrieveWalletAddressFromSigner = async (API: API): Promise<string> => {
 
   const { walletAddress, signerAddress } = signingWebAuthnSigner
 
-  _setWebauthnCredentialsInStorage(walletAddress, publicKeyId, signerAddress)
+  setWebauthnCredentialsInStorage(walletAddress, publicKeyId, signerAddress)
 
   return walletAddress
 }
@@ -395,5 +392,6 @@ export default {
   createSigner,
   signWithWebAuthn,
   getSigner,
-  retrieveWalletAddressFromSigner
+  retrieveWalletAddressFromSigner,
+  setWebauthnCredentialsInStorage
 }
