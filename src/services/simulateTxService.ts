@@ -1,10 +1,10 @@
 import { arrayify } from '@ethersproject/bytes'
-import { StaticJsonRpcProvider } from '@ethersproject/providers'
+import { Network, StaticJsonRpcProvider } from '@ethersproject/providers'
 import { pack as solidityPack } from '@ethersproject/solidity'
 import { BigNumber } from 'ethers'
 import { MetaTransaction } from 'ethers-multisend'
 
-import { MAX_TRIES_SAFETXGAS } from '../constants'
+import { networks } from '../constants'
 import {
   Multisend__factory,
   Safe__factory,
@@ -13,7 +13,7 @@ import {
 import { MultisendInterface } from '../contracts/types/Multisend'
 import { SafeInterface } from '../contracts/types/Safe'
 import { SimulateTxAcessorInterface } from '../contracts/types/SimulateTxAcessor'
-import { isMetaTransactionArray, wait } from '../utils/utils'
+import { isMetaTransactionArray } from '../utils/utils'
 import safeService from './safeService'
 
 const MultisendContract: MultisendInterface =
@@ -88,17 +88,25 @@ const estimateSafeTxGasWithSimulate = async (
   )
 
   let encodedResponse
-  let safeTxGasCalculationTries = 0
 
-  while (!encodedResponse && safeTxGasCalculationTries < MAX_TRIES_SAFETXGAS) {
-    await wait(1000)
-    safeTxGasCalculationTries++
-
+  try {
     encodedResponse = await provider.call({
       to,
       value: '0',
       data: safeFunctionToEstimate
     })
+  } catch (error) {
+    console.log(error)
+  }
+
+  if (!encodedResponse) {
+    const network = await provider.getNetwork()
+
+    encodedResponse = await _getFallbackEstimate(
+      to,
+      safeFunctionToEstimate,
+      network
+    )
   }
 
   if (!encodedResponse) throw new Error('Impossible to determine gas...')
@@ -110,6 +118,41 @@ const estimateSafeTxGasWithSimulate = async (
 
 function _decodeSafeTxGas(encodedSafeTxGas: string): string {
   return Number(`0x${encodedSafeTxGas.slice(184).slice(0, 10)}`).toString()
+}
+
+async function _getFallbackEstimate(
+  to: string,
+  safeFunctionToEstimate: string,
+  network: Network
+): Promise<string | undefined> {
+  let encodedResponse: string | undefined
+  let safeTxGasCalculationTries = 0
+
+  const fallbackRPCUrls = networks[network.chainId].fallbackRPCUrl
+
+  if (fallbackRPCUrls) {
+    while (
+      !encodedResponse &&
+      safeTxGasCalculationTries < fallbackRPCUrls.length
+    ) {
+      const fallbackProvider = new StaticJsonRpcProvider(
+        fallbackRPCUrls[safeTxGasCalculationTries]
+      )
+      try {
+        encodedResponse = await fallbackProvider.call({
+          to,
+          value: '0',
+          data: safeFunctionToEstimate
+        })
+      } catch (error) {
+        console.log(error)
+      }
+
+      safeTxGasCalculationTries++
+    }
+  }
+
+  return encodedResponse
 }
 
 export default {

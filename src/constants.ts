@@ -5,11 +5,19 @@ export const networks = {
   // Default network: Polygon
   137: {
     RPCUrl: process.env.RPC_URL_POLYGON || 'https://polygon-rpc.com',
+    fallbackRPCUrl: [
+      'https://rpc.ankr.com/polygon',
+      'https://polygon-bor.publicnode.com'
+    ],
     networkName: 'Polygon',
     currency: 'MATIC'
   },
   80001: {
     RPCUrl: process.env.RPC_URL_MUMBAI || 'https://rpc-mumbai.maticvigil.com',
+    fallbackRPCUrl: [
+      'https://rpc.ankr.com/polygon_mumbai',
+      'https://polygon-mumbai-pokt.nodies.app'
+    ],
     networkName: 'Mumbai',
     currency: 'MATIC'
   },
@@ -17,6 +25,7 @@ export const networks = {
     RPCUrl:
       process.env.RPC_URL_AVALANCHE ||
       'https://avalanche-mainnet.infura.io/v3/5eba3fe58b4646c89a0e3fad285769d4',
+    fallbackRPCUrl: ['https://avalanche.drpc.org', 'https://avax.meowrpc.com'],
     networkName: 'Avalanche',
     currency: 'AVAX'
   },
@@ -24,25 +33,25 @@ export const networks = {
     RPCUrl:
       process.env.RPC_URL_FUJI ||
       'https://avalanche-fuji.infura.io/v3/5eba3fe58b4646c89a0e3fad285769d4',
+    fallbackRPCUrl: ['https://avalanche-fuji-c-chain.publicnode.com'],
     networkName: 'Fuji',
     currency: 'AVAX'
   },
   100: {
     RPCUrl: process.env.RPC_URL_GNOSIS || 'https://rpc.ankr.com/gnosis',
+    fallbackRPCUrl: [
+      'https://rpc.gnosischain.com',
+      'https://gnosis.publicnode.com',
+      'https://gnosis.drpc.org'
+    ],
     networkName: 'Gnosis Chain',
     currency: 'xDai'
   },
   10200: {
     RPCUrl: process.env.RPC_URL_CHIADO || 'https://rpc.chiadochain.net',
+    fallbackRPCUrl: ['https://1rpc.io/gnosis'],
     networkName: 'Chiado Chain',
     currency: 'xDai'
-  },
-  1442: {
-    RPCUrl:
-      process.env.RPC_URL_POLYGON_ZKEVM_TESTNET ||
-      'https://rpc.public.zkevm-test.net',
-    networkName: 'Polygon zkEVM Testnet',
-    currency: 'MATIC'
   },
   2121337: {
     RPCUrl:
@@ -88,7 +97,6 @@ export const EIP712_SAFE_TX_TYPES = {
   ]
 }
 export const challengePrefix = '226368616c6c656e6765223a'
-export const MAX_TRIES_SAFETXGAS = 5
 
 export const importSafeMessage = 'Use my wallet with Cometh Connect'
 
