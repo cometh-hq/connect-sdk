@@ -1,10 +1,9 @@
 import { arrayify } from '@ethersproject/bytes'
-import { Network, StaticJsonRpcProvider } from '@ethersproject/providers'
+import { StaticJsonRpcProvider } from '@ethersproject/providers'
 import { pack as solidityPack } from '@ethersproject/solidity'
 import { BigNumber } from 'ethers'
 import { MetaTransaction } from 'ethers-multisend'
 
-import { networks } from '../constants'
 import {
   Multisend__factory,
   Safe__factory,
@@ -96,17 +95,11 @@ const estimateSafeTxGasWithSimulate = async (
       data: safeFunctionToEstimate
     })
   } catch (error) {
-    console.log(error)
-  }
-
-  if (!encodedResponse) {
-    const network = await provider.getNetwork()
-
-    encodedResponse = await _getFallbackEstimate(
-      to,
-      safeFunctionToEstimate,
-      network
-    )
+    try {
+      encodedResponse = _formatRpcError(error)
+    } catch (error) {
+      console.log(error)
+    }
   }
 
   if (!encodedResponse) throw new Error('Impossible to determine gas...')
@@ -120,39 +113,9 @@ function _decodeSafeTxGas(encodedSafeTxGas: string): string {
   return Number(`0x${encodedSafeTxGas.slice(184).slice(0, 10)}`).toString()
 }
 
-async function _getFallbackEstimate(
-  to: string,
-  safeFunctionToEstimate: string,
-  network: Network
-): Promise<string | undefined> {
-  let encodedResponse: string | undefined
-  let safeTxGasCalculationTries = 0
-
-  const fallbackRPCUrls = networks[network.chainId].fallbackRPCUrl
-
-  if (fallbackRPCUrls) {
-    while (
-      !encodedResponse &&
-      safeTxGasCalculationTries < fallbackRPCUrls.length
-    ) {
-      const fallbackProvider = new StaticJsonRpcProvider(
-        fallbackRPCUrls[safeTxGasCalculationTries]
-      )
-      try {
-        encodedResponse = await fallbackProvider.call({
-          to,
-          value: '0',
-          data: safeFunctionToEstimate
-        })
-      } catch (error) {
-        console.log(error)
-      }
-
-      safeTxGasCalculationTries++
-    }
-  }
-
-  return encodedResponse
+function _formatRpcError(error: any): string {
+  const formattedError = JSON.parse(JSON.stringify(error))
+  return formattedError.error.error.data.slice(9)
 }
 
 export default {
