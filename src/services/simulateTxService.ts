@@ -1,10 +1,9 @@
 import { arrayify } from '@ethersproject/bytes'
-import { Network, StaticJsonRpcProvider } from '@ethersproject/providers'
+import { StaticJsonRpcProvider } from '@ethersproject/providers'
 import { pack as solidityPack } from '@ethersproject/solidity'
 import { BigNumber } from 'ethers'
 import { MetaTransaction } from 'ethers-multisend'
 
-import { networks } from '../constants'
 import {
   Multisend__factory,
   Safe__factory,
