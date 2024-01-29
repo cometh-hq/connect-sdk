@@ -1,9 +1,5 @@
 import { MetaTransaction } from 'ethers-multisend'
 
-export const wait = async (msInterval: number): Promise<void> => {
-  await new Promise((resolve) => setTimeout(resolve, msInterval))
-}
-
 export const hexArrayStr = (array): string =>
   new Uint8Array(array).reduce(
     (acc, v) => acc + v.toString(16).padStart(2, '0'),
