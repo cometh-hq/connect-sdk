@@ -62,10 +62,7 @@ const createCredential = async (
       authenticatorSelection,
       timeout: 30000,
       challenge,
-      pubKeyCredParams: [
-        { alg: -7, type: 'public-key' },
-        { alg: -257, type: 'public-key' }
-      ],
+      pubKeyCredParams: [{ alg: -7, type: 'public-key' }],
       extensions
     }
   })
