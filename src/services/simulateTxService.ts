@@ -96,7 +96,11 @@ const estimateSafeTxGasWithSimulate = async (
       data: safeFunctionToEstimate
     })
   } catch (error) {
-    console.log(error)
+    try {
+      encodedResponse = _formatRpcError(error)
+    } catch (error) {
+      console.log(error)
+    }
   }
 
   if (!encodedResponse) {
@@ -120,6 +124,11 @@ function _decodeSafeTxGas(encodedSafeTxGas: string): string {
   return Number(`0x${encodedSafeTxGas.slice(184).slice(0, 10)}`).toString()
 }
 
+function _formatRpcError(error: any): string {
+  const formattedError = JSON.parse(JSON.stringify(error))
+  return formattedError.error.error.data.slice(9)
+}
+
 async function _getFallbackEstimate(
   to: string,
   safeFunctionToEstimate: string,
@@ -138,6 +147,7 @@ async function _getFallbackEstimate(
       const fallbackProvider = new StaticJsonRpcProvider(
         fallbackRPCUrls[safeTxGasCalculationTries]
       )
+
       try {
         encodedResponse = await fallbackProvider.call({
           to,
@@ -145,7 +155,11 @@ async function _getFallbackEstimate(
           data: safeFunctionToEstimate
         })
       } catch (error) {
-        console.log(error)
+        try {
+          encodedResponse = _formatRpcError(error)
+        } catch (error) {
+          console.log(error)
+        }
       }
 
       safeTxGasCalculationTries++

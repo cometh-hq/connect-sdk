@@ -38,18 +38,26 @@ export const networks = {
     currency: 'AVAX'
   },
   100: {
-    RPCUrl: process.env.RPC_URL_GNOSIS || 'https://rpc.ankr.com/gnosis',
+    RPCUrl:
+      process.env.RPC_URL_GNOSIS ||
+      'https://nd-172-437-343.p2pify.com/1d6bd5c8e083348409f2c78bca182c48',
     fallbackRPCUrl: [
-      'https://rpc.gnosischain.com',
-      'https://gnosis.publicnode.com',
-      'https://gnosis.drpc.org'
+      'https://nd-172-437-343.p2pify.com/1d6bd5c8e083348409f2c78bca182c48',
+      'https://rpc.ankr.com/gnosis',
+      'https://rpc.gnosischain.com'
     ],
     networkName: 'Gnosis Chain',
     currency: 'xDai'
   },
   10200: {
-    RPCUrl: process.env.RPC_URL_CHIADO || 'https://rpc.chiadochain.net',
-    fallbackRPCUrl: ['https://1rpc.io/gnosis'],
+    RPCUrl:
+      process.env.RPC_URL_CHIADO ||
+      'https://nd-244-554-535.p2pify.com/3e6f7fedad74cbc0637859cf91e7d676',
+    fallbackRPCUrl: [
+      'https://nd-244-554-535.p2pify.com/3e6f7fedad74cbc0637859cf91e7d676',
+      'https://1rpc.io/gnosis',
+      'https://rpc.chiadochain.net'
+    ],
     networkName: 'Chiado Chain',
     currency: 'xDai'
   },
