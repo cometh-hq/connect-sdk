@@ -5,19 +5,12 @@ export const networks = {
   // Default network: Polygon
   137: {
     RPCUrl: process.env.RPC_URL_POLYGON || 'https://polygon-rpc.com',
-    fallbackRPCUrl: [
-      'https://rpc.ankr.com/polygon',
-      'https://polygon-bor.publicnode.com'
-    ],
+
     networkName: 'Polygon',
     currency: 'MATIC'
   },
   80001: {
     RPCUrl: process.env.RPC_URL_MUMBAI || 'https://rpc-mumbai.maticvigil.com',
-    fallbackRPCUrl: [
-      'https://rpc.ankr.com/polygon_mumbai',
-      'https://polygon-mumbai-pokt.nodies.app'
-    ],
     networkName: 'Mumbai',
     currency: 'MATIC'
   },
@@ -25,7 +18,6 @@ export const networks = {
     RPCUrl:
       process.env.RPC_URL_AVALANCHE ||
       'https://avalanche-mainnet.infura.io/v3/5eba3fe58b4646c89a0e3fad285769d4',
-    fallbackRPCUrl: ['https://avalanche.drpc.org', 'https://avax.meowrpc.com'],
     networkName: 'Avalanche',
     currency: 'AVAX'
   },
@@ -33,19 +25,11 @@ export const networks = {
     RPCUrl:
       process.env.RPC_URL_FUJI ||
       'https://avalanche-fuji.infura.io/v3/5eba3fe58b4646c89a0e3fad285769d4',
-    fallbackRPCUrl: ['https://avalanche-fuji-c-chain.publicnode.com'],
     networkName: 'Fuji',
     currency: 'AVAX'
   },
   100: {
-    RPCUrl:
-      process.env.RPC_URL_GNOSIS ||
-      'https://nd-172-437-343.p2pify.com/1d6bd5c8e083348409f2c78bca182c48',
-    fallbackRPCUrl: [
-      'https://nd-172-437-343.p2pify.com/1d6bd5c8e083348409f2c78bca182c48',
-      'https://rpc.ankr.com/gnosis',
-      'https://rpc.gnosischain.com'
-    ],
+    RPCUrl: process.env.RPC_URL_GNOSIS || 'https://rpc.gnosischain.com',
     networkName: 'Gnosis Chain',
     currency: 'xDai'
   },
@@ -53,11 +37,6 @@ export const networks = {
     RPCUrl:
       process.env.RPC_URL_CHIADO ||
       'https://nd-244-554-535.p2pify.com/3e6f7fedad74cbc0637859cf91e7d676',
-    fallbackRPCUrl: [
-      'https://nd-244-554-535.p2pify.com/3e6f7fedad74cbc0637859cf91e7d676',
-      'https://1rpc.io/gnosis',
-      'https://rpc.chiadochain.net'
-    ],
     networkName: 'Chiado Chain',
     currency: 'xDai'
   },

@@ -103,16 +103,6 @@ const estimateSafeTxGasWithSimulate = async (
     }
   }
 
-  if (!encodedResponse) {
-    const network = await provider.getNetwork()
-
-    encodedResponse = await _getFallbackEstimate(
-      to,
-      safeFunctionToEstimate,
-      network
-    )
-  }
-
   if (!encodedResponse) throw new Error('Impossible to determine gas...')
 
   const safeTxGas = _decodeSafeTxGas(encodedResponse)
@@ -127,46 +117,6 @@ function _decodeSafeTxGas(encodedSafeTxGas: string): string {
 function _formatRpcError(error: any): string {
   const formattedError = JSON.parse(JSON.stringify(error))
   return formattedError.error.error.data.slice(9)
-}
-
-async function _getFallbackEstimate(
-  to: string,
-  safeFunctionToEstimate: string,
-  network: Network
-): Promise<string | undefined> {
-  let encodedResponse: string | undefined
-  let safeTxGasCalculationTries = 0
-
-  const fallbackRPCUrls = networks[network.chainId].fallbackRPCUrl
-
-  if (fallbackRPCUrls) {
-    while (
-      !encodedResponse &&
-      safeTxGasCalculationTries < fallbackRPCUrls.length
-    ) {
-      const fallbackProvider = new StaticJsonRpcProvider(
-        fallbackRPCUrls[safeTxGasCalculationTries]
-      )
-
-      try {
-        encodedResponse = await fallbackProvider.call({
-          to,
-          value: '0',
-          data: safeFunctionToEstimate
-        })
-      } catch (error) {
-        try {
-          encodedResponse = _formatRpcError(error)
-        } catch (error) {
-          console.log(error)
-        }
-      }
-
-      safeTxGasCalculationTries++
-    }
-  }
-
-  return encodedResponse
 }
 
 export default {
