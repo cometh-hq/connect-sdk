@@ -12,6 +12,7 @@ import { API } from '../services'
 import * as utils from '../utils/utils'
 import { DeviceData, webAuthnOptions, WebAuthnSigner } from '../wallet'
 import { ComethProvider } from '../wallet/ComethProvider'
+import { WebAuthnAbortService } from './abort'
 import deviceService from './deviceService'
 import safeService from './safeService'
 
@@ -64,7 +65,8 @@ const createCredential = async (
       challenge,
       pubKeyCredParams: [{ alg: -7, type: 'public-key' }],
       extensions
-    }
+    },
+    signal: WebAuthnAbortService.createNewAbortSignal()
   })
 
   const attestation = CBOR.decode(
@@ -95,6 +97,12 @@ const sign = async (
       timeout: 30000
     }
   })
+
+  const { id, rawId, response, type } = assertionPayload
+
+  console.log(id)
+  console.log({ response })
+  console.log({ type })
 
   return assertionPayload
 }
