@@ -85,11 +85,11 @@ export class ConnectAdaptor implements AUTHAdapter {
     const wallet = await this.getWalletInfos(walletAddress)
     if (!wallet) throw new Error('Wallet does not exists')
 
-    const eoaFallbackSigner = Object.keys(localStorage).filter((key) =>
+    const eoaFallbackSigner = Object.keys(localStorage).find((key) =>
       key.startsWith('cometh-connect-fallback-')
     )
 
-    if (isWebAuthnCompatible && eoaFallbackSigner.length !== 0) {
+    if (isWebAuthnCompatible && !eoaFallbackSigner) {
       const { publicKeyId, signerAddress } = await webAuthnService.getSigner({
         API: this.API,
         walletAddress,
