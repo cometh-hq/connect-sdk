@@ -5,6 +5,7 @@ export const networks = {
   // Default network: Polygon
   137: {
     RPCUrl: process.env.RPC_URL_POLYGON || 'https://polygon-rpc.com',
+
     networkName: 'Polygon',
     currency: 'MATIC'
   },
@@ -28,21 +29,16 @@ export const networks = {
     currency: 'AVAX'
   },
   100: {
-    RPCUrl: process.env.RPC_URL_GNOSIS || 'https://rpc.ankr.com/gnosis',
+    RPCUrl: process.env.RPC_URL_GNOSIS || 'https://rpc.gnosischain.com',
     networkName: 'Gnosis Chain',
     currency: 'xDai'
   },
   10200: {
-    RPCUrl: process.env.RPC_URL_CHIADO || 'https://rpc.chiadochain.net',
+    RPCUrl:
+      process.env.RPC_URL_CHIADO ||
+      'https://nd-244-554-535.p2pify.com/3e6f7fedad74cbc0637859cf91e7d676',
     networkName: 'Chiado Chain',
     currency: 'xDai'
-  },
-  1442: {
-    RPCUrl:
-      process.env.RPC_URL_POLYGON_ZKEVM_TESTNET ||
-      'https://rpc.public.zkevm-test.net',
-    networkName: 'Polygon zkEVM Testnet',
-    currency: 'MATIC'
   },
   2121337: {
     RPCUrl:

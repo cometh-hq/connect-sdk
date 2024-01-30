@@ -86,23 +86,36 @@ const estimateSafeTxGasWithSimulate = async (
     [simulateTxAcessorAddress, transactionDataToEstimate]
   )
 
+  let encodedResponse
+
   try {
-    const encodedResponse = await provider.call({
+    encodedResponse = await provider.call({
       to,
       value: '0',
       data: safeFunctionToEstimate
     })
-
-    const safeTxGas = _decodeSafeTxGas(encodedResponse)
-
-    return BigNumber.from(_addExtraGasForSafety(safeTxGas))
-  } catch {
-    throw new Error('Impossible to determine gas...')
+  } catch (error) {
+    try {
+      encodedResponse = _formatRpcError(error)
+    } catch (error) {
+      console.log(error)
+    }
   }
+
+  if (!encodedResponse) throw new Error('Impossible to determine gas...')
+
+  const safeTxGas = _decodeSafeTxGas(encodedResponse)
+
+  return BigNumber.from(_addExtraGasForSafety(safeTxGas))
 }
 
 function _decodeSafeTxGas(encodedSafeTxGas: string): string {
   return Number(`0x${encodedSafeTxGas.slice(184).slice(0, 10)}`).toString()
+}
+
+function _formatRpcError(error: any): string {
+  const formattedError = JSON.parse(JSON.stringify(error))
+  return formattedError.error.error.data.slice(9)
 }
 
 export default {
