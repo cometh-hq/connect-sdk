@@ -76,14 +76,18 @@ const createCredential = async (
     throw new Error('Error in the webauthn credential creation')
   }
 
-  const publicKeyAlgorithm = webAuthnCredentials.response.publicKeyAlgorithm()
+  const publicKeyAlgorithm =
+    webAuthnCredentials.response.getPublicKeyAlgorithm()
+
+  console.log({ publicKeyAlgorithm })
 
   if (publicKeyAlgorithm == 257)
     throw new Error('Device does not support ECC algorithmic curve')
 
   const attestation = CBOR.decode(
-    webAuthnCredentials?.response?.attestationObject
+    webAuthnCredentials.response.attestationObject
   )
+
   const authData = parseAuthenticatorData(attestation.authData)
   const publicKey = CBOR.decode(authData?.credentialPublicKey?.buffer)
   const x = publicKey[-2]
