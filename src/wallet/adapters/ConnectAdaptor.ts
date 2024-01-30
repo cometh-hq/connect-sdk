@@ -114,43 +114,51 @@ export class ConnectAdaptor implements AUTHAdapter {
   }
 
   private async _createWalletWithPasskeySigner(): Promise<void> {
-    const webAuthnSignerParams = await webAuthnService.createSigner({
+    const {
+      walletAddress,
+      publicKeyId,
+      signerAddress,
+      publicKeyX,
+      publicKeyY,
+      deviceData,
+      publicKeyAlgorithm
+    } = await webAuthnService.createSigner({
       API: this.API,
       webAuthnOptions: this.webAuthnOptions,
       passKeyName: this.passKeyName
     })
 
-    if (webAuthnSignerParams.publicKeyAlgorithm) {
-      await this._createWalletWithFallbackSigner(
-        webAuthnSignerParams.publicKeyId
-      )
+    if (publicKeyAlgorithm === -257) {
+      await this._createWalletWithFallbackSigner()
     } else {
+      if (!walletAddress || !signerAddress)
+        throw new Error('Error in webauthn creation')
+
       webAuthnService.setWebauthnCredentialsInStorage(
-        webAuthnSignerParams.walletAddress,
-        webAuthnSignerParams.publicKeyId,
-        webAuthnSignerParams.signerAddress
+        walletAddress,
+        publicKeyId,
+        signerAddress
       )
 
-      this.signer = new WebAuthnSigner(
-        webAuthnSignerParams.publicKeyId,
-        webAuthnSignerParams.signerAddress
-      )
-      this.walletAddress = webAuthnSignerParams.walletAddress
+      this.signer = new WebAuthnSigner(publicKeyId, signerAddress)
+      this.walletAddress = walletAddress
 
       await this.API.initWalletWithWebAuthn({
-        ...webAuthnSignerParams
+        walletAddress,
+        publicKeyId,
+        publicKeyX,
+        publicKeyY,
+        deviceData
       })
     }
   }
 
-  private async _createWalletWithFallbackSigner(
-    passkeyEncryptionSalt?: string
-  ): Promise<void> {
+  private async _createWalletWithFallbackSigner(): Promise<void> {
     this._throwErrorWhenEoaFallbackDisabled()
 
     const { signer, walletAddress } = await eoaFallbackService.createSigner({
       API: this.API,
-      encryptionSalt: passkeyEncryptionSalt || this.encryptionSalt
+      encryptionSalt: this.encryptionSalt
     })
 
     this.signer = signer
