@@ -160,12 +160,7 @@ const isWebAuthnCompatible = async (
   webAuthnOptions: webAuthnOptions
 ): Promise<boolean> => {
   try {
-    const eoaFallbackSigner = Object.keys(localStorage).filter((key) =>
-      key.startsWith('cometh-connect-fallback-')
-    )
-
-    if (!window.PublicKeyCredential || eoaFallbackSigner.length !== 0)
-      return false
+    if (!window.PublicKeyCredential) return false
 
     if (
       webAuthnOptions?.authenticatorSelection?.authenticatorAttachment ===
