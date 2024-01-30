@@ -1,5 +1,5 @@
 import { StaticJsonRpcProvider } from '@ethersproject/providers'
-import { Signer, Wallet } from 'ethers'
+import { Wallet } from 'ethers'
 import { isAddress } from 'ethers/lib/utils'
 
 import { importSafeMessage, networks } from '../../constants'
@@ -69,77 +69,95 @@ export class ConnectAdaptor implements AUTHAdapter {
     )
 
     if (walletAddress) {
-      const wallet = await this.getWalletInfos(walletAddress)
-
-      if (!wallet) throw new Error('Wallet does not exists')
-
-      if (isWebAuthnCompatible) {
-        const { publicKeyId, signerAddress } = await webAuthnService.getSigner({
-          API: this.API,
-          walletAddress,
-          provider: this.provider
-        })
-        this.signer = new WebAuthnSigner(publicKeyId, signerAddress)
-      } else {
-        this._throwErrorWhenEoaFallbackDisabled()
-        this.signer = await eoaFallbackService.getSigner({
-          API: this.API,
-          provider: this.provider,
-          walletAddress,
-          encryptionSalt: this.encryptionSalt
-        })
-      }
-
-      this.walletAddress = walletAddress
+      await this._reconnect(walletAddress, isWebAuthnCompatible)
     } else {
-      if (isWebAuthnCompatible) {
-        const {
-          publicKeyX,
-          publicKeyY,
-          publicKeyId,
-          signerAddress,
-          deviceData,
-          walletAddress
-        } = await webAuthnService.createSigner({
-          API: this.API,
-          webAuthnOptions: this.webAuthnOptions,
-          passKeyName: this.passKeyName
-        })
+      await this._createWallet(isWebAuthnCompatible)
+    }
+  }
 
-        webAuthnService.setWebauthnCredentialsInStorage(
-          walletAddress,
-          publicKeyId,
-          signerAddress
-        )
+  private async _reconnect(
+    walletAddress: string,
+    isWebAuthnCompatible: boolean
+  ): Promise<void> {
+    const wallet = await this.getWalletInfos(walletAddress)
+    if (!wallet) throw new Error('Wallet does not exists')
 
-        this.signer = new WebAuthnSigner(publicKeyId, signerAddress)
-        this.walletAddress = walletAddress
+    if (isWebAuthnCompatible) {
+      const { publicKeyId, signerAddress } = await webAuthnService.getSigner({
+        API: this.API,
+        walletAddress,
+        provider: this.provider
+      })
+      this.signer = new WebAuthnSigner(publicKeyId, signerAddress)
+    } else {
+      this._throwErrorWhenEoaFallbackDisabled()
+      this.signer = await eoaFallbackService.getSigner({
+        API: this.API,
+        provider: this.provider,
+        walletAddress,
+        encryptionSalt: this.encryptionSalt
+      })
+    }
 
-        await this.API.initWalletWithWebAuthn({
-          walletAddress,
-          publicKeyId,
-          publicKeyX,
-          publicKeyY,
-          deviceData
-        })
+    this.walletAddress = walletAddress
+  }
+
+  private async _createWallet(isWebAuthnCompatible: boolean): Promise<void> {
+    if (isWebAuthnCompatible) {
+      await this._createWalletWithPasskeySigner()
+    } else {
+      await this._createWalletWithFallbackSigner()
+    }
+  }
+
+  private async _createWalletWithPasskeySigner(): Promise<void> {
+    try {
+      const webAuthnSignerParams = await webAuthnService.createSigner({
+        API: this.API,
+        webAuthnOptions: this.webAuthnOptions,
+        passKeyName: this.passKeyName
+      })
+
+      webAuthnService.setWebauthnCredentialsInStorage(
+        webAuthnSignerParams.walletAddress,
+        webAuthnSignerParams.publicKeyId,
+        webAuthnSignerParams.signerAddress
+      )
+
+      this.signer = new WebAuthnSigner(
+        webAuthnSignerParams.publicKeyId,
+        webAuthnSignerParams.signerAddress
+      )
+      this.walletAddress = webAuthnSignerParams.walletAddress
+
+      await this.API.initWalletWithWebAuthn({
+        ...webAuthnSignerParams
+      })
+    } catch (error) {
+      console.log('logged error: ', error)
+      if (error == new Error('Device does not support ECC algorithmic curve')) {
+        console.log('ECC fallback')
+        await this._createWalletWithFallbackSigner()
       } else {
-        this._throwErrorWhenEoaFallbackDisabled()
-
-        const { signer, walletAddress } = await eoaFallbackService.createSigner(
-          {
-            API: this.API,
-            encryptionSalt: this.encryptionSalt
-          }
-        )
-
-        this.signer = signer
-        this.walletAddress = walletAddress
-
-        await this.API.initWallet({
-          ownerAddress: signer.address
-        })
+        throw new Error('Error in the webauthn credential creation')
       }
     }
+  }
+
+  private async _createWalletWithFallbackSigner(): Promise<void> {
+    this._throwErrorWhenEoaFallbackDisabled()
+
+    const { signer, walletAddress } = await eoaFallbackService.createSigner({
+      API: this.API,
+      encryptionSalt: this.encryptionSalt
+    })
+
+    this.signer = signer
+    this.walletAddress = walletAddress
+
+    await this.API.initWallet({
+      ownerAddress: signer.address
+    })
   }
 
   _throwErrorWhenEoaFallbackDisabled(): void {

@@ -12,7 +12,6 @@ import { API } from '../services'
 import * as utils from '../utils/utils'
 import { DeviceData, webAuthnOptions, WebAuthnSigner } from '../wallet'
 import { ComethProvider } from '../wallet/ComethProvider'
-import { WebAuthnAbortService } from './abort'
 import deviceService from './deviceService'
 import safeService from './safeService'
 
@@ -51,23 +50,36 @@ const createCredential = async (
   const authenticatorSelection = webAuthnOptions?.authenticatorSelection
   const extensions = webAuthnOptions?.extensions
 
-  const webAuthnCredentials: any = await navigator.credentials.create({
-    publicKey: {
-      rp: _formatCreatingRpId(),
-      user: {
-        id: new TextEncoder().encode(v4()),
-        name,
-        displayName: name
-      },
-      attestation: 'none',
-      authenticatorSelection,
-      timeout: 30000,
-      challenge,
-      pubKeyCredParams: [{ alg: -7, type: 'public-key' }],
-      extensions
-    },
-    signal: WebAuthnAbortService.createNewAbortSignal()
-  })
+  let webAuthnCredentials: any
+
+  try {
+    webAuthnCredentials = await navigator.credentials.create({
+      publicKey: {
+        rp: _formatCreatingRpId(),
+        user: {
+          id: new TextEncoder().encode(v4()),
+          name,
+          displayName: name
+        },
+        attestation: 'none',
+        authenticatorSelection,
+        timeout: 30000,
+        challenge,
+        pubKeyCredParams: [
+          { alg: -7, type: 'public-key' },
+          { alg: -257, type: 'public-key' }
+        ],
+        extensions
+      }
+    })
+  } catch {
+    throw new Error('Error in the webauthn credential creation')
+  }
+
+  const publicKeyAlgorithm = webAuthnCredentials.response.publicKeyAlgorithm()
+
+  if (publicKeyAlgorithm == 257)
+    throw new Error('Device does not support ECC algorithmic curve')
 
   const attestation = CBOR.decode(
     webAuthnCredentials?.response?.attestationObject
@@ -97,12 +109,6 @@ const sign = async (
       timeout: 30000
     }
   })
-
-  const { id, rawId, response, type } = assertionPayload
-
-  console.log(id)
-  console.log({ response })
-  console.log({ type })
 
   return assertionPayload
 }
@@ -169,7 +175,7 @@ const isWebAuthnCompatible = async (
     if (!window.PublicKeyCredential) return false
 
     if (
-      webAuthnOptions?.authenticatorSelection?.authenticatorAttachment ===
+      webAuthnOptions.authenticatorSelection?.authenticatorAttachment ===
       'platform'
     ) {
       const isUserVerifyingPlatformAuthenticatorAvailable =
@@ -248,34 +254,30 @@ const createSigner = async ({
   deviceData: DeviceData
   walletAddress: string
 }> => {
-  try {
-    const webAuthnCredentials = await createCredential(
-      webAuthnOptions,
-      passKeyName
-    )
+  const webAuthnCredentials = await createCredential(
+    webAuthnOptions,
+    passKeyName
+  )
 
-    const publicKeyX = `0x${webAuthnCredentials.point.getX().toString(16)}`
-    const publicKeyY = `0x${webAuthnCredentials.point.getY().toString(16)}`
-    const publicKeyId = webAuthnCredentials.id
+  const publicKeyX = `0x${webAuthnCredentials.point.getX().toString(16)}`
+  const publicKeyY = `0x${webAuthnCredentials.point.getY().toString(16)}`
+  const publicKeyId = webAuthnCredentials.id
 
-    const signerAddress = await API.predictWebAuthnSignerAddress({
-      publicKeyX,
-      publicKeyY
-    })
+  const signerAddress = await API.predictWebAuthnSignerAddress({
+    publicKeyX,
+    publicKeyY
+  })
 
-    const deviceData = deviceService.getDeviceData()
-    walletAddress = walletAddress || (await API.getWalletAddress(signerAddress))
+  const deviceData = deviceService.getDeviceData()
+  walletAddress = walletAddress || (await API.getWalletAddress(signerAddress))
 
-    return {
-      publicKeyX,
-      publicKeyY,
-      publicKeyId,
-      signerAddress,
-      deviceData,
-      walletAddress
-    }
-  } catch {
-    throw new Error('Error in the webauthn credential creation')
+  return {
+    publicKeyX,
+    publicKeyY,
+    publicKeyId,
+    signerAddress,
+    deviceData,
+    walletAddress
   }
 }
 
