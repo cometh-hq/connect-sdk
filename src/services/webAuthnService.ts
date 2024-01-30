@@ -15,15 +15,6 @@ import { ComethProvider } from '../wallet/ComethProvider'
 import deviceService from './deviceService'
 import safeService from './safeService'
 
-const DEFAULT_WEBAUTHN_OPTIONS: webAuthnOptions = {
-  // authenticatorSelection documentation can be found here: https://www.w3.org/TR/webauthn-2/#dictdef-authenticatorselectioncriteria
-  authenticatorSelection: {
-    authenticatorAttachment: 'platform',
-    residentKey: 'preferred',
-    userVerification: 'preferred'
-  }
-}
-
 const _formatCreatingRpId = (): { name: string; id?: string } => {
   return psl.parse(window.location.host).domain
     ? {
@@ -40,20 +31,14 @@ const _formatSigningRpId = (): string | undefined => {
 const createCredential = async (
   webAuthnOptions: webAuthnOptions,
   passKeyName?: string
-): Promise<{
-  point: any
-  id: string
-}> => {
-  const curve = new EC('p256')
+): Promise<any> => {
   const challenge = new TextEncoder().encode('credentialCreation')
   const name = passKeyName || 'Cometh Connect'
-  const authenticatorSelection = webAuthnOptions?.authenticatorSelection
-  const extensions = webAuthnOptions?.extensions
-
-  let webAuthnCredentials: any
+  const authenticatorSelection = webAuthnOptions.authenticatorSelection
+  const extensions = webAuthnOptions.extensions
 
   try {
-    webAuthnCredentials = await navigator.credentials.create({
+    const webAuthnCredentials = await navigator.credentials.create({
       publicKey: {
         rp: _formatCreatingRpId(),
         user: {
@@ -72,35 +57,13 @@ const createCredential = async (
         extensions
       }
     })
+    return webAuthnCredentials
   } catch {
     throw new Error('Error in the webauthn credential creation')
   }
-
-  const publicKeyAlgorithm =
-    webAuthnCredentials.response.getPublicKeyAlgorithm()
-
-  console.log({ publicKeyAlgorithm })
-
-  if (publicKeyAlgorithm == 257)
-    throw new Error('Device does not support ECC algorithmic curve')
-
-  const attestation = CBOR.decode(
-    webAuthnCredentials.response.attestationObject
-  )
-
-  const authData = parseAuthenticatorData(attestation.authData)
-  const publicKey = CBOR.decode(authData?.credentialPublicKey?.buffer)
-  const x = publicKey[-2]
-  const y = publicKey[-3]
-  const point = curve.curve.point(x, y)
-
-  return {
-    point,
-    id: utils.hexArrayStr(webAuthnCredentials.rawId)
-  }
 }
 
-const sign = async (
+const getCredential = async (
   challenge: BufferSource,
   publicKeyCredential?: PublicKeyCredentialDescriptor[]
 ): Promise<any> => {
@@ -122,7 +85,7 @@ const getWebAuthnSignature = async (
   publicKeyCredential?: PublicKeyCredentialDescriptor[]
 ): Promise<{ encodedSignature: string; publicKeyId: string }> => {
   const challenge = utils.parseHex(hash.slice(2))
-  const assertionPayload = await sign(challenge, publicKeyCredential)
+  const assertionPayload = await getCredential(challenge, publicKeyCredential)
   const publicKeyId = utils.hexArrayStr(assertionPayload.rawId)
 
   const {
@@ -176,7 +139,11 @@ const isWebAuthnCompatible = async (
   webAuthnOptions: webAuthnOptions
 ): Promise<boolean> => {
   try {
-    if (!window.PublicKeyCredential) return false
+    const eoaFallbackSigner = Object.keys(localStorage).filter((key) =>
+      key.startsWith('cometh-connect-fallback-')
+    )
+
+    if (!window.PublicKeyCredential || eoaFallbackSigner) return false
 
     if (
       webAuthnOptions.authenticatorSelection?.authenticatorAttachment ===
@@ -194,7 +161,7 @@ const isWebAuthnCompatible = async (
   }
 }
 
-const signWithWebAuthn = async (
+const sign = async (
   challenge: string,
   webAuthnSigners?: WebAuthnSigner[]
 ): Promise<{
@@ -257,14 +224,29 @@ const createSigner = async ({
   signerAddress: string
   deviceData: DeviceData
   walletAddress: string
+  publicKeyAlgorithm: number
 }> => {
   const webAuthnCredentials = await createCredential(
     webAuthnOptions,
     passKeyName
   )
 
-  const publicKeyX = `0x${webAuthnCredentials.point.getX().toString(16)}`
-  const publicKeyY = `0x${webAuthnCredentials.point.getY().toString(16)}`
+  const publicKeyAlgorithm =
+    webAuthnCredentials.response.getPublicKeyAlgorithm()
+
+  const attestation = CBOR.decode(
+    webAuthnCredentials.response.attestationObject
+  )
+
+  const curve = new EC('p256')
+  const authData = parseAuthenticatorData(attestation.authData)
+  const publicKey = CBOR.decode(authData?.credentialPublicKey?.buffer)
+  const x = publicKey[-2]
+  const y = publicKey[-3]
+  const point = curve.curve.point(x, y)
+
+  const publicKeyX = `0x${point.getX().toString(16)}`
+  const publicKeyY = `0x${point.getY().toString(16)}`
   const publicKeyId = webAuthnCredentials.id
 
   const signerAddress = await API.predictWebAuthnSignerAddress({
@@ -281,7 +263,8 @@ const createSigner = async ({
     publicKeyId,
     signerAddress,
     deviceData,
-    walletAddress
+    walletAddress,
+    publicKeyAlgorithm
   }
 }
 
@@ -339,7 +322,7 @@ const getSigner = async ({
   /* If no local storage or no match in db, Call Webauthn API to get current signer */
   let signatureParams
   try {
-    signatureParams = await signWithWebAuthn('SDK Connection', webAuthnSigners)
+    signatureParams = await sign('SDK Connection', webAuthnSigners)
   } catch {
     throw new Error(
       'New Domain detected. You need to add that domain as signer'
@@ -379,7 +362,7 @@ const retrieveWalletAddressFromSigner = async (API: API): Promise<string> => {
   let publicKeyId: string
 
   try {
-    ;({ publicKeyId } = await signWithWebAuthn('Retrieve user wallet'))
+    ;({ publicKeyId } = await sign('Retrieve user wallet'))
   } catch {
     throw new Error('Unable to sign message')
   }
@@ -397,14 +380,13 @@ const retrieveWalletAddressFromSigner = async (API: API): Promise<string> => {
 }
 
 export default {
-  DEFAULT_WEBAUTHN_OPTIONS,
   createCredential,
-  sign,
+  getCredential,
   getWebAuthnSignature,
   waitWebAuthnSignerDeployment,
   isWebAuthnCompatible,
   createSigner,
-  signWithWebAuthn,
+  sign,
   getSigner,
   retrieveWalletAddressFromSigner,
   setWebauthnCredentialsInStorage

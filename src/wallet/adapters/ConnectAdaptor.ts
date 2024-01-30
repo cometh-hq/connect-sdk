@@ -2,7 +2,11 @@ import { StaticJsonRpcProvider } from '@ethersproject/providers'
 import { Wallet } from 'ethers'
 import { isAddress } from 'ethers/lib/utils'
 
-import { importSafeMessage, networks } from '../../constants'
+import {
+  DEFAULT_WEBAUTHN_OPTIONS,
+  importSafeMessage,
+  networks
+} from '../../constants'
 import { API } from '../../services'
 import deviceService from '../../services/deviceService'
 import eoaFallbackService from '../../services/eoaFallbackService'
@@ -59,8 +63,7 @@ export class ConnectAdaptor implements AUTHAdapter {
       rpcUrl ?? networks[+this.chainId].RPCUrl
     )
     this.passKeyName = passKeyName
-    this.webAuthnOptions =
-      webAuthnOptions || webAuthnService.DEFAULT_WEBAUTHN_OPTIONS
+    this.webAuthnOptions = webAuthnOptions || DEFAULT_WEBAUTHN_OPTIONS
   }
 
   async connect(walletAddress?: string): Promise<void> {
@@ -111,13 +114,17 @@ export class ConnectAdaptor implements AUTHAdapter {
   }
 
   private async _createWalletWithPasskeySigner(): Promise<void> {
-    try {
-      const webAuthnSignerParams = await webAuthnService.createSigner({
-        API: this.API,
-        webAuthnOptions: this.webAuthnOptions,
-        passKeyName: this.passKeyName
-      })
+    const webAuthnSignerParams = await webAuthnService.createSigner({
+      API: this.API,
+      webAuthnOptions: this.webAuthnOptions,
+      passKeyName: this.passKeyName
+    })
 
+    if (webAuthnSignerParams.publicKeyAlgorithm) {
+      await this._createWalletWithFallbackSigner(
+        webAuthnSignerParams.publicKeyId
+      )
+    } else {
       webAuthnService.setWebauthnCredentialsInStorage(
         webAuthnSignerParams.walletAddress,
         webAuthnSignerParams.publicKeyId,
@@ -133,23 +140,17 @@ export class ConnectAdaptor implements AUTHAdapter {
       await this.API.initWalletWithWebAuthn({
         ...webAuthnSignerParams
       })
-    } catch (error) {
-      console.log('logged error: ', error)
-      if (error == new Error('Device does not support ECC algorithmic curve')) {
-        console.log('ECC fallback')
-        await this._createWalletWithFallbackSigner()
-      } else {
-        throw new Error('Error in the webauthn credential creation')
-      }
     }
   }
 
-  private async _createWalletWithFallbackSigner(): Promise<void> {
+  private async _createWalletWithFallbackSigner(
+    passkeyEncryptionSalt?: string
+  ): Promise<void> {
     this._throwErrorWhenEoaFallbackDisabled()
 
     const { signer, walletAddress } = await eoaFallbackService.createSigner({
       API: this.API,
-      encryptionSalt: this.encryptionSalt
+      encryptionSalt: passkeyEncryptionSalt || this.encryptionSalt
     })
 
     this.signer = signer
