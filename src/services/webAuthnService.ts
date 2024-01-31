@@ -37,17 +37,13 @@ const createCredential = async (
   publicKeyId: string
   publicKeyAlgorithm: number
 }> => {
-  const challenge = new TextEncoder().encode('credentialCreation')
-  const name = passKeyName || 'Cometh Connect'
-  const authenticatorSelection = webAuthnOptions?.authenticatorSelection
-  const extensions = webAuthnOptions?.extensions
-
-  let webAuthnCredentials: any
-  let point: any
-  let publicKeyAlgorithm: number
-
   try {
-    webAuthnCredentials = await navigator.credentials.create({
+    const challenge = new TextEncoder().encode('credentialCreation')
+    const name = passKeyName || 'Cometh Connect'
+    const authenticatorSelection = webAuthnOptions?.authenticatorSelection
+    const extensions = webAuthnOptions?.extensions
+
+    const webAuthnCredentials: any = await navigator.credentials.create({
       publicKey: {
         rp: _formatCreatingRpId(),
         user: {
@@ -75,22 +71,23 @@ const createCredential = async (
     const x = publicKey[-2]
     const y = publicKey[-3]
     const curve = new EC('p256')
-    point = curve.curve.point(x, y)
+    const point = curve.curve.point(x, y)
 
-    publicKeyAlgorithm = webAuthnCredentials.response.getPublicKeyAlgorithm()
+    const publicKeyAlgorithm =
+      webAuthnCredentials.response.getPublicKeyAlgorithm()
+
+    const publicKeyX = `0x${point.getX().toString(16)}`
+    const publicKeyY = `0x${point.getY().toString(16)}`
+    const publicKeyId = utils.hexArrayStr(webAuthnCredentials.rawId)
+
+    return {
+      publicKeyX,
+      publicKeyY,
+      publicKeyId,
+      publicKeyAlgorithm
+    }
   } catch {
     throw new Error('Error in the webauthn credential creation')
-  }
-
-  const publicKeyX = `0x${point.getX().toString(16)}`
-  const publicKeyY = `0x${point.getY().toString(16)}`
-  const publicKeyId = utils.hexArrayStr(webAuthnCredentials.rawId)
-
-  return {
-    publicKeyX,
-    publicKeyY,
-    publicKeyId,
-    publicKeyAlgorithm
   }
 }
 
