@@ -364,16 +364,16 @@ export class ConnectAdaptor implements AUTHAdapter {
       }
     }
 
-    const signer = Wallet.createRandom()
+    this.signer = Wallet.createRandom()
 
     return {
       addNewSignerRequest: {
         walletAddress,
-        signerAddress: signer.address,
+        signerAddress: this.signer.address,
         deviceData: deviceService.getDeviceData(),
         type: NewSignerRequestType.BURNER_WALLET
       },
-      localPrivateKey: signer.privateKey
+      localPrivateKey: this.signer.privateKey
     }
   }
 
