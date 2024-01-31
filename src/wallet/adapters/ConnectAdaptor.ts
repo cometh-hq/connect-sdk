@@ -118,23 +118,22 @@ export class ConnectAdaptor implements AUTHAdapter {
   }
 
   private async _createWalletWithPasskeySigner(): Promise<void> {
-    const {
-      walletAddress,
-      publicKeyId,
-      signerAddress,
-      publicKeyX,
-      publicKeyY,
-      deviceData,
-      publicKeyAlgorithm
-    } = await webAuthnService.createSigner({
-      API: this.API,
-      webAuthnOptions: this.webAuthnOptions,
-      passKeyName: this.passKeyName
-    })
+    const { publicKeyId, publicKeyX, publicKeyY, publicKeyAlgorithm } =
+      await webAuthnService.createCredential(
+        this.webAuthnOptions,
+        this.passKeyName
+      )
 
     if (publicKeyAlgorithm === -257) {
       await this._createWalletWithFallbackSigner()
     } else {
+      const { walletAddress, signerAddress, deviceData } =
+        await webAuthnService.getSignerFromCredentials({
+          API: this.API,
+          publicKeyX,
+          publicKeyY
+        })
+
       if (!walletAddress || !signerAddress)
         throw new Error('Error in webauthn creation')
 
@@ -197,52 +196,58 @@ export class ConnectAdaptor implements AUTHAdapter {
 
     const wallet = await this.getWalletInfos(walletAddress)
 
-    if (wallet) {
-      return wallet.initiatorAddress
-    } else {
-      let requestBody
+    if (wallet) return wallet.initiatorAddress
 
-      const isWebAuthnCompatible = await webAuthnService.isWebAuthnCompatible(
-        this.webAuthnOptions
-      )
+    const isWebAuthnCompatible = await webAuthnService.isWebAuthnCompatible(
+      this.webAuthnOptions
+    )
 
-      if (!isWebAuthnCompatible) {
-        const { signer } = await eoaFallbackService.createSigner({
-          API: this.API,
-          walletAddress
-        })
-        requestBody = { signerAddress: signer.address }
-      } else {
-        try {
-          requestBody = await webAuthnService.createSigner({
+    if (isWebAuthnCompatible) {
+      const { publicKeyId, publicKeyX, publicKeyY, publicKeyAlgorithm } =
+        await webAuthnService.createCredential(
+          this.webAuthnOptions,
+          this.passKeyName
+        )
+
+      if (publicKeyAlgorithm === -7) {
+        const { walletAddress, signerAddress, deviceData } =
+          await webAuthnService.getSignerFromCredentials({
             API: this.API,
-            walletAddress,
-            webAuthnOptions: this.webAuthnOptions
+            publicKeyX,
+            publicKeyY
           })
 
-          webAuthnService.setWebauthnCredentialsInStorage(
-            walletAddress,
-            requestBody.publicKeyId,
-            requestBody.signerAddress
-          )
-        } catch {
-          throw new Error('Error in webAuthn creation')
-        }
+        webAuthnService.setWebauthnCredentialsInStorage(
+          walletAddress,
+          publicKeyId,
+          signerAddress
+        )
+
+        return await this.API.importExternalSafe({
+          message,
+          signature,
+          walletAddress,
+          signerAddress,
+          deviceData,
+          publicKeyId,
+          publicKeyX,
+          publicKeyY
+        })
       }
-
-      const signerAddress = await this.API.importExternalSafe({
-        message,
-        signature,
-        walletAddress,
-        signerAddress: requestBody.signerAddress,
-        deviceData: requestBody.deviceData,
-        publicKeyId: requestBody.publicKeyId,
-        publicKeyX: requestBody.publicKeyX,
-        publicKeyY: requestBody.publicKeyY
-      })
-
-      return signerAddress
     }
+
+    const { signer } = await eoaFallbackService.createSigner({
+      API: this.API,
+      walletAddress
+    })
+
+    return await this.API.importExternalSafe({
+      message,
+      signature,
+      walletAddress,
+      signerAddress: signer.address,
+      deviceData: deviceService.getDeviceData()
+    })
   }
 
   getImportSafeMessage(): string {
@@ -323,40 +328,53 @@ export class ConnectAdaptor implements AUTHAdapter {
       this.webAuthnOptions
     )
 
-    let addNewSignerRequest
-    let localPrivateKey
-
     if (isWebAuthnCompatible) {
-      const { publicKeyX, publicKeyY, publicKeyId, signerAddress, deviceData } =
-        await webAuthnService.createSigner({
-          API: this.API,
-          walletAddress,
-          webAuthnOptions: this.webAuthnOptions,
+      const { publicKeyId, publicKeyX, publicKeyY, publicKeyAlgorithm } =
+        await webAuthnService.createCredential(
+          this.webAuthnOptions,
           passKeyName
-        })
+        )
 
-      addNewSignerRequest = {
-        walletAddress,
-        signerAddress,
-        deviceData,
-        type: NewSignerRequestType.WEBAUTHN,
-        publicKeyId,
-        publicKeyX,
-        publicKeyY
-      }
-    } else {
-      this.signer = Wallet.createRandom()
-      localPrivateKey = this.signer.privateKey
+      if (publicKeyAlgorithm === -7) {
+        const { walletAddress, signerAddress, deviceData } =
+          await webAuthnService.getSignerFromCredentials({
+            API: this.API,
+            publicKeyX,
+            publicKeyY
+          })
 
-      addNewSignerRequest = {
-        walletAddress,
-        signerAddress: this.signer?.address,
-        deviceData: deviceService.getDeviceData(),
-        type: NewSignerRequestType.BURNER_WALLET
+        webAuthnService.setWebauthnCredentialsInStorage(
+          walletAddress,
+          publicKeyId,
+          signerAddress
+        )
+
+        return {
+          addNewSignerRequest: {
+            walletAddress,
+            signerAddress,
+            deviceData,
+            type: NewSignerRequestType.WEBAUTHN,
+            publicKeyId,
+            publicKeyX,
+            publicKeyY
+          },
+          localPrivateKey: undefined
+        }
       }
     }
 
-    return { addNewSignerRequest, localPrivateKey }
+    this.signer = Wallet.createRandom()
+
+    return {
+      addNewSignerRequest: {
+        walletAddress,
+        signerAddress: this.signer.address,
+        deviceData: deviceService.getDeviceData(),
+        type: NewSignerRequestType.BURNER_WALLET
+      },
+      localPrivateKey: this.signer.privateKey
+    }
   }
 
   async getNewSignerRequests(): Promise<NewSignerRequest[] | null> {
