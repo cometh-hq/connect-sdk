@@ -15,15 +15,6 @@ import { ComethProvider } from '../wallet/ComethProvider'
 import deviceService from './deviceService'
 import safeService from './safeService'
 
-const DEFAULT_WEBAUTHN_OPTIONS: webAuthnOptions = {
-  // authenticatorSelection documentation can be found here: https://www.w3.org/TR/webauthn-2/#dictdef-authenticatorselectioncriteria
-  authenticatorSelection: {
-    authenticatorAttachment: 'platform',
-    residentKey: 'preferred',
-    userVerification: 'preferred'
-  }
-}
-
 const _formatCreatingRpId = (): { name: string; id?: string } => {
   return psl.parse(window.location.host).domain
     ? {
@@ -41,48 +32,66 @@ const createCredential = async (
   webAuthnOptions: webAuthnOptions,
   passKeyName?: string
 ): Promise<{
-  point: any
-  id: string
+  publicKeyX: string
+  publicKeyY: string
+  publicKeyId: string
+  publicKeyAlgorithm: number
 }> => {
-  const curve = new EC('p256')
-  const challenge = new TextEncoder().encode('credentialCreation')
-  const name = passKeyName || 'Cometh Connect'
-  const authenticatorSelection = webAuthnOptions?.authenticatorSelection
-  const extensions = webAuthnOptions?.extensions
+  try {
+    const challenge = new TextEncoder().encode('credentialCreation')
+    const name = passKeyName || 'Cometh Connect'
+    const authenticatorSelection = webAuthnOptions?.authenticatorSelection
+    const extensions = webAuthnOptions?.extensions
 
-  const webAuthnCredentials: any = await navigator.credentials.create({
-    publicKey: {
-      rp: _formatCreatingRpId(),
-      user: {
-        id: new TextEncoder().encode(v4()),
-        name,
-        displayName: name
-      },
-      attestation: 'none',
-      authenticatorSelection,
-      timeout: 30000,
-      challenge,
-      pubKeyCredParams: [{ alg: -7, type: 'public-key' }],
-      extensions
+    const webAuthnCredentials: any = await navigator.credentials.create({
+      publicKey: {
+        rp: _formatCreatingRpId(),
+        user: {
+          id: new TextEncoder().encode(v4()),
+          name,
+          displayName: name
+        },
+        attestation: 'none',
+        authenticatorSelection,
+        timeout: 30000,
+        challenge,
+        pubKeyCredParams: [
+          { alg: -7, type: 'public-key' },
+          { alg: -257, type: 'public-key' }
+        ],
+        extensions
+      }
+    })
+
+    const attestation = CBOR.decode(
+      webAuthnCredentials?.response?.attestationObject
+    )
+    const authData = parseAuthenticatorData(attestation.authData)
+    const publicKey = CBOR.decode(authData?.credentialPublicKey?.buffer)
+    const x = publicKey[-2]
+    const y = publicKey[-3]
+    const curve = new EC('p256')
+    const point = curve.curve.point(x, y)
+
+    const publicKeyAlgorithm =
+      webAuthnCredentials.response.getPublicKeyAlgorithm()
+
+    const publicKeyX = `0x${point.getX().toString(16)}`
+    const publicKeyY = `0x${point.getY().toString(16)}`
+    const publicKeyId = utils.hexArrayStr(webAuthnCredentials.rawId)
+
+    return {
+      publicKeyX,
+      publicKeyY,
+      publicKeyId,
+      publicKeyAlgorithm
     }
-  })
-
-  const attestation = CBOR.decode(
-    webAuthnCredentials?.response?.attestationObject
-  )
-  const authData = parseAuthenticatorData(attestation.authData)
-  const publicKey = CBOR.decode(authData?.credentialPublicKey?.buffer)
-  const x = publicKey[-2]
-  const y = publicKey[-3]
-  const point = curve.curve.point(x, y)
-
-  return {
-    point,
-    id: utils.hexArrayStr(webAuthnCredentials.rawId)
+  } catch {
+    throw new Error('Error in the webauthn credential creation')
   }
 }
 
-const sign = async (
+const signWithCredential = async (
   challenge: BufferSource,
   publicKeyCredential?: PublicKeyCredentialDescriptor[]
 ): Promise<any> => {
@@ -104,7 +113,10 @@ const getWebAuthnSignature = async (
   publicKeyCredential?: PublicKeyCredentialDescriptor[]
 ): Promise<{ encodedSignature: string; publicKeyId: string }> => {
   const challenge = utils.parseHex(hash.slice(2))
-  const assertionPayload = await sign(challenge, publicKeyCredential)
+  const assertionPayload = await signWithCredential(
+    challenge,
+    publicKeyCredential
+  )
   const publicKeyId = utils.hexArrayStr(assertionPayload.rawId)
 
   const {
@@ -222,52 +234,32 @@ const _getWebauthnCredentialsInStorage = (
   return window.localStorage.getItem(`cometh-connect-${walletAddress}`)
 }
 
-const createSigner = async ({
+const getSignerFromCredentials = async ({
   API,
-  webAuthnOptions,
-  walletAddress,
-  passKeyName
+  publicKeyX,
+  publicKeyY,
+  walletAddress
 }: {
   API: API
-  webAuthnOptions: webAuthnOptions
-  walletAddress?: string
-  passKeyName?: string
-}): Promise<{
   publicKeyX: string
   publicKeyY: string
-  publicKeyId: string
-  signerAddress: string
+  walletAddress?: string
+}): Promise<{
   deviceData: DeviceData
+  signerAddress: string
   walletAddress: string
 }> => {
-  try {
-    const webAuthnCredentials = await createCredential(
-      webAuthnOptions,
-      passKeyName
-    )
+  const deviceData = deviceService.getDeviceData()
+  const signerAddress = await API.predictWebAuthnSignerAddress({
+    publicKeyX,
+    publicKeyY
+  })
+  walletAddress = walletAddress || (await API.getWalletAddress(signerAddress))
 
-    const publicKeyX = `0x${webAuthnCredentials.point.getX().toString(16)}`
-    const publicKeyY = `0x${webAuthnCredentials.point.getY().toString(16)}`
-    const publicKeyId = webAuthnCredentials.id
-
-    const signerAddress = await API.predictWebAuthnSignerAddress({
-      publicKeyX,
-      publicKeyY
-    })
-
-    const deviceData = deviceService.getDeviceData()
-    walletAddress = walletAddress || (await API.getWalletAddress(signerAddress))
-
-    return {
-      publicKeyX,
-      publicKeyY,
-      publicKeyId,
-      signerAddress,
-      deviceData,
-      walletAddress
-    }
-  } catch {
-    throw new Error('Error in the webauthn credential creation')
+  return {
+    deviceData,
+    signerAddress,
+    walletAddress
   }
 }
 
@@ -383,13 +375,12 @@ const retrieveWalletAddressFromSigner = async (API: API): Promise<string> => {
 }
 
 export default {
-  DEFAULT_WEBAUTHN_OPTIONS,
   createCredential,
-  sign,
+  signWithCredential,
   getWebAuthnSignature,
   waitWebAuthnSignerDeployment,
   isWebAuthnCompatible,
-  createSigner,
+  getSignerFromCredentials,
   signWithWebAuthn,
   getSigner,
   retrieveWalletAddressFromSigner,
