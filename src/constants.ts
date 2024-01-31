@@ -12,10 +12,6 @@ export const networks = {
   },
   80001: {
     RPCUrl: process.env.RPC_URL_MUMBAI || 'https://rpc-mumbai.maticvigil.com',
-    fallbackRPCUrl: [
-      'https://rpc.ankr.com/polygon_mumbai',
-      'https://polygon-mumbai-pokt.nodies.app'
-    ],
     networkName: 'Mumbai',
     currency: 'MATIC'
   },
@@ -23,7 +19,6 @@ export const networks = {
     RPCUrl:
       process.env.RPC_URL_AVALANCHE ||
       'https://avalanche-mainnet.infura.io/v3/5eba3fe58b4646c89a0e3fad285769d4',
-    fallbackRPCUrl: ['https://avalanche.drpc.org', 'https://avax.meowrpc.com'],
     networkName: 'Avalanche',
     currency: 'AVAX'
   },
@@ -31,7 +26,6 @@ export const networks = {
     RPCUrl:
       process.env.RPC_URL_FUJI ||
       'https://avalanche-fuji.infura.io/v3/5eba3fe58b4646c89a0e3fad285769d4',
-    fallbackRPCUrl: ['https://avalanche-fuji-c-chain.publicnode.com'],
     networkName: 'Fuji',
     currency: 'AVAX'
   },
