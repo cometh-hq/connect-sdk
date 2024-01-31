@@ -124,9 +124,7 @@ export class ConnectAdaptor implements AUTHAdapter {
         this.passKeyName
       )
 
-    if (publicKeyAlgorithm === -257) {
-      await this._createWalletWithFallbackSigner()
-    } else {
+    if (publicKeyAlgorithm === -7) {
       const { walletAddress, signerAddress, deviceData } =
         await webAuthnService.getSignerFromCredentials({
           API: this.API,
@@ -153,6 +151,8 @@ export class ConnectAdaptor implements AUTHAdapter {
         publicKeyY,
         deviceData
       })
+    } else {
+      await this._createWalletWithFallbackSigner()
     }
   }
 
@@ -210,7 +210,7 @@ export class ConnectAdaptor implements AUTHAdapter {
         )
 
       if (publicKeyAlgorithm === -7) {
-        const { walletAddress, signerAddress, deviceData } =
+        const { signerAddress, deviceData } =
           await webAuthnService.getSignerFromCredentials({
             API: this.API,
             publicKeyX,
@@ -336,7 +336,7 @@ export class ConnectAdaptor implements AUTHAdapter {
         )
 
       if (publicKeyAlgorithm === -7) {
-        const { walletAddress, signerAddress, deviceData } =
+        const { signerAddress, deviceData } =
           await webAuthnService.getSignerFromCredentials({
             API: this.API,
             publicKeyX,
@@ -364,16 +364,16 @@ export class ConnectAdaptor implements AUTHAdapter {
       }
     }
 
-    this.signer = Wallet.createRandom()
+    const signer = Wallet.createRandom()
 
     return {
       addNewSignerRequest: {
         walletAddress,
-        signerAddress: this.signer.address,
+        signerAddress: signer.address,
         deviceData: deviceService.getDeviceData(),
         type: NewSignerRequestType.BURNER_WALLET
       },
-      localPrivateKey: this.signer.privateKey
+      localPrivateKey: signer.privateKey
     }
   }
 
