@@ -1,5 +1,5 @@
 import { JsonRpcSigner, StaticJsonRpcProvider } from '@ethersproject/providers'
-import { BigNumber, Bytes, constants, Contract, utils, Wallet } from 'ethers'
+import { BigNumber, Bytes, constants, Wallet } from 'ethers'
 import { formatEther, hashMessage, parseUnits } from 'ethers/lib/utils'
 import { encodeMulti, MetaTransaction } from 'ethers-multisend'
 
@@ -304,6 +304,7 @@ export class ComethWallet {
       value: value ?? '0',
       data: data,
       operation: operation ?? 0,
+      // Avoid a GS013 error if failure https://github.com/safe-global/safe-smart-account/blob/767ef36bba88bdbc0c9fe3708a4290cabef4c376/contracts/GnosisSafe.sol#L180
       safeTxGas: 10,
       baseGas: 0,
       gasPrice: 0,
