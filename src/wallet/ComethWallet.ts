@@ -27,6 +27,7 @@ import {
   DefaultSponsoredFunctions,
   MetaTransactionData,
   ProjectParams,
+  RecoveryRequest,
   SafeTransactionDataPartial,
   SendTransactionResponse,
   SponsoredTransaction,
@@ -423,6 +424,12 @@ export class ComethWallet {
       safeTxDataTyped.gasPrice = +gasPrice
     }
     return safeTxDataTyped
+  }
+
+  async getRecoveryRequest(): Promise<RecoveryRequest | undefined> {
+    if (!this.walletAddress) throw new Error('wallet is not connected')
+
+    return await this.API.getRecoveryRequest(this.walletAddress)
   }
 
   async cancelRecoveryRequest(): Promise<SendTransactionResponse> {

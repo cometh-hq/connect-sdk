@@ -148,3 +148,8 @@ export type fallbackStorageValues = {
   encryptedPrivateKey: string
   iv: string
 }
+
+export type RecoveryRequest = {
+  txCreatedAt: string
+  txHash: string
+}

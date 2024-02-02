@@ -6,6 +6,7 @@ import {
   DeviceData,
   NewSignerRequest,
   NewSignerRequestType,
+  RecoveryRequest,
   RelayTransactionType,
   SponsoredTransaction,
   UserNonceType,
@@ -377,5 +378,17 @@ export class API {
     const response = await this.api.get(`/new-signer-request/${walletAddress}`)
 
     return response.data.signerRequests
+  }
+
+  /**
+   * Recovery request
+   */
+
+  async getRecoveryRequest(
+    walletAddress: string
+  ): Promise<RecoveryRequest | undefined> {
+    const response = await this.api.get(`/recovery/${walletAddress}`)
+
+    return response.data.recoveryRequest
   }
 }
