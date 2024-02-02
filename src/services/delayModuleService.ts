@@ -16,10 +16,8 @@ export type DelayContext = {
 
 export const getDelayAddress = async (
   safe: string,
-  provider: StaticJsonRpcProvider,
   context: DelayContext
 ): Promise<string> => {
-  const nonce = await safeService.getNonce(safe, provider)
   const cooldown = context.recoveryCooldown
   const expiration = context.recoveryExpiration
   const delayModuleAddress = context.delayModuleAddress
@@ -37,7 +35,7 @@ export const getDelayAddress = async (
 
   const salt = utils.solidityKeccak256(
     ['bytes32', 'uint256'],
-    [utils.keccak256(initializer), nonce]
+    [utils.keccak256(initializer), safe]
   )
 
   return Promise.resolve(
@@ -46,7 +44,6 @@ export const getDelayAddress = async (
 }
 
 export const formatSetTxNonceFunction = async (
-  safe: string,
   proxyDelayAddress: string,
   provider: StaticJsonRpcProvider
 ): Promise<MetaTransaction> => {
@@ -56,12 +53,14 @@ export const formatSetTxNonceFunction = async (
     provider
   )
 
-  const txNonce = (await proxyDelayContract.txNonce()) as number
+  const txNonce = await (await proxyDelayContract.txNonce()).toString()
+
+  const newNonce = Number(txNonce) + 1
 
   return {
-    to: safe,
+    to: proxyDelayAddress,
     value: '0x0',
-    data: DelayModule.encodeFunctionData('setTxNonce', [txNonce + 1]),
+    data: DelayModule.encodeFunctionData('setTxNonce', [newNonce]),
     operation: 0
   }
 }

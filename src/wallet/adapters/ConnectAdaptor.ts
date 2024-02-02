@@ -331,12 +331,6 @@ export class ConnectAdaptor implements AUTHAdapter {
             publicKeyY
           })
 
-        webAuthnService.setWebauthnCredentialsInStorage(
-          walletAddress,
-          publicKeyId,
-          signerAddress
-        )
-
         return {
           addNewSignerRequest: {
             walletAddress,

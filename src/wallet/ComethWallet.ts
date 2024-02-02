@@ -431,16 +431,21 @@ export class ComethWallet {
 
     const proxyDelayAddress = await delayModuleService.getDelayAddress(
       this.walletAddress,
-      this.provider,
       walletInfos.recoveryContext
     )
 
     const tx = await delayModuleService.formatSetTxNonceFunction(
-      this.walletAddress,
       proxyDelayAddress,
       this.provider
     )
 
-    return await this.sendTransaction(tx)
+    const sent = await this.sendTransaction(tx)
+
+    await delayModuleService.formatSetTxNonceFunction(
+      proxyDelayAddress,
+      this.provider
+    )
+
+    return sent
   }
 }
