@@ -43,7 +43,7 @@ export const getDelayAddress = async (
   )
 }
 
-export const formatSetTxNonceFunction = async (
+export const createSetTxNonceFunction = async (
   proxyDelayAddress: string,
   provider: StaticJsonRpcProvider
 ): Promise<MetaTransaction> => {
@@ -67,5 +67,5 @@ export const formatSetTxNonceFunction = async (
 
 export default {
   getDelayAddress,
-  formatSetTxNonceFunction
+  createSetTxNonceFunction
 }
