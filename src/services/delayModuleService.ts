@@ -3,7 +3,6 @@ import { Contract, utils } from 'ethers'
 import { MetaTransaction } from 'ethers-multisend'
 
 import delayModuleABI from '../contracts/abis/Delay.json'
-import safeService from './safeService'
 
 const DelayModule = new utils.Interface(delayModuleABI)
 

@@ -45,6 +45,11 @@ export enum SupportedNetworks {
   REDSTONE_HOLESKY = '0x4269'
 }
 
+export enum DefaultSponsoredFunctions {
+  ADD_OWNER_FUNCTION_SELECTOR = '0x0d582f13',
+  SET_DELAY_TX_NONCE_SELECTOR = '0xebb2b4a2'
+}
+
 export declare enum OperationType {
   Call = 0,
   DelegateCall = 1

@@ -1,5 +1,13 @@
 import { MetaTransaction } from 'ethers-multisend'
 
+import { DefaultSponsoredFunctions } from '../wallet/types'
+
+export const isDefaultSponsorisedFunction = (
+  value: string
+): value is DefaultSponsoredFunctions => {
+  return Object.values(DefaultSponsoredFunctions).includes(value as any)
+}
+
 export const hexArrayStr = (array): string =>
   new Uint8Array(array).reduce(
     (acc, v) => acc + v.toString(16).padStart(2, '0'),

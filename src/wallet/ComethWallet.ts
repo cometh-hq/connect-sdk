@@ -4,7 +4,6 @@ import { formatEther, hashMessage, parseUnits } from 'ethers/lib/utils'
 import { encodeMulti, MetaTransaction } from 'ethers-multisend'
 
 import {
-  ADD_OWNER_FUNCTION_SELECTOR,
   DEFAULT_BASE_GAS_LOCAL_WALLET,
   DEFAULT_BASE_GAS_WEBAUTHN,
   DEFAULT_REWARD_PERCENTILE,
@@ -18,10 +17,14 @@ import gasService from '../services/gasService'
 import safeService from '../services/safeService'
 import simulateTxService from '../services/simulateTxService'
 import { GasModal } from '../ui'
-import { isMetaTransactionArray } from '../utils/utils'
+import {
+  isDefaultSponsorisedFunction,
+  isMetaTransactionArray
+} from '../utils/utils'
 import { AUTHAdapter } from './adapters'
 import { WebAuthnSigner } from './signers/WebAuthnSigner'
 import {
+  DefaultSponsoredFunctions,
   MetaTransactionData,
   ProjectParams,
   SafeTransactionDataPartial,
@@ -225,7 +228,7 @@ export class ComethWallet {
           safeTransactionData[i].to.toLowerCase()
       )
 
-      if (!sponsoredAddress && functionSelector !== ADD_OWNER_FUNCTION_SELECTOR)
+      if (!sponsoredAddress && !isDefaultSponsorisedFunction(functionSelector))
         return false
     }
     return true
