@@ -13,12 +13,16 @@ export type SponsoredTransaction = {
 }
 
 export type WalletInfos = {
+  chainId: string
   address: string
-  connectionDate: Date
   creationDate: Date
-  userId: string
   initiatorAddress: string
-  initiatorAddressType: NewSignerRequestType
+  recoveryContext?: {
+    moduleFactoryAddress: string
+    delayModuleAddress: string
+    recoveryCooldown: number
+    recoveryExpiration: number
+  }
 }
 
 export type ProjectParams = {

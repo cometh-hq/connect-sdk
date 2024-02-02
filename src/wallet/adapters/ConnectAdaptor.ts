@@ -305,18 +305,6 @@ export class ConnectAdaptor implements AUTHAdapter {
     return addNewSignerRequest
   }
 
-  async initRecoveryRequest(
-    walletAddress: string,
-    passKeyName?: string
-  ): Promise<NewSignerRequestBody> {
-    const { addNewSignerRequest } = await this.createSignerObject(
-      walletAddress,
-      passKeyName
-    )
-
-    return addNewSignerRequest
-  }
-
   private async createSignerObject(
     walletAddress: string,
     passKeyName?: string
@@ -393,5 +381,17 @@ export class ConnectAdaptor implements AUTHAdapter {
       webAuthnSigner.publicKeyY,
       this.provider
     )
+  }
+
+  async initRecoveryRequest(
+    walletAddress: string,
+    passKeyName?: string
+  ): Promise<NewSignerRequestBody> {
+    const { addNewSignerRequest } = await this.createSignerObject(
+      walletAddress,
+      passKeyName
+    )
+
+    return addNewSignerRequest
   }
 }

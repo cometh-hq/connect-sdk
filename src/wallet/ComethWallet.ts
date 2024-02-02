@@ -1,5 +1,5 @@
 import { JsonRpcSigner, StaticJsonRpcProvider } from '@ethersproject/providers'
-import { BigNumber, Bytes, constants, Wallet } from 'ethers'
+import { BigNumber, Bytes, constants, Contract, utils, Wallet } from 'ethers'
 import { formatEther, hashMessage, parseUnits } from 'ethers/lib/utils'
 import { encodeMulti, MetaTransaction } from 'ethers-multisend'
 
@@ -13,6 +13,7 @@ import {
   networks
 } from '../constants'
 import { API } from '../services'
+import delayModuleService from '../services/delayModuleService'
 import gasService from '../services/gasService'
 import safeService from '../services/safeService'
 import simulateTxService from '../services/simulateTxService'
@@ -303,7 +304,7 @@ export class ComethWallet {
       value: value ?? '0',
       data: data,
       operation: operation ?? 0,
-      safeTxGas: 0,
+      safeTxGas: 10,
       baseGas: 0,
       gasPrice: 0,
       gasToken: constants.AddressZero,
@@ -418,5 +419,27 @@ export class ComethWallet {
       safeTxDataTyped.gasPrice = +gasPrice
     }
     return safeTxDataTyped
+  }
+
+  async cancelRecoveryRequest(): Promise<SendTransactionResponse> {
+    if (!this.walletAddress) throw new Error('wallet is not connected')
+
+    const walletInfos = await this.API.getWalletInfos(this.walletAddress)
+
+    if (!walletInfos.recoveryContext) throw new Error('no recovery found')
+
+    const proxyDelayAddress = await delayModuleService.getDelayAddress(
+      this.walletAddress,
+      this.provider,
+      walletInfos.recoveryContext
+    )
+
+    const tx = await delayModuleService.formatSetTxNonceFunction(
+      this.walletAddress,
+      proxyDelayAddress,
+      this.provider
+    )
+
+    return await this.sendTransaction(tx)
   }
 }
