@@ -381,6 +381,12 @@ export class ConnectAdaptor implements AUTHAdapter {
     walletAddress: string,
     passKeyName?: string
   ): Promise<NewSignerRequestBody> {
+    const isDeployed = await safeService.isDeployed(
+      walletAddress,
+      this.provider
+    )
+    if (!isDeployed) throw new Error('Wallet is not deployed yet')
+
     const { addNewSignerRequest } = await this.createSignerObject(
       walletAddress,
       passKeyName

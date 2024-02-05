@@ -439,13 +439,8 @@ export class ComethWallet {
     if (!isDeployed) throw new Error('Wallet is not deployed yet')
 
     try {
-      const proxyDelayAddress = await delayModuleService.getDelayAddress(
-        this.walletAddress,
-        walletInfos.recoveryContext
-      )
-
       const isRecoveryQueueEmpty = await delayModuleService.isQueueEmpty(
-        proxyDelayAddress,
+        walletInfos.proxyDelayAddress,
         this.provider
       )
 
@@ -453,7 +448,7 @@ export class ComethWallet {
         return undefined
       } else {
         return await delayModuleService.getCurrentRecoveryParams(
-          proxyDelayAddress,
+          walletInfos.proxyDelayAddress,
           this.provider
         )
       }
@@ -473,13 +468,8 @@ export class ComethWallet {
     if (!recoveryRequest) throw new Error('No recovery request found')
 
     try {
-      const proxyDelayAddress = await delayModuleService.getDelayAddress(
-        this.walletAddress,
-        walletInfos.recoveryContext
-      )
-
       const tx = await delayModuleService.createSetTxNonceFunction(
-        proxyDelayAddress,
+        walletInfos.proxyDelayAddress,
         this.provider
       )
 

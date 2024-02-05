@@ -23,6 +23,7 @@ export type WalletInfos = {
     recoveryCooldown: number
     recoveryExpiration: number
   }
+  proxyDelayAddress: string
 }
 
 export type ProjectParams = {
