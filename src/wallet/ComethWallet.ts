@@ -161,9 +161,9 @@ export class ComethWallet {
   }
 
   public async getOwners(): Promise<string[]> {
-    if (!this.walletAddress) throw new Error('Wallet is not connected')
+    if (!this.walletInfos) throw new Error('No recovery parameters found')
 
-    return await safeService.getOwners(this.walletAddress, this.provider)
+    return await safeService.getOwners(this.walletInfos.address, this.provider)
   }
 
   /**
@@ -240,7 +240,8 @@ export class ComethWallet {
       if (
         functionSelector ===
           DefaultSponsoredFunctions.ADD_OWNER_FUNCTION_SELECTOR &&
-        sponsoredAddress.targetAddress.toLowerCase() !== this.walletAddress
+        sponsoredAddress.targetAddress.toLowerCase() !==
+          this.walletInfos.address
       )
         return false
 
