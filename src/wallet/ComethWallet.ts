@@ -158,7 +158,7 @@ export class ComethWallet {
   }
 
   public async getOwners(): Promise<string[]> {
-    if (!this.walletAddress) throw new Error('wallet is not connected')
+    if (!this.walletAddress) throw new Error('Wallet is not connected')
 
     return await safeService.getOwners(this.walletAddress, this.provider)
   }
@@ -426,49 +426,66 @@ export class ComethWallet {
   }
 
   async getRecoveryRequest(): Promise<RecoveryRequest | undefined> {
-    if (!this.walletAddress) throw new Error('wallet is not connected')
+    if (!this.walletAddress) throw new Error('Wallet is not connected')
 
     const walletInfos = await this.API.getWalletInfos(this.walletAddress)
+    if (!walletInfos.recoveryContext)
+      throw new Error('No recovery parameters found')
 
-    if (!walletInfos.recoveryContext) throw new Error('no recovery found')
-
-    const proxyDelayAddress = await delayModuleService.getDelayAddress(
+    const isDeployed = await safeService.isDeployed(
       this.walletAddress,
-      walletInfos.recoveryContext
-    )
-
-    const isRecoveryQueueEmpty = await delayModuleService.isQueueEmpty(
-      proxyDelayAddress,
       this.provider
     )
+    if (!isDeployed) throw new Error('Wallet is not deployed yet')
 
-    if (isRecoveryQueueEmpty) {
-      return undefined
-    } else {
-      return await delayModuleService.getCurrentTxParams(
+    try {
+      const proxyDelayAddress = await delayModuleService.getDelayAddress(
+        this.walletAddress,
+        walletInfos.recoveryContext
+      )
+
+      const isRecoveryQueueEmpty = await delayModuleService.isQueueEmpty(
         proxyDelayAddress,
         this.provider
       )
+
+      if (isRecoveryQueueEmpty) {
+        return undefined
+      } else {
+        return await delayModuleService.getCurrentRecoveryParams(
+          proxyDelayAddress,
+          this.provider
+        )
+      }
+    } catch {
+      throw new Error('Failed to get recovery request')
     }
   }
 
   async cancelRecoveryRequest(): Promise<SendTransactionResponse> {
-    if (!this.walletAddress) throw new Error('wallet is not connected')
+    if (!this.walletAddress) throw new Error('Wallet is not connected')
 
     const walletInfos = await this.API.getWalletInfos(this.walletAddress)
+    if (!walletInfos.recoveryContext)
+      throw new Error('No recovery parameters found')
 
-    if (!walletInfos.recoveryContext) throw new Error('no recovery found')
+    const recoveryRequest = await this.getRecoveryRequest()
+    if (!recoveryRequest) throw new Error('No recovery request found')
 
-    const proxyDelayAddress = await delayModuleService.getDelayAddress(
-      this.walletAddress,
-      walletInfos.recoveryContext
-    )
+    try {
+      const proxyDelayAddress = await delayModuleService.getDelayAddress(
+        this.walletAddress,
+        walletInfos.recoveryContext
+      )
 
-    const tx = await delayModuleService.createSetTxNonceFunction(
-      proxyDelayAddress,
-      this.provider
-    )
+      const tx = await delayModuleService.createSetTxNonceFunction(
+        proxyDelayAddress,
+        this.provider
+      )
 
-    return await this.sendTransaction(tx)
+      return await this.sendTransaction(tx)
+    } catch {
+      throw new Error('Failed to cancel recovery request')
+    }
   }
 }

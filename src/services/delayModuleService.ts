@@ -64,7 +64,7 @@ export const createSetTxNonceFunction = async (
   }
 }
 
-export const getCurrentTxParams = async (
+export const getCurrentRecoveryParams = async (
   delayModuleAddress: string,
   provider: StaticJsonRpcProvider
 ): Promise<{ txCreatedAt: string; txHash: string }> => {
@@ -97,6 +97,6 @@ export const isQueueEmpty = async (
 export default {
   getDelayAddress,
   createSetTxNonceFunction,
-  getCurrentTxParams,
+  getCurrentRecoveryParams,
   isQueueEmpty
 }
