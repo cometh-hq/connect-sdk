@@ -64,7 +64,39 @@ export const createSetTxNonceFunction = async (
   }
 }
 
+export const getCurrentTxParams = async (
+  delayModuleAddress: string,
+  provider: StaticJsonRpcProvider
+): Promise<{ txCreatedAt: string; txHash: string }> => {
+  const contract = new Contract(delayModuleAddress, delayModuleABI, provider)
+
+  const txNonce = await contract.txNonce()
+
+  const [txCreatedAt, txHash] = await Promise.all([
+    contract.getTxCreatedAt(txNonce),
+    contract.getTxHash(txNonce)
+  ])
+
+  return { txCreatedAt, txHash }
+}
+
+export const isQueueEmpty = async (
+  moduleAddress: string,
+  provider: StaticJsonRpcProvider
+): Promise<boolean> => {
+  const contract = new Contract(moduleAddress, delayModuleABI, provider)
+
+  const [txNonce, queueNonce] = await Promise.all([
+    contract.txNonce(),
+    contract.queueNonce()
+  ])
+
+  return txNonce.eq(queueNonce)
+}
+
 export default {
   getDelayAddress,
-  createSetTxNonceFunction
+  createSetTxNonceFunction,
+  getCurrentTxParams,
+  isQueueEmpty
 }

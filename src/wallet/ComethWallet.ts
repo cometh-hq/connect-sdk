@@ -24,7 +24,6 @@ import {
 import { AUTHAdapter } from './adapters'
 import { WebAuthnSigner } from './signers/WebAuthnSigner'
 import {
-  DefaultSponsoredFunctions,
   MetaTransactionData,
   ProjectParams,
   RecoveryRequest,
@@ -429,7 +428,28 @@ export class ComethWallet {
   async getRecoveryRequest(): Promise<RecoveryRequest | undefined> {
     if (!this.walletAddress) throw new Error('wallet is not connected')
 
-    return await this.API.getRecoveryRequest(this.walletAddress)
+    const walletInfos = await this.API.getWalletInfos(this.walletAddress)
+
+    if (!walletInfos.recoveryContext) throw new Error('no recovery found')
+
+    const proxyDelayAddress = await delayModuleService.getDelayAddress(
+      this.walletAddress,
+      walletInfos.recoveryContext
+    )
+
+    const isRecoveryQueueEmpty = await delayModuleService.isQueueEmpty(
+      proxyDelayAddress,
+      this.provider
+    )
+
+    if (isRecoveryQueueEmpty) {
+      return undefined
+    } else {
+      return await delayModuleService.getCurrentTxParams(
+        proxyDelayAddress,
+        this.provider
+      )
+    }
   }
 
   async cancelRecoveryRequest(): Promise<SendTransactionResponse> {
