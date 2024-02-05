@@ -379,16 +379,4 @@ export class API {
 
     return response.data.signerRequests
   }
-
-  /**
-   * Recovery request
-   */
-
-  async getRecoveryRequest(
-    walletAddress: string
-  ): Promise<RecoveryRequest | undefined> {
-    const response = await this.api.get(`/recovery/${walletAddress}`)
-
-    return response.data.recoveryRequest
-  }
 }
