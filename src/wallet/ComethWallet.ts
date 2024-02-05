@@ -24,6 +24,7 @@ import {
 import { AUTHAdapter } from './adapters'
 import { WebAuthnSigner } from './signers/WebAuthnSigner'
 import {
+  DefaultSponsoredFunctions,
   MetaTransactionData,
   ProjectParams,
   RecoveryRequest,
@@ -53,6 +54,7 @@ export class ComethWallet {
   private walletAddress?: string
   public signer?: JsonRpcSigner | Wallet | WebAuthnSigner
   private projectParams?: ProjectParams
+  private walletInfos?: WalletInfos
   private uiConfig: UIConfig
 
   constructor({
@@ -97,6 +99,7 @@ export class ComethWallet {
       this.BASE_GAS = DEFAULT_BASE_GAS_LOCAL_WALLET
 
     this.sponsoredAddresses = await this.API.getSponsoredAddresses()
+    this.walletInfos = await this.API.getWalletInfos(this.walletAddress)
     this.connected = true
   }
 
@@ -217,6 +220,8 @@ export class ComethWallet {
   private async _isSponsoredTransaction(
     safeTransactionData: MetaTransactionData[]
   ): Promise<boolean> {
+    if (!this.walletInfos) throw new Error('No recovery parameters found')
+
     for (let i = 0; i < safeTransactionData.length; i++) {
       const functionSelector = safeService.getFunctionSelector(
         safeTransactionData[i]
@@ -228,7 +233,23 @@ export class ComethWallet {
           safeTransactionData[i].to.toLowerCase()
       )
 
-      if (!sponsoredAddress && !isDefaultSponsorisedFunction(functionSelector))
+      if (!sponsoredAddress) return false
+
+      if (!isDefaultSponsorisedFunction(functionSelector)) return false
+
+      if (
+        functionSelector ===
+          DefaultSponsoredFunctions.ADD_OWNER_FUNCTION_SELECTOR &&
+        sponsoredAddress.targetAddress.toLowerCase() !== this.walletAddress
+      )
+        return false
+
+      if (
+        functionSelector ===
+          DefaultSponsoredFunctions.SET_DELAY_TX_NONCE_SELECTOR &&
+        sponsoredAddress.targetAddress.toLowerCase() !==
+          this.walletInfos.proxyDelayAddress
+      )
         return false
     }
     return true
@@ -426,21 +447,17 @@ export class ComethWallet {
   }
 
   async getRecoveryRequest(): Promise<RecoveryRequest | undefined> {
-    if (!this.walletAddress) throw new Error('Wallet is not connected')
-
-    const walletInfos = await this.API.getWalletInfos(this.walletAddress)
-    if (!walletInfos.recoveryContext)
-      throw new Error('No recovery parameters found')
+    if (!this.walletInfos) throw new Error('No recovery parameters found')
 
     const isDeployed = await safeService.isDeployed(
-      this.walletAddress,
+      this.walletInfos.address,
       this.provider
     )
     if (!isDeployed) throw new Error('Wallet is not deployed yet')
 
     try {
       const isRecoveryQueueEmpty = await delayModuleService.isQueueEmpty(
-        walletInfos.proxyDelayAddress,
+        this.walletInfos.proxyDelayAddress,
         this.provider
       )
 
@@ -448,7 +465,7 @@ export class ComethWallet {
         return undefined
       } else {
         return await delayModuleService.getCurrentRecoveryParams(
-          walletInfos.proxyDelayAddress,
+          this.walletInfos.proxyDelayAddress,
           this.provider
         )
       }
@@ -458,18 +475,14 @@ export class ComethWallet {
   }
 
   async cancelRecoveryRequest(): Promise<SendTransactionResponse> {
-    if (!this.walletAddress) throw new Error('Wallet is not connected')
-
-    const walletInfos = await this.API.getWalletInfos(this.walletAddress)
-    if (!walletInfos.recoveryContext)
-      throw new Error('No recovery parameters found')
+    if (!this.walletInfos) throw new Error('No recovery parameters found')
 
     const recoveryRequest = await this.getRecoveryRequest()
     if (!recoveryRequest) throw new Error('No recovery request found')
 
     try {
       const tx = await delayModuleService.createSetTxNonceFunction(
-        walletInfos.proxyDelayAddress,
+        this.walletInfos.proxyDelayAddress,
         this.provider
       )
 
