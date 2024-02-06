@@ -16,6 +16,7 @@ import delayModuleService from '../services/delayModuleService'
 import gasService from '../services/gasService'
 import safeService from '../services/safeService'
 import simulateTxService from '../services/simulateTxService'
+import sponsoredService from '../services/sponsoredService'
 import { GasModal } from '../ui'
 import {
   isDefaultSponsorisedFunction,
@@ -227,31 +228,15 @@ export class ComethWallet {
         safeTransactionData[i]
       )
 
-      const sponsoredAddress = this.sponsoredAddresses?.find(
-        (sponsoredAddress) =>
-          sponsoredAddress.targetAddress.toLowerCase() ===
-          safeTransactionData[i].to.toLowerCase()
+      const isSponsored = await sponsoredService.isSponsoredAddress(
+        functionSelector,
+        this.walletInfos.address,
+        safeTransactionData[i].to,
+        this.sponsoredAddresses,
+        this.walletInfos.proxyDelayAddress
       )
 
-      if (!sponsoredAddress) return false
-
-      if (!isDefaultSponsorisedFunction(functionSelector)) return false
-
-      if (
-        functionSelector ===
-          DefaultSponsoredFunctions.ADD_OWNER_FUNCTION_SELECTOR &&
-        sponsoredAddress.targetAddress.toLowerCase() !==
-          this.walletInfos.address
-      )
-        return false
-
-      if (
-        functionSelector ===
-          DefaultSponsoredFunctions.SET_DELAY_TX_NONCE_SELECTOR &&
-        sponsoredAddress.targetAddress.toLowerCase() !==
-          this.walletInfos.proxyDelayAddress
-      )
-        return false
+      if (!isSponsored) return false
     }
     return true
   }
