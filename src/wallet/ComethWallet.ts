@@ -18,14 +18,10 @@ import safeService from '../services/safeService'
 import simulateTxService from '../services/simulateTxService'
 import sponsoredService from '../services/sponsoredService'
 import { GasModal } from '../ui'
-import {
-  isDefaultSponsorisedFunction,
-  isMetaTransactionArray
-} from '../utils/utils'
+import { isMetaTransactionArray } from '../utils/utils'
 import { AUTHAdapter } from './adapters'
 import { WebAuthnSigner } from './signers/WebAuthnSigner'
 import {
-  DefaultSponsoredFunctions,
   MetaTransactionData,
   ProjectParams,
   RecoveryRequest,
@@ -164,7 +160,19 @@ export class ComethWallet {
   public async getOwners(): Promise<string[]> {
     if (!this.walletInfos) throw new Error('No recovery parameters found')
 
-    return await safeService.getOwners(this.walletInfos.address, this.provider)
+    if (
+      (await safeService.isDeployed(
+        this.walletInfos.address,
+        this.provider
+      )) === true
+    ) {
+      return await safeService.getOwners(
+        this.walletInfos.address,
+        this.provider
+      )
+    } else {
+      return [this.walletInfos.initiatorAddress]
+    }
   }
 
   /**
