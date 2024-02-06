@@ -155,7 +155,7 @@ export type RecoveryRequest = {
   txHash: string
 }
 
-export type EnshrinedOwner = {
+export type EnrichedOwner = {
   address: string
   deviceData?: DeviceData
 }
