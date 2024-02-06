@@ -6,6 +6,7 @@ import {
   DeviceData,
   NewSignerRequest,
   NewSignerRequestType,
+  RecoveryRequest,
   RelayTransactionType,
   SponsoredTransaction,
   UserNonceType,

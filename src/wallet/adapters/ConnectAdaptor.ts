@@ -305,18 +305,6 @@ export class ConnectAdaptor implements AUTHAdapter {
     return addNewSignerRequest
   }
 
-  async initRecoveryRequest(
-    walletAddress: string,
-    passKeyName?: string
-  ): Promise<NewSignerRequestBody> {
-    const { addNewSignerRequest } = await this.createSignerObject(
-      walletAddress,
-      passKeyName
-    )
-
-    return addNewSignerRequest
-  }
-
   private async createSignerObject(
     walletAddress: string,
     passKeyName?: string
@@ -342,12 +330,6 @@ export class ConnectAdaptor implements AUTHAdapter {
             publicKeyX,
             publicKeyY
           })
-
-        webAuthnService.setWebauthnCredentialsInStorage(
-          walletAddress,
-          publicKeyId,
-          signerAddress
-        )
 
         return {
           addNewSignerRequest: {
@@ -393,5 +375,23 @@ export class ConnectAdaptor implements AUTHAdapter {
       webAuthnSigner.publicKeyY,
       this.provider
     )
+  }
+
+  async initRecoveryRequest(
+    walletAddress: string,
+    passKeyName?: string
+  ): Promise<NewSignerRequestBody> {
+    const isDeployed = await safeService.isDeployed(
+      walletAddress,
+      this.provider
+    )
+    if (!isDeployed) throw new Error('Wallet is not deployed yet')
+
+    const { addNewSignerRequest } = await this.createSignerObject(
+      walletAddress,
+      passKeyName
+    )
+
+    return addNewSignerRequest
   }
 }

@@ -13,12 +13,17 @@ export type SponsoredTransaction = {
 }
 
 export type WalletInfos = {
+  chainId: string
   address: string
-  connectionDate: Date
   creationDate: Date
-  userId: string
   initiatorAddress: string
-  initiatorAddressType: NewSignerRequestType
+  recoveryContext?: {
+    moduleFactoryAddress: string
+    delayModuleAddress: string
+    recoveryCooldown: number
+    recoveryExpiration: number
+  }
+  proxyDelayAddress: string
 }
 
 export type ProjectParams = {
@@ -39,6 +44,11 @@ export enum SupportedNetworks {
   MUSTER_TESTNET = '0x205e79',
   MUSTER = '0xfee',
   REDSTONE_HOLESKY = '0x4269'
+}
+
+export enum DefaultSponsoredFunctions {
+  ADD_OWNER_FUNCTION_SELECTOR = '0x0d582f13',
+  SET_DELAY_TX_NONCE_SELECTOR = '0x46ba2307'
 }
 
 export declare enum OperationType {
@@ -138,4 +148,9 @@ export type NewSignerRequest = NewSignerRequestBody & {
 export type fallbackStorageValues = {
   encryptedPrivateKey: string
   iv: string
+}
+
+export type RecoveryRequest = {
+  txCreatedAt: string
+  txHash: string
 }
