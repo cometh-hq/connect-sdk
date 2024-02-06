@@ -158,17 +158,25 @@ export class ComethWallet {
     return await this.sendTransaction(tx)
   }
 
-  public async getOwners(): Promise<EnrichedOwner[]> {
+  public async getOwners(): Promise<string[]> {
     if (!this.walletInfos) throw new Error('No recovery parameters found')
 
-    const isWalleDeployed = await safeService.isDeployed(
+    const isWalletDeployed = await safeService.isDeployed(
       this.walletInfos.address,
       this.provider
     )
 
-    const owners = isWalleDeployed
+    const owners = isWalletDeployed
       ? await safeService.getOwners(this.walletInfos.address, this.provider)
       : [this.walletInfos.initiatorAddress]
+
+    return owners
+  }
+
+  public async getEnrichedOwners(): Promise<EnrichedOwner[]> {
+    if (!this.walletInfos) throw new Error('No recovery parameters found')
+
+    const owners = await this.getOwners()
 
     const webAuthnSigners = await this.API.getWebAuthnSignersByWalletAddress(
       this.walletInfos.address
