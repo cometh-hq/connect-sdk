@@ -22,6 +22,7 @@ import { isMetaTransactionArray } from '../utils/utils'
 import { AUTHAdapter } from './adapters'
 import { WebAuthnSigner } from './signers/WebAuthnSigner'
 import {
+  EnshrinedOwner,
   MetaTransactionData,
   ProjectParams,
   RecoveryRequest,
@@ -157,22 +158,35 @@ export class ComethWallet {
     return await this.sendTransaction(tx)
   }
 
-  public async getOwners(): Promise<string[]> {
+  public async getOwners(): Promise<EnshrinedOwner[]> {
     if (!this.walletInfos) throw new Error('No recovery parameters found')
 
-    if (
-      (await safeService.isDeployed(
-        this.walletInfos.address,
-        this.provider
-      )) === true
-    ) {
-      return await safeService.getOwners(
-        this.walletInfos.address,
-        this.provider
+    const isWalleDeployed = await safeService.isDeployed(
+      this.walletInfos.address,
+      this.provider
+    )
+
+    const owners = isWalleDeployed
+      ? await safeService.getOwners(this.walletInfos.address, this.provider)
+      : [this.walletInfos.initiatorAddress]
+
+    const webAuthnSigners = await this.API.getWebAuthnSignersByWalletAddress(
+      this.walletInfos.address
+    )
+
+    const enshrinedOwners = owners.map((owner) => {
+      const webauthSigner = webAuthnSigners.find(
+        (webauthnSigner) => webauthnSigner.signerAddress === owner
       )
-    } else {
-      return [this.walletInfos.initiatorAddress]
-    }
+
+      if (webauthSigner) {
+        return { address: owner, deviceData: webauthSigner.deviceData }
+      } else {
+        return { address: owner }
+      }
+    })
+
+    return enshrinedOwners
   }
 
   /**

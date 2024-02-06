@@ -6,7 +6,6 @@ import {
   DeviceData,
   NewSignerRequest,
   NewSignerRequestType,
-  RecoveryRequest,
   RelayTransactionType,
   SponsoredTransaction,
   UserNonceType,
@@ -196,47 +195,6 @@ export class API {
     const response = await this.api.post(`/user/init`, body, config)
 
     return response?.data.walletAddress
-  }
-
-  async initWalletWithWebAuthnForUserID({
-    token,
-    walletAddress,
-    publicKeyId,
-    publicKeyX,
-    publicKeyY,
-    deviceData
-  }: {
-    token: string
-    walletAddress: string
-    publicKeyId: string
-    publicKeyX: string
-    publicKeyY: string
-    deviceData: DeviceData
-  }): Promise<void> {
-    const config = {
-      headers: {
-        token
-      }
-    }
-    const body = {
-      walletAddress,
-      publicKeyId,
-      publicKeyX,
-      publicKeyY,
-      deviceData
-    }
-
-    await this.api.post(`/user/init-with-webauthn`, body, config)
-  }
-
-  async getWalletAddressFromUserID(token: string): Promise<string> {
-    const config = {
-      headers: {
-        token
-      }
-    }
-    const response = await this.api.get(`/user/address`, config)
-    return response?.data?.walletAddress
   }
 
   async createNewSignerRequest({
