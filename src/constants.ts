@@ -101,3 +101,6 @@ export const DEFAULT_WEBAUTHN_OPTIONS: webAuthnOptions = {
     userVerification: 'preferred'
   }
 }
+
+// 60 secondes
+export const DEFAULT_CONFIRMATION_TIME = 60 * 1000

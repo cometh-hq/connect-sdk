@@ -5,17 +5,13 @@ import {
 import { BigNumber } from 'ethers'
 import { AccessList } from 'ethers/lib/utils'
 
+import { DEFAULT_CONFIRMATION_TIME } from '../constants'
 import safeService from '../services/safeService'
 import { ComethProvider } from './ComethProvider'
 import { ComethWallet } from './ComethWallet'
 
-const CATCH_EVENT_MAX_TRIES = 10
-const GET_RECEIPT_MAX_TRIES = 10
-
 export class RelayTransactionResponse implements TransactionResponse {
   hash: string
-  catch_event_tries: number
-  get_receipt_tries: number
   blockNumber?: number
   blockHash?: string
   timestamp?: number
@@ -42,8 +38,6 @@ export class RelayTransactionResponse implements TransactionResponse {
     private provider: ComethProvider,
     private wallet: ComethWallet
   ) {
-    this.catch_event_tries = 0
-    this.get_receipt_tries = 0
     this.hash = '0x0000000000000000000000000000000000000000'
     this.confirmations = 0
     this.from = this.wallet.getAddress()
@@ -58,20 +52,9 @@ export class RelayTransactionResponse implements TransactionResponse {
     return this.safeTxHash
   }
 
-  private hasReachedMaxTriesForCatchTxEvent(): boolean {
-    return this.catch_event_tries === CATCH_EVENT_MAX_TRIES
-  }
-
-  private hasReachedMaxTriesForGetReceiptEvent(): boolean {
-    return this.get_receipt_tries === GET_RECEIPT_MAX_TRIES
-  }
-
-  public async wait(): Promise<any> {
-    if (
-      this.hasReachedMaxTriesForCatchTxEvent() ||
-      this.hasReachedMaxTriesForGetReceiptEvent()
-    )
-      return
+  public async wait(confirmations?: number): Promise<any> {
+    const timeout = confirmations || DEFAULT_CONFIRMATION_TIME
+    const startDate = Date.now()
 
     let txSuccessEvent: any = undefined
     let txFailureEvent: any = undefined
@@ -79,9 +62,9 @@ export class RelayTransactionResponse implements TransactionResponse {
     while (
       !txSuccessEvent &&
       !txFailureEvent &&
-      !this.hasReachedMaxTriesForCatchTxEvent()
+      new Date(Date.now()) < new Date(startDate + timeout)
     ) {
-      await new Promise((resolve) => setTimeout(resolve, 2000))
+      await new Promise((resolve) => setTimeout(resolve, 3000))
       txSuccessEvent = await safeService.getSuccessExecTransactionEvent(
         this.safeTxHash,
         this.from,
@@ -92,55 +75,43 @@ export class RelayTransactionResponse implements TransactionResponse {
         this.from,
         this.provider
       )
-      this.catch_event_tries++
     }
 
     if (txSuccessEvent) {
       let txResponse: TransactionReceipt | null = null
-      while (
-        txResponse === null &&
-        !this.hasReachedMaxTriesForGetReceiptEvent()
-      ) {
+      while (txResponse === null) {
         txResponse = await this.provider.getTransactionReceipt(
           txSuccessEvent.transactionHash
         )
-        this.get_receipt_tries++
+
         await new Promise((resolve) => setTimeout(resolve, 2000))
       }
 
-      if (txResponse) {
-        this.hash = txResponse.transactionHash
-        this.confirmations = txResponse.confirmations
-        this.from = txResponse.from
-        this.data = txSuccessEvent.data
-        this.value = txSuccessEvent.args[1]
+      this.hash = txResponse.transactionHash
+      this.confirmations = txResponse.confirmations
+      this.from = txResponse.from
+      this.data = txSuccessEvent.data
+      this.value = txSuccessEvent.args[1]
 
-        return txResponse
-      }
+      return txResponse
     }
     if (txFailureEvent) {
       let txResponse: TransactionReceipt | null = null
-      while (
-        txResponse === null &&
-        !this.hasReachedMaxTriesForGetReceiptEvent()
-      ) {
+      while (txResponse === null) {
         txResponse = await this.provider.getTransactionReceipt(
           txFailureEvent.transactionHash
         )
-        this.get_receipt_tries++
+
         await new Promise((resolve) => setTimeout(resolve, 2000))
       }
-      if (txResponse) {
-        this.hash = txResponse.transactionHash
-        this.confirmations = txResponse.confirmations
-        this.from = txResponse.from
-        this.data = txFailureEvent.data
-        this.value = txFailureEvent.args[1]
 
-        return txResponse
-      }
+      this.hash = txResponse.transactionHash
+      this.confirmations = txResponse.confirmations
+      this.from = txResponse.from
+      this.data = txFailureEvent.data
+      this.value = txFailureEvent.args[1]
+
+      return txResponse
     }
-
-    return this.wait()
   }
 }
