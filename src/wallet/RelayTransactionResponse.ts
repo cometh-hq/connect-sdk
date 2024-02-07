@@ -12,6 +12,7 @@ import { ComethWallet } from './ComethWallet'
 
 export class RelayTransactionResponse implements TransactionResponse {
   hash: string
+  timeout: number
   blockNumber?: number
   blockHash?: string
   timestamp?: number
@@ -39,6 +40,7 @@ export class RelayTransactionResponse implements TransactionResponse {
     private wallet: ComethWallet
   ) {
     this.hash = '0x0000000000000000000000000000000000000000'
+    this.timeout = wallet.transactionTimeout || DEFAULT_CONFIRMATION_TIME
     this.confirmations = 0
     this.from = this.wallet.getAddress()
     this.nonce = 0
@@ -52,8 +54,8 @@ export class RelayTransactionResponse implements TransactionResponse {
     return this.safeTxHash
   }
 
-  public async wait(confirmations?: number): Promise<any> {
-    const timeout = confirmations || DEFAULT_CONFIRMATION_TIME
+  public async wait(): Promise<any> {
+    console.log('timeout:', this.timeout)
     const startDate = Date.now()
 
     let txSuccessEvent: any = undefined
@@ -62,7 +64,7 @@ export class RelayTransactionResponse implements TransactionResponse {
     while (
       !txSuccessEvent &&
       !txFailureEvent &&
-      new Date(Date.now()) < new Date(startDate + timeout)
+      new Date(Date.now()) < new Date(startDate + this.timeout)
     ) {
       await new Promise((resolve) => setTimeout(resolve, 3000))
       txSuccessEvent = await safeService.getSuccessExecTransactionEvent(
