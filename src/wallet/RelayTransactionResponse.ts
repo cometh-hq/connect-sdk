@@ -55,7 +55,6 @@ export class RelayTransactionResponse implements TransactionResponse {
   }
 
   public async wait(): Promise<any> {
-    console.log('timeout:', this.timeout)
     const startDate = Date.now()
 
     let txSuccessEvent: any = undefined
