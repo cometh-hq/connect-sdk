@@ -468,6 +468,11 @@ export class ComethWallet {
   async getRecoveryRequest(): Promise<RecoveryRequest | undefined> {
     if (!this.walletInfos) throw new Error('Wallet is not connected')
 
+    if (!this.walletInfos.proxyDelayAddress)
+      throw new Error(
+        'This Recovery Request type is not supported with this method, please reach out'
+      )
+
     const isDeployed = await safeService.isDeployed(
       this.walletInfos.address,
       this.provider
@@ -495,6 +500,11 @@ export class ComethWallet {
 
   async cancelRecoveryRequest(): Promise<SendTransactionResponse> {
     if (!this.walletInfos) throw new Error('Wallet is not connected')
+
+    if (!this.walletInfos.proxyDelayAddress)
+      throw new Error(
+        'This Recovery Request type is not supported with this method, please reach out'
+      )
 
     const recoveryRequest = await this.getRecoveryRequest()
     if (!recoveryRequest) throw new Error('No recovery request found')
