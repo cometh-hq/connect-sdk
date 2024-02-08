@@ -44,9 +44,6 @@ export const getSignerLocalStorage = async (
     `cometh-connect-fallback-${walletAddress}`
   )
 
-  console.log({ localStorageV1 })
-  console.log({ localStorageV2 })
-
   if (localStorageV1) {
     const privateKey = localStorageV1
     const signer = new Wallet(privateKey)
@@ -66,8 +63,6 @@ export const getSignerLocalStorage = async (
       utils.base64toUint8Array(iv),
       salt || defaultEncryptionSalt
     )
-
-    console.log({ privateKey })
 
     const signer = new Wallet(privateKey)
 
