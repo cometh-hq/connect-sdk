@@ -69,13 +69,18 @@ describe('eoaFallbackService', () => {
     const encryptedPrivateKey =
       '93OuZvzQhfsUPuxGnJ4FLIw0P4wrGFw3E0HiaH1rfRqWQFvXoYRREWG00g5FpahVSEfU'
     const iv = 'SkYTzy3OmELWXi2yfk7mIg=='
+    const signerAddress = '0x_signer_Address'
+
     it('Given a encrypted key value, when formatting for localstorage, then return the right format', async () => {
       const storageValue = eoaFallbackService.formatStorageValue(
         encryptedPrivateKey,
-        iv
+        iv,
+        signerAddress
       )
 
-      expect(storageValue).toEqual(JSON.stringify({ encryptedPrivateKey, iv }))
+      expect(storageValue).toEqual(
+        JSON.stringify({ encryptedPrivateKey, iv, signerAddress })
+      )
     })
   })
 

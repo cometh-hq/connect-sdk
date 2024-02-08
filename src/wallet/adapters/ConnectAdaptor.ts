@@ -19,7 +19,8 @@ import {
   NewSignerRequestType,
   SupportedNetworks,
   WalletInfos,
-  webAuthnOptions
+  webAuthnOptions,
+  webauthnStorageValues
 } from '../types'
 import { AUTHAdapter } from './types'
 
@@ -85,11 +86,7 @@ export class ConnectAdaptor implements AUTHAdapter {
     const wallet = await this.getWalletInfos(walletAddress)
     if (!wallet) throw new Error('Wallet does not exists')
 
-    const eoaFallbackSigner = Object.keys(localStorage).find((key) =>
-      key.startsWith('cometh-connect-fallback-')
-    )
-
-    if (isWebAuthnCompatible && !eoaFallbackSigner) {
+    if (isWebAuthnCompatible && !this._isFallbackSigner()) {
       const { publicKeyId, signerAddress } = await webAuthnService.getSigner({
         API: this.API,
         walletAddress,
@@ -179,6 +176,36 @@ export class ConnectAdaptor implements AUTHAdapter {
 
   async retrieveWalletAddressFromSigner(): Promise<string> {
     return await webAuthnService.retrieveWalletAddressFromSigner(this.API)
+  }
+
+  async getCurrentSigner(): Promise<
+    webauthnStorageValues | string | undefined
+  > {
+    if (!this.walletAddress) throw new Error('Wallet is not connected')
+
+    if (this._isFallbackSigner()) {
+      const localSigner = await eoaFallbackService.getSignerLocalStorage(
+        this.walletAddress,
+        this.encryptionSalt
+      )
+
+      if (localSigner) return localSigner.address
+    } else {
+      const webauthnWallet = webAuthnService.getWebauthnCredentialsInStorage(
+        this.walletAddress
+      )
+
+      if (webauthnWallet) return JSON.parse(webauthnWallet)
+    }
+
+    return undefined
+  }
+
+  private _isFallbackSigner(): boolean {
+    const fallbackSigner = Object.keys(localStorage).find((key) =>
+      key.startsWith('cometh-connect-fallback-')
+    )
+    return !!fallbackSigner
   }
 
   async importSafe(
