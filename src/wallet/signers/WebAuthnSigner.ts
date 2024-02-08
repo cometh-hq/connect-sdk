@@ -38,7 +38,9 @@ export class WebAuthnSigner extends Signer {
     if (!IS_SAFE_MESSAGE_TYPE && !IS_SAFE_TX_TYPE)
       throw new Error('types data not supported')
 
-    const data = _TypedDataEncoder.hash(domain, types, value)
+    const data = IS_SAFE_TX_TYPE
+      ? _TypedDataEncoder.hash(domain, types, value)
+      : keccak256(value.message)
 
     const publicKeyCredential: PublicKeyCredentialDescriptor[] = [
       {
@@ -48,7 +50,7 @@ export class WebAuthnSigner extends Signer {
     ]
 
     const { encodedSignature } = await webAuthnService.getWebAuthnSignature(
-      keccak256(data),
+      data,
       publicKeyCredential
     )
 
