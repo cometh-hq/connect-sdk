@@ -117,9 +117,8 @@ export class ComethWallet {
     return this.provider
   }
 
-  public async getUserInfos(): Promise<WalletInfos> {
-    const walletInfos = await this.API.getWalletInfos(this.getAddress())
-    return walletInfos
+  public async getWalletInfos(): Promise<WalletInfos> {
+    return await this.API.getWalletInfos(this.getAddress())
   }
 
   public getAddress(): string {
@@ -163,7 +162,7 @@ export class ComethWallet {
   }
 
   public async getOwners(): Promise<string[]> {
-    if (!this.walletInfos) throw new Error('No recovery parameters found')
+    if (!this.walletInfos) throw new Error('Wallet is not connected')
 
     const isWalletDeployed = await safeService.isDeployed(
       this.walletInfos.address,
@@ -178,7 +177,7 @@ export class ComethWallet {
   }
 
   public async getEnrichedOwners(): Promise<EnrichedOwner[]> {
-    if (!this.walletInfos) throw new Error('No recovery parameters found')
+    if (!this.walletInfos) throw new Error('Wallet is not connected')
 
     const owners = await this.getOwners()
 
@@ -255,7 +254,7 @@ export class ComethWallet {
   private async _isSponsoredTransaction(
     safeTransactionData: MetaTransactionData[]
   ): Promise<boolean> {
-    if (!this.walletInfos) throw new Error('No recovery parameters found')
+    if (!this.walletInfos) throw new Error('Wallet is not connected')
 
     for (let i = 0; i < safeTransactionData.length; i++) {
       const functionSelector = safeService.getFunctionSelector(
@@ -467,7 +466,7 @@ export class ComethWallet {
   }
 
   async getRecoveryRequest(): Promise<RecoveryRequest | undefined> {
-    if (!this.walletInfos) throw new Error('No recovery parameters found')
+    if (!this.walletInfos) throw new Error('Wallet is not connected')
 
     const isDeployed = await safeService.isDeployed(
       this.walletInfos.address,
@@ -495,7 +494,7 @@ export class ComethWallet {
   }
 
   async cancelRecoveryRequest(): Promise<SendTransactionResponse> {
-    if (!this.walletInfos) throw new Error('No recovery parameters found')
+    if (!this.walletInfos) throw new Error('Wallet is not connected')
 
     const recoveryRequest = await this.getRecoveryRequest()
     if (!recoveryRequest) throw new Error('No recovery request found')

@@ -86,11 +86,7 @@ export class ConnectAdaptor implements AUTHAdapter {
     const wallet = await this.getWalletInfos(walletAddress)
     if (!wallet) throw new Error('Wallet does not exists')
 
-    const eoaFallbackSigner = Object.keys(localStorage).find((key) =>
-      key.startsWith('cometh-connect-fallback-')
-    )
-
-    if (isWebAuthnCompatible && !eoaFallbackSigner) {
+    if (isWebAuthnCompatible && !this._isFallbackSigner()) {
       const { publicKeyId, signerAddress } = await webAuthnService.getSigner({
         API: this.API,
         walletAddress,
@@ -185,13 +181,9 @@ export class ConnectAdaptor implements AUTHAdapter {
   async getCurrentSigner(): Promise<
     webauthnStorageValues | string | undefined
   > {
-    if (!this.walletAddress) throw new Error('No recovery parameters found')
+    if (!this.walletAddress) throw new Error('Wallet is not connected')
 
-    const eoaFallbackSigner = Object.keys(localStorage).find((key) =>
-      key.startsWith('cometh-connect-fallback-')
-    )
-
-    if (eoaFallbackSigner) {
+    if (this._isFallbackSigner()) {
       const localSigner = await eoaFallbackService.getSignerLocalStorage(
         this.walletAddress,
         this.encryptionSalt
@@ -207,6 +199,13 @@ export class ConnectAdaptor implements AUTHAdapter {
     }
 
     return undefined
+  }
+
+  private _isFallbackSigner(): boolean {
+    const fallbackSigner = Object.keys(localStorage).find((key) =>
+      key.startsWith('cometh-connect-fallback-')
+    )
+    return !!fallbackSigner
   }
 
   async importSafe(
