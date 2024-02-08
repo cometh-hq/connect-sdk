@@ -228,7 +228,7 @@ const setWebauthnCredentialsInStorage = (
   )
 }
 
-const _getWebauthnCredentialsInStorage = (
+const getWebauthnCredentialsInStorage = (
   walletAddress: string
 ): string | null => {
   return window.localStorage.getItem(`cometh-connect-${walletAddress}`)
@@ -286,7 +286,7 @@ const getSigner = async ({
 
   /* Retrieve potentiel WebAuthn credentials in storage */
   const localStorageWebauthnCredentials =
-    _getWebauthnCredentialsInStorage(walletAddress)
+    getWebauthnCredentialsInStorage(walletAddress)
 
   if (localStorageWebauthnCredentials) {
     /* Check if storage WebAuthn credentials exists in db */
@@ -384,5 +384,6 @@ export default {
   signWithWebAuthn,
   getSigner,
   retrieveWalletAddressFromSigner,
-  setWebauthnCredentialsInStorage
+  setWebauthnCredentialsInStorage,
+  getWebauthnCredentialsInStorage
 }

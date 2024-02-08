@@ -150,6 +150,11 @@ export type fallbackStorageValues = {
   iv: string
 }
 
+export type webauthnStorageValues = {
+  publicKeyId: string
+  signerAddress: string
+}
+
 export type RecoveryRequest = {
   txCreatedAt: string
   txHash: string

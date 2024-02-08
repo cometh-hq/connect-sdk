@@ -19,7 +19,8 @@ import {
   NewSignerRequestType,
   SupportedNetworks,
   WalletInfos,
-  webAuthnOptions
+  webAuthnOptions,
+  webauthnStorageValues
 } from '../types'
 import { AUTHAdapter } from './types'
 
@@ -179,6 +180,33 @@ export class ConnectAdaptor implements AUTHAdapter {
 
   async retrieveWalletAddressFromSigner(): Promise<string> {
     return await webAuthnService.retrieveWalletAddressFromSigner(this.API)
+  }
+
+  async getCurrentSigner(): Promise<
+    webauthnStorageValues | string | undefined
+  > {
+    if (!this.walletAddress) throw new Error('No recovery parameters found')
+
+    const eoaFallbackSigner = Object.keys(localStorage).find((key) =>
+      key.startsWith('cometh-connect-fallback-')
+    )
+
+    if (eoaFallbackSigner) {
+      const localSigner = await eoaFallbackService.getSignerLocalStorage(
+        this.walletAddress,
+        this.encryptionSalt
+      )
+
+      if (localSigner) return localSigner.address
+    } else {
+      const webauthnWallet = webAuthnService.getWebauthnCredentialsInStorage(
+        this.walletAddress
+      )
+
+      if (webauthnWallet) return JSON.parse(webauthnWallet)
+    }
+
+    return undefined
   }
 
   async importSafe(
