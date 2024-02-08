@@ -5,12 +5,14 @@ import {
 import { BigNumber } from 'ethers'
 import { AccessList } from 'ethers/lib/utils'
 
+import { DEFAULT_CONFIRMATION_TIME } from '../constants'
 import safeService from '../services/safeService'
 import { ComethProvider } from './ComethProvider'
 import { ComethWallet } from './ComethWallet'
 
 export class RelayTransactionResponse implements TransactionResponse {
   hash: string
+  timeout: number
   blockNumber?: number
   blockHash?: string
   timestamp?: number
@@ -38,6 +40,7 @@ export class RelayTransactionResponse implements TransactionResponse {
     private wallet: ComethWallet
   ) {
     this.hash = '0x0000000000000000000000000000000000000000'
+    this.timeout = wallet.transactionTimeout || DEFAULT_CONFIRMATION_TIME
     this.confirmations = 0
     this.from = this.wallet.getAddress()
     this.nonce = 0
@@ -51,12 +54,18 @@ export class RelayTransactionResponse implements TransactionResponse {
     return this.safeTxHash
   }
 
-  public async wait(): Promise<TransactionReceipt> {
+  public async wait(): Promise<any> {
+    const startDate = Date.now()
+
     let txSuccessEvent: any = undefined
     let txFailureEvent: any = undefined
 
-    while (!txSuccessEvent && !txFailureEvent) {
-      await new Promise((resolve) => setTimeout(resolve, 2000))
+    while (
+      !txSuccessEvent &&
+      !txFailureEvent &&
+      new Date(Date.now()) < new Date(startDate + this.timeout)
+    ) {
+      await new Promise((resolve) => setTimeout(resolve, 3000))
       txSuccessEvent = await safeService.getSuccessExecTransactionEvent(
         this.safeTxHash,
         this.from,
@@ -75,7 +84,8 @@ export class RelayTransactionResponse implements TransactionResponse {
         txResponse = await this.provider.getTransactionReceipt(
           txSuccessEvent.transactionHash
         )
-        await new Promise((resolve) => setTimeout(resolve, 1000))
+
+        await new Promise((resolve) => setTimeout(resolve, 2000))
       }
 
       this.hash = txResponse.transactionHash
@@ -92,8 +102,10 @@ export class RelayTransactionResponse implements TransactionResponse {
         txResponse = await this.provider.getTransactionReceipt(
           txFailureEvent.transactionHash
         )
-        await new Promise((resolve) => setTimeout(resolve, 1000))
+
+        await new Promise((resolve) => setTimeout(resolve, 2000))
       }
+
       this.hash = txResponse.transactionHash
       this.confirmations = txResponse.confirmations
       this.from = txResponse.from
@@ -102,8 +114,5 @@ export class RelayTransactionResponse implements TransactionResponse {
 
       return txResponse
     }
-
-    await new Promise((resolve) => setTimeout(resolve, 2000))
-    return this.wait()
   }
 }

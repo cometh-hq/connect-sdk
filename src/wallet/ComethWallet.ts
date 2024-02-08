@@ -39,6 +39,7 @@ export interface WalletConfig {
   rpcUrl?: string
   uiConfig?: UIConfig
   baseUrl?: string
+  transactionTimeout?: number
 }
 export class ComethWallet {
   public authAdapter: AUTHAdapter
@@ -51,6 +52,7 @@ export class ComethWallet {
   private sponsoredAddresses?: SponsoredTransaction[]
   private walletAddress?: string
   public signer?: JsonRpcSigner | Wallet | WebAuthnSigner
+  public transactionTimeout?: number
   private projectParams?: ProjectParams
   private walletInfos?: WalletInfos
   private uiConfig: UIConfig
@@ -62,7 +64,8 @@ export class ComethWallet {
     baseUrl,
     uiConfig = {
       displayValidationModal: true
-    }
+    },
+    transactionTimeout
   }: WalletConfig) {
     this.authAdapter = authAdapter
     this.chainId = +authAdapter.chainId
@@ -73,6 +76,7 @@ export class ComethWallet {
     this.BASE_GAS = DEFAULT_BASE_GAS_WEBAUTHN
     this.REWARD_PERCENTILE = DEFAULT_REWARD_PERCENTILE
     this.uiConfig = uiConfig
+    this.transactionTimeout = transactionTimeout
   }
 
   /**
