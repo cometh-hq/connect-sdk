@@ -102,11 +102,7 @@ const getOwners = async (
 ): Promise<string[]> => {
   const safeInstance = await Safe__factory.connect(walletAddress, provider)
 
-  if ((await isDeployed(walletAddress, provider)) === true) {
-    return await safeInstance.getOwners()
-  } else {
-    throw new Error('wallet is not deployed')
-  }
+  return await safeInstance.getOwners()
 }
 
 const prepareAddOwnerTx = async (

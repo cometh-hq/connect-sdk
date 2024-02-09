@@ -11,16 +11,20 @@ import safeService from './safeService'
 
 export const _setSignerLocalStorage = async (
   walletAddress: string,
-  privateKey: string,
+  signer: Wallet,
   salt?: string
 ): Promise<void> => {
   const { encryptedPrivateKey, iv } = await encryptEoaFallback(
     walletAddress,
-    privateKey,
+    signer.privateKey,
     salt || defaultEncryptionSalt
   )
 
-  const storageValue = formatStorageValue(encryptedPrivateKey, iv)
+  const storageValue = formatStorageValue(
+    encryptedPrivateKey,
+    iv,
+    signer.address
+  )
 
   window.localStorage.setItem(
     `cometh-connect-fallback-${walletAddress}`,
@@ -28,10 +32,10 @@ export const _setSignerLocalStorage = async (
   )
 }
 
-export const _getSignerLocalStorage = async (
+export const getSignerLocalStorage = async (
   walletAddress: string,
   salt?: string
-): Promise<string | null> => {
+): Promise<Wallet | null> => {
   const localStorageV1 = window.localStorage.getItem(
     `cometh-connect-${walletAddress}`
   )
@@ -41,12 +45,13 @@ export const _getSignerLocalStorage = async (
   )
 
   if (localStorageV1) {
-    const privatekey = localStorageV1
+    const privateKey = localStorageV1
+    const signer = new Wallet(privateKey)
 
-    await _setSignerLocalStorage(walletAddress, privatekey, salt)
+    await _setSignerLocalStorage(walletAddress, signer, salt)
     window.localStorage.removeItem(`cometh-connect-${walletAddress}`)
 
-    return privatekey
+    return signer
   }
 
   if (localStorageV2) {
@@ -59,7 +64,9 @@ export const _getSignerLocalStorage = async (
       salt || defaultEncryptionSalt
     )
 
-    return privateKey
+    const signer = new Wallet(privateKey)
+
+    return signer
   }
 
   return null
@@ -78,22 +85,14 @@ export const createSigner = async ({
 
   // if import external safe wallet
   if (walletAddress) {
-    await _setSignerLocalStorage(
-      walletAddress,
-      signer.privateKey,
-      encryptionSalt
-    )
+    await _setSignerLocalStorage(walletAddress, signer, encryptionSalt)
     return { signer, walletAddress }
   }
 
   // if safe created by cometh wallet SDK
   const predictedWalletAddress = await API.getWalletAddress(signer.address)
 
-  await _setSignerLocalStorage(
-    predictedWalletAddress,
-    signer.privateKey,
-    encryptionSalt
-  )
+  await _setSignerLocalStorage(predictedWalletAddress, signer, encryptionSalt)
 
   return { signer, walletAddress: predictedWalletAddress }
 }
@@ -109,20 +108,15 @@ export const getSigner = async ({
   walletAddress: string
   encryptionSalt?: string
 }): Promise<Wallet> => {
-  const storagePrivateKey = await _getSignerLocalStorage(
-    walletAddress,
-    encryptionSalt
-  )
+  const signer = await getSignerLocalStorage(walletAddress, encryptionSalt)
 
-  if (!storagePrivateKey)
+  if (!signer)
     throw new Error(
       'New Domain detected. You need to add that domain as signer.'
     )
 
-  const storageSigner = new Wallet(storagePrivateKey)
-
   const isOwner = await safeService.isSigner(
-    storageSigner.address,
+    signer.address,
     walletAddress,
     provider,
     API
@@ -133,7 +127,7 @@ export const getSigner = async ({
       'New Domain detected. You need to add that domain as signer.'
     )
 
-  return storageSigner
+  return signer
 }
 
 const encryptEoaFallback = async (
@@ -192,11 +186,13 @@ const decryptEoaFallback = async (
 
 const formatStorageValue = (
   encryptedPrivateKey: string,
-  iv: string
+  iv: string,
+  signerAddress: string
 ): string => {
   return JSON.stringify({
     encryptedPrivateKey,
-    iv
+    iv,
+    signerAddress
   })
 }
 
@@ -210,5 +206,6 @@ export default {
   encryptEoaFallback,
   decryptEoaFallback,
   formatStorageValue,
-  unFormatStorageValue
+  unFormatStorageValue,
+  getSignerLocalStorage
 }

@@ -1,3 +1,5 @@
+import { webAuthnOptions } from './wallet/types'
+
 export const API_URL = 'https://api.connect.cometh.io/'
 export const DEFAULT_CHAIN_ID = 137
 export const DEFAULT_RPC_TARGET = 'https://polygon-rpc.com'
@@ -87,9 +89,19 @@ export const challengePrefix = '226368616c6c656e6765223a'
 
 export const importSafeMessage = 'Use my wallet with Cometh Connect'
 
-export const ADD_OWNER_FUNCTION_SELECTOR = '0x0d582f13'
-
 export const defaultEncryptionSalt = 'COMETH-CONNECT'
 export const Pbkdf2Iterations = 1000000
 
 export const SAFE_SENTINEL_OWNERS = '0x1'
+
+export const DEFAULT_WEBAUTHN_OPTIONS: webAuthnOptions = {
+  // authenticatorSelection documentation can be found here: https://www.w3.org/TR/webauthn-2/#dictdef-authenticatorselectioncriteria
+  authenticatorSelection: {
+    authenticatorAttachment: 'platform',
+    residentKey: 'preferred',
+    userVerification: 'preferred'
+  }
+}
+
+// 60 secondes
+export const DEFAULT_CONFIRMATION_TIME = 60 * 1000

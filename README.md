@@ -66,8 +66,10 @@ This function logs the user out and clears the cache.
 ### Send transaction
 
 ```javascript
-const tx = { to: DESTINATION, value: VALUE, data: DATA }
-const relayId = await wallet.sendTransaction(tx)
+const txParams = { to: DESTINATION, value: VALUE, data: DATA }
+const tx = await wallet.sendTransaction(txParams)
+const txPending = await provider.getTransaction(tx.safeTxHash); 
+const txReceipt = await txPending.wait();
 ```
 
 This function relays the transaction data to the target address. The transaction fees can be sponsored.
@@ -75,11 +77,13 @@ This function relays the transaction data to the target address. The transaction
 ### Send Batch transactions
 
 ```javascript
-const txBatch = [
+const txParams = [
   { to: DESTINATION, value: VALUE, data: DATA },
   { to: DESTINATION, value: VALUE, data: DATA }
 ]
-const relayId = await wallet.sendBatchTransactions(txBatch)
+const tx = await wallet.sendBatchTransactions(txParams)
+const txPending = await provider.getTransaction(tx.safeTxHash); 
+const txReceipt = await txPending.wait();
 ```
 
 This function relays a batch of transaction data to the targeted addresses. The transaction fees can be sponsored as well.
@@ -125,7 +129,7 @@ const nftContract = new ethers.Contract(
 )
 
 const tx = await nftContract.count()
-const txResponse = await tx.wait()
+const txReceipt = await tx.wait()
 ```
 
 You can also interact with the interface of a contract, calling directly the contract functions.

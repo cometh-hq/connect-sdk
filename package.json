@@ -1,6 +1,6 @@
 {
   "name": "@cometh/connect-sdk",
-  "version": "1.2.10",
+  "version": "1.2.11-rc.1",
   "main": "dist/index.js",
   "types": "dist/index.d.ts",
   "description": "SDK Cometh Connect",
@@ -73,7 +73,6 @@
     "elliptic": "^6.5.4",
     "ethers": "^5.7.1",
     "ethers-multisend": "^2.4.0",
-    "jsonwebtoken": "^9.0.2",
     "lodash": "^4.17.21",
     "psl": "^1.9.0",
     "react": "^18.0.0",

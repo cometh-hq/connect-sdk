@@ -4,7 +4,6 @@ import { formatEther, hashMessage, parseUnits } from 'ethers/lib/utils'
 import { encodeMulti, MetaTransaction } from 'ethers-multisend'
 
 import {
-  ADD_OWNER_FUNCTION_SELECTOR,
   DEFAULT_BASE_GAS_LOCAL_WALLET,
   DEFAULT_BASE_GAS_WEBAUTHN,
   DEFAULT_REWARD_PERCENTILE,
@@ -13,16 +12,20 @@ import {
   networks
 } from '../constants'
 import { API } from '../services'
+import delayModuleService from '../services/delayModuleService'
 import gasService from '../services/gasService'
 import safeService from '../services/safeService'
 import simulateTxService from '../services/simulateTxService'
+import sponsoredService from '../services/sponsoredService'
 import { GasModal } from '../ui'
 import { isMetaTransactionArray } from '../utils/utils'
 import { AUTHAdapter } from './adapters'
 import { WebAuthnSigner } from './signers/WebAuthnSigner'
 import {
+  EnrichedOwner,
   MetaTransactionData,
   ProjectParams,
+  RecoveryRequest,
   SafeTransactionDataPartial,
   SendTransactionResponse,
   SponsoredTransaction,
@@ -36,6 +39,7 @@ export interface WalletConfig {
   rpcUrl?: string
   uiConfig?: UIConfig
   baseUrl?: string
+  transactionTimeout?: number
 }
 export class ComethWallet {
   public authAdapter: AUTHAdapter
@@ -48,7 +52,9 @@ export class ComethWallet {
   private sponsoredAddresses?: SponsoredTransaction[]
   private walletAddress?: string
   public signer?: JsonRpcSigner | Wallet | WebAuthnSigner
+  public transactionTimeout?: number
   private projectParams?: ProjectParams
+  private walletInfos?: WalletInfos
   private uiConfig: UIConfig
 
   constructor({
@@ -58,7 +64,8 @@ export class ComethWallet {
     baseUrl,
     uiConfig = {
       displayValidationModal: true
-    }
+    },
+    transactionTimeout
   }: WalletConfig) {
     this.authAdapter = authAdapter
     this.chainId = +authAdapter.chainId
@@ -69,6 +76,7 @@ export class ComethWallet {
     this.BASE_GAS = DEFAULT_BASE_GAS_WEBAUTHN
     this.REWARD_PERCENTILE = DEFAULT_REWARD_PERCENTILE
     this.uiConfig = uiConfig
+    this.transactionTimeout = transactionTimeout
   }
 
   /**
@@ -93,6 +101,7 @@ export class ComethWallet {
       this.BASE_GAS = DEFAULT_BASE_GAS_LOCAL_WALLET
 
     this.sponsoredAddresses = await this.API.getSponsoredAddresses()
+    this.walletInfos = await this.API.getWalletInfos(this.walletAddress)
     this.connected = true
   }
 
@@ -108,9 +117,8 @@ export class ComethWallet {
     return this.provider
   }
 
-  public async getUserInfos(): Promise<WalletInfos> {
-    const walletInfos = await this.API.getWalletInfos(this.getAddress())
-    return walletInfos
+  public async getWalletInfos(): Promise<WalletInfos> {
+    return await this.API.getWalletInfos(this.getAddress())
   }
 
   public getAddress(): string {
@@ -154,9 +162,42 @@ export class ComethWallet {
   }
 
   public async getOwners(): Promise<string[]> {
-    if (!this.walletAddress) throw new Error('wallet is not connected')
+    if (!this.walletInfos) throw new Error('Wallet is not connected')
 
-    return await safeService.getOwners(this.walletAddress, this.provider)
+    const isWalletDeployed = await safeService.isDeployed(
+      this.walletInfos.address,
+      this.provider
+    )
+
+    const owners = isWalletDeployed
+      ? await safeService.getOwners(this.walletInfos.address, this.provider)
+      : [this.walletInfos.initiatorAddress]
+
+    return owners
+  }
+
+  public async getEnrichedOwners(): Promise<EnrichedOwner[]> {
+    if (!this.walletInfos) throw new Error('Wallet is not connected')
+
+    const owners = await this.getOwners()
+
+    const webAuthnSigners = await this.API.getWebAuthnSignersByWalletAddress(
+      this.walletInfos.address
+    )
+
+    const enrichedOwners = owners.map((owner) => {
+      const webauthSigner = webAuthnSigners.find(
+        (webauthnSigner) => webauthnSigner.signerAddress === owner
+      )
+
+      if (webauthSigner) {
+        return { address: owner, deviceData: webauthSigner.deviceData }
+      } else {
+        return { address: owner }
+      }
+    })
+
+    return enrichedOwners
   }
 
   /**
@@ -213,19 +254,22 @@ export class ComethWallet {
   private async _isSponsoredTransaction(
     safeTransactionData: MetaTransactionData[]
   ): Promise<boolean> {
+    if (!this.walletInfos) throw new Error('Wallet is not connected')
+
     for (let i = 0; i < safeTransactionData.length; i++) {
       const functionSelector = safeService.getFunctionSelector(
         safeTransactionData[i]
       )
 
-      const sponsoredAddress = this.sponsoredAddresses?.find(
-        (sponsoredAddress) =>
-          sponsoredAddress.targetAddress.toLowerCase() ===
-          safeTransactionData[i].to.toLowerCase()
+      const isSponsored = await sponsoredService.isSponsoredAddress(
+        functionSelector,
+        this.walletInfos.address,
+        safeTransactionData[i].to,
+        this.sponsoredAddresses,
+        this.walletInfos.proxyDelayAddress
       )
 
-      if (!sponsoredAddress && functionSelector !== ADD_OWNER_FUNCTION_SELECTOR)
-        return false
+      if (!isSponsored) return false
     }
     return true
   }
@@ -303,7 +347,8 @@ export class ComethWallet {
       value: value ?? '0',
       data: data,
       operation: operation ?? 0,
-      safeTxGas: 0,
+      // Avoid a GS013 error if failure https://github.com/safe-global/safe-smart-account/blob/767ef36bba88bdbc0c9fe3708a4290cabef4c376/contracts/GnosisSafe.sol#L180
+      safeTxGas: 10,
       baseGas: 0,
       gasPrice: 0,
       gasToken: constants.AddressZero,
@@ -418,5 +463,61 @@ export class ComethWallet {
       safeTxDataTyped.gasPrice = +gasPrice
     }
     return safeTxDataTyped
+  }
+
+  async getRecoveryRequest(): Promise<RecoveryRequest | undefined> {
+    if (!this.walletInfos) throw new Error('Wallet is not connected')
+
+    if (!this.walletInfos.proxyDelayAddress)
+      throw new Error(
+        'This Recovery Request type is not supported with this method, please reach out'
+      )
+
+    const isDeployed = await safeService.isDeployed(
+      this.walletInfos.address,
+      this.provider
+    )
+    if (!isDeployed) throw new Error('Wallet is not deployed yet')
+
+    try {
+      const isRecoveryQueueEmpty = await delayModuleService.isQueueEmpty(
+        this.walletInfos.proxyDelayAddress,
+        this.provider
+      )
+
+      if (isRecoveryQueueEmpty) {
+        return undefined
+      } else {
+        return await delayModuleService.getCurrentRecoveryParams(
+          this.walletInfos.proxyDelayAddress,
+          this.provider
+        )
+      }
+    } catch {
+      throw new Error('Failed to get recovery request')
+    }
+  }
+
+  async cancelRecoveryRequest(): Promise<SendTransactionResponse> {
+    if (!this.walletInfos) throw new Error('Wallet is not connected')
+
+    if (!this.walletInfos.proxyDelayAddress)
+      throw new Error(
+        'This Recovery Request type is not supported with this method, please reach out'
+      )
+
+    const recoveryRequest = await this.getRecoveryRequest()
+    if (!recoveryRequest) throw new Error('No recovery request found')
+
+    try {
+      const tx = await delayModuleService.createSetTxNonceFunction(
+        this.walletInfos.proxyDelayAddress,
+        this.provider
+      )
+
+      return await this.sendTransaction(tx)
+    } catch {
+      throw new Error('Failed to cancel recovery request')
+    }
   }
 }
