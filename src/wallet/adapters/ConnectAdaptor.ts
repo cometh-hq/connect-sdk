@@ -223,7 +223,10 @@ export class ConnectAdaptor implements AUTHAdapter {
 
     const wallet = await this.getWalletInfos(walletAddress)
 
-    if (wallet) return wallet.initiatorAddress
+    if (wallet) {
+      console.warn('Wallet already imported.')
+      return wallet.initiatorAddress
+    }
 
     const isWebAuthnCompatible = await webAuthnService.isWebAuthnCompatible(
       this.webAuthnOptions
