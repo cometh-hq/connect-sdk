@@ -130,7 +130,7 @@ export class ConnectAdaptor implements AUTHAdapter {
         })
 
       if (!walletAddress || !signerAddress)
-        throw new Error('Error in webauthn creation')
+        throw new Error('Error in passkey creation')
 
       webAuthnService.setWebauthnCredentialsInStorage(
         walletAddress,

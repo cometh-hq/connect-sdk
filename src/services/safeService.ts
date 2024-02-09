@@ -134,6 +134,9 @@ const prepareRemoveOwnerTx = async (
   owner: string,
   provider: StaticJsonRpcProvider
 ): Promise<MetaTransaction> => {
+  if ((await isDeployed(walletAddress, provider)) === false)
+    throw new Error('Impossible to remove owner: Wallet is not deployed')
+
   const prevOwner = await getSafePreviousOwner(walletAddress, owner, provider)
 
   const tx = {
