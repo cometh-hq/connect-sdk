@@ -316,6 +316,13 @@ export class ConnectAdaptor implements AUTHAdapter {
     walletAddress: string,
     passKeyName?: string
   ): Promise<NewSignerRequestBody> {
+    const wallet = await this.getWalletInfos(walletAddress)
+
+    if (!wallet)
+      throw new Error(
+        'Wallet does not exist in db. Please verify walletAddress'
+      )
+
     const { addNewSignerRequest, localPrivateKey } =
       await this.createSignerObject(walletAddress, passKeyName)
 
@@ -411,6 +418,13 @@ export class ConnectAdaptor implements AUTHAdapter {
     walletAddress: string,
     passKeyName?: string
   ): Promise<NewSignerRequestBody> {
+    const wallet = await this.getWalletInfos(walletAddress)
+
+    if (!wallet)
+      throw new Error(
+        'Wallet does not exist in db. Please verify walletAddress'
+      )
+
     const isDeployed = await safeService.isDeployed(
       walletAddress,
       this.provider
