@@ -7,6 +7,7 @@ export const networks = {
   // Default network: Polygon
   137: {
     RPCUrl: process.env.RPC_URL_POLYGON || 'https://polygon-rpc.com',
+
     networkName: 'Polygon',
     currency: 'MATIC'
   },
