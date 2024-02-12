@@ -356,7 +356,7 @@ export class ConnectAdaptor implements AUTHAdapter {
       this.webAuthnOptions
     )
 
-    if (isWebAuthnCompatible) {
+    if (isWebAuthnCompatible && !this._isFallbackSigner()) {
       const { publicKeyId, publicKeyX, publicKeyY, publicKeyAlgorithm } =
         await webAuthnService.createCredential(
           this.webAuthnOptions,
@@ -380,8 +380,7 @@ export class ConnectAdaptor implements AUTHAdapter {
             publicKeyId,
             publicKeyX,
             publicKeyY
-          },
-          localPrivateKey: undefined
+          }
         }
       }
     }

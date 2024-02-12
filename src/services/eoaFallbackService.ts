@@ -122,10 +122,7 @@ export const getSigner = async ({
     API
   )
 
-  if (!isOwner)
-    throw new Error(
-      'New Domain detected. You need to add that domain as signer.'
-    )
+  if (!isOwner) throw new Error('Signer detected is not owner of the wallet')
 
   return signer
 }
