@@ -333,9 +333,12 @@ export class ConnectAdaptor implements AUTHAdapter {
         addNewSignerRequest.signerAddress!
       )
     } else {
-      window.localStorage.setItem(
-        `cometh-connect-${walletAddress}`,
-        localPrivateKey!
+      if (!localPrivateKey) throw new Error('no fallback signer found')
+
+      eoaFallbackService.setSignerLocalStorage(
+        walletAddress,
+        new Wallet(localPrivateKey),
+        this.encryptionSalt
       )
     }
 
@@ -418,24 +421,6 @@ export class ConnectAdaptor implements AUTHAdapter {
     walletAddress: string,
     passKeyName?: string
   ): Promise<NewSignerRequestBody> {
-    const wallet = await this.getWalletInfos(walletAddress)
-
-    if (!wallet)
-      throw new Error(
-        'Wallet does not exist in db. Please verify walletAddress'
-      )
-
-    const isDeployed = await safeService.isDeployed(
-      walletAddress,
-      this.provider
-    )
-    if (!isDeployed) throw new Error('Wallet is not deployed yet')
-
-    const { addNewSignerRequest } = await this.createSignerObject(
-      walletAddress,
-      passKeyName
-    )
-
-    return addNewSignerRequest
+    return this.initNewSignerRequest(walletAddress, passKeyName)
   }
 }

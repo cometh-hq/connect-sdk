@@ -9,7 +9,7 @@ import { API } from './API'
 import { getRandomIV } from './randomIvService'
 import safeService from './safeService'
 
-export const _setSignerLocalStorage = async (
+export const setSignerLocalStorage = async (
   walletAddress: string,
   signer: Wallet,
   salt?: string
@@ -48,7 +48,7 @@ export const getSignerLocalStorage = async (
     const privateKey = localStorageV1
     const signer = new Wallet(privateKey)
 
-    await _setSignerLocalStorage(walletAddress, signer, salt)
+    await setSignerLocalStorage(walletAddress, signer, salt)
     window.localStorage.removeItem(`cometh-connect-${walletAddress}`)
 
     return signer
@@ -85,14 +85,14 @@ export const createSigner = async ({
 
   // if import external safe wallet
   if (walletAddress) {
-    await _setSignerLocalStorage(walletAddress, signer, encryptionSalt)
+    await setSignerLocalStorage(walletAddress, signer, encryptionSalt)
     return { signer, walletAddress }
   }
 
   // if safe created by cometh wallet SDK
   const predictedWalletAddress = await API.getWalletAddress(signer.address)
 
-  await _setSignerLocalStorage(predictedWalletAddress, signer, encryptionSalt)
+  await setSignerLocalStorage(predictedWalletAddress, signer, encryptionSalt)
 
   return { signer, walletAddress: predictedWalletAddress }
 }
@@ -207,5 +207,6 @@ export default {
   decryptEoaFallback,
   formatStorageValue,
   unFormatStorageValue,
-  getSignerLocalStorage
+  getSignerLocalStorage,
+  setSignerLocalStorage
 }
