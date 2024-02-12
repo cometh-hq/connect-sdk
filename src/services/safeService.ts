@@ -232,8 +232,6 @@ const isSigner = async (
   API: API
 ): Promise<boolean> => {
   try {
-    await isDeployed(walletAddress, provider)
-
     const owner = await isSafeOwner(walletAddress, signerAddress, provider)
 
     if (!owner) return false
