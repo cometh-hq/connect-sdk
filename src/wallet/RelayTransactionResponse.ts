@@ -114,5 +114,7 @@ export class RelayTransactionResponse implements TransactionResponse {
 
       return txResponse
     }
+
+    throw new Error('Error in the relayed transaction')
   }
 }

@@ -347,8 +347,7 @@ export class ComethWallet {
       value: value ?? '0',
       data: data,
       operation: operation ?? 0,
-      // Avoid a GS013 error if failure https://github.com/safe-global/safe-smart-account/blob/767ef36bba88bdbc0c9fe3708a4290cabef4c376/contracts/GnosisSafe.sol#L180
-      safeTxGas: 10,
+      safeTxGas: 0,
       baseGas: 0,
       gasPrice: 0,
       gasToken: constants.AddressZero,

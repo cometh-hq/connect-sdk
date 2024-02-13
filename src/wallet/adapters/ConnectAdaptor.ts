@@ -130,7 +130,7 @@ export class ConnectAdaptor implements AUTHAdapter {
         })
 
       if (!walletAddress || !signerAddress)
-        throw new Error('Error in webauthn creation')
+        throw new Error('Error in passkey creation')
 
       webAuthnService.setWebauthnCredentialsInStorage(
         walletAddress,
@@ -223,7 +223,10 @@ export class ConnectAdaptor implements AUTHAdapter {
 
     const wallet = await this.getWalletInfos(walletAddress)
 
-    if (wallet) return wallet.initiatorAddress
+    if (wallet) {
+      console.warn('Wallet already imported.')
+      return wallet.initiatorAddress
+    }
 
     const isWebAuthnCompatible = await webAuthnService.isWebAuthnCompatible(
       this.webAuthnOptions
@@ -313,6 +316,13 @@ export class ConnectAdaptor implements AUTHAdapter {
     walletAddress: string,
     passKeyName?: string
   ): Promise<NewSignerRequestBody> {
+    const wallet = await this.getWalletInfos(walletAddress)
+
+    if (!wallet)
+      throw new Error(
+        'Wallet does not exist in db. Please verify walletAddress'
+      )
+
     const { addNewSignerRequest, localPrivateKey } =
       await this.createSignerObject(walletAddress, passKeyName)
 
@@ -323,9 +333,12 @@ export class ConnectAdaptor implements AUTHAdapter {
         addNewSignerRequest.signerAddress!
       )
     } else {
-      window.localStorage.setItem(
-        `cometh-connect-${walletAddress}`,
-        localPrivateKey!
+      if (!localPrivateKey) throw new Error('no fallback signer found')
+
+      eoaFallbackService.setSignerLocalStorage(
+        walletAddress,
+        new Wallet(localPrivateKey),
+        this.encryptionSalt
       )
     }
 
@@ -343,7 +356,7 @@ export class ConnectAdaptor implements AUTHAdapter {
       this.webAuthnOptions
     )
 
-    if (isWebAuthnCompatible) {
+    if (isWebAuthnCompatible && !this._isFallbackSigner()) {
       const { publicKeyId, publicKeyX, publicKeyY, publicKeyAlgorithm } =
         await webAuthnService.createCredential(
           this.webAuthnOptions,
@@ -367,8 +380,7 @@ export class ConnectAdaptor implements AUTHAdapter {
             publicKeyId,
             publicKeyX,
             publicKeyY
-          },
-          localPrivateKey: undefined
+          }
         }
       }
     }
@@ -408,17 +420,6 @@ export class ConnectAdaptor implements AUTHAdapter {
     walletAddress: string,
     passKeyName?: string
   ): Promise<NewSignerRequestBody> {
-    const isDeployed = await safeService.isDeployed(
-      walletAddress,
-      this.provider
-    )
-    if (!isDeployed) throw new Error('Wallet is not deployed yet')
-
-    const { addNewSignerRequest } = await this.createSignerObject(
-      walletAddress,
-      passKeyName
-    )
-
-    return addNewSignerRequest
+    return this.initNewSignerRequest(walletAddress, passKeyName)
   }
 }

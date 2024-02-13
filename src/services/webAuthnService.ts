@@ -87,7 +87,7 @@ const createCredential = async (
       publicKeyAlgorithm
     }
   } catch {
-    throw new Error('Error in the webauthn credential creation')
+    throw new Error('Error in the passkey creation')
   }
 }
 
@@ -280,9 +280,7 @@ const getSigner = async ({
   )
 
   if (webAuthnSigners.length === 0)
-    throw new Error(
-      'New Domain detected. You need to add that domain as signer'
-    )
+    throw new Error('No signer found for this walletAddress')
 
   /* Retrieve potentiel WebAuthn credentials in storage */
   const localStorageWebauthnCredentials =
@@ -301,10 +299,7 @@ const getSigner = async ({
       API
     )
 
-    if (!isOwner)
-      throw new Error(
-        'New Domain detected. You need to add that domain as signer.'
-      )
+    if (!isOwner) throw new Error('Signer found is not owner of the wallet.')
 
     /* If signer exists in db, instantiate WebAuthn signer  */
     if (registeredWebauthnSigner)
@@ -320,7 +315,7 @@ const getSigner = async ({
     signatureParams = await signWithWebAuthn('SDK Connection', webAuthnSigners)
   } catch {
     throw new Error(
-      'New Domain detected. You need to add that domain as signer'
+      'No signer was found on your device. You might need to add that domain as signer'
     )
   }
 
@@ -335,10 +330,7 @@ const getSigner = async ({
     API
   )
 
-  if (!isOwner)
-    throw new Error(
-      'New Domain detected. You need to add that domain as signer.'
-    )
+  if (!isOwner) throw new Error('Signer found is not owner of the wallet.')
 
   /* Store WebAuthn credentials in storage */
   setWebauthnCredentialsInStorage(
@@ -359,13 +351,14 @@ const retrieveWalletAddressFromSigner = async (API: API): Promise<string> => {
   try {
     ;({ publicKeyId } = await signWithWebAuthn('Retrieve user wallet'))
   } catch {
-    throw new Error('Unable to sign message')
+    throw new Error('Unable to retrieve wallet address from passkeys')
   }
 
   const signingWebAuthnSigner = await API.getWebAuthnSignerByPublicKeyId(
     publicKeyId
   )
-  if (!signingWebAuthnSigner) throw new Error('No webauthn signer found')
+  if (!signingWebAuthnSigner)
+    throw new Error('The signer found is not linked to your wallet')
 
   const { walletAddress, signerAddress } = signingWebAuthnSigner
 
