@@ -35,6 +35,7 @@ export type ProjectParams = {
 }
 
 export enum SupportedNetworks {
+  ETHEREUM_MAINNET = '0x1',
   POLYGON = '0x89',
   MUMBAI = '0x13881',
   AVALANCHE = '0xa86a',
@@ -43,7 +44,8 @@ export enum SupportedNetworks {
   CHIADO = '0x27d8',
   MUSTER_TESTNET = '0x205e79',
   MUSTER = '0xfee',
-  REDSTONE_HOLESKY = '0x4269'
+  REDSTONE_HOLESKY = '0x4269',
+  OPTIMISM_SEPOLIA = '0xaa37dc'
 }
 
 export enum DefaultSponsoredFunctions {
