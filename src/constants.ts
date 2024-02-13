@@ -6,7 +6,8 @@ export const DEFAULT_RPC_TARGET = 'https://polygon-rpc.com'
 export const networks = {
   // Default network: Polygon
   1: {
-    RPCUrl: process.env.RPC_URL_POLYGON || 'https://ethereum.publicnode.com',
+    RPCUrl:
+      process.env.RPC_URL_ETHEREUM_MAINNET || 'https://ethereum.publicnode.com',
     networkName: 'Ethereum mainnet',
     currency: 'ETH'
   },
@@ -67,7 +68,8 @@ export const networks = {
     currency: 'ETH'
   },
   11155420: {
-    RPCUrl: process.env.RPC_URL_POLYGON || 'https://sepolia.optimism.io/',
+    RPCUrl:
+      process.env.RPC_URL_OPTIMISM_SEPOLIA || 'https://sepolia.optimism.io/',
     networkName: 'Optimism sepolia',
     currency: 'ETH'
   }
