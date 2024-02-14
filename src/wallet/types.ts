@@ -35,7 +35,6 @@ export type ProjectParams = {
 }
 
 export enum SupportedNetworks {
-  ETHEREUM_MAINNET = '0x1',
   POLYGON = '0x89',
   MUMBAI = '0x13881',
   AVALANCHE = '0xa86a',

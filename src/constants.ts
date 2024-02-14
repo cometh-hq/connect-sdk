@@ -5,12 +5,6 @@ export const DEFAULT_CHAIN_ID = 137
 export const DEFAULT_RPC_TARGET = 'https://polygon-rpc.com'
 export const networks = {
   // Default network: Polygon
-  1: {
-    RPCUrl:
-      process.env.RPC_URL_ETHEREUM_MAINNET || 'https://ethereum.publicnode.com',
-    networkName: 'Ethereum mainnet',
-    currency: 'ETH'
-  },
   137: {
     RPCUrl: process.env.RPC_URL_POLYGON || 'https://polygon-rpc.com',
 
