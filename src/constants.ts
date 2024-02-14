@@ -60,6 +60,12 @@ export const networks = {
       'https://rpc.holesky.redstone.xyz',
     networkName: 'Redstone Holesky',
     currency: 'ETH'
+  },
+  11155420: {
+    RPCUrl:
+      process.env.RPC_URL_OPTIMISM_SEPOLIA || 'https://sepolia.optimism.io/',
+    networkName: 'Optimism sepolia',
+    currency: 'ETH'
   }
 }
 export const GAS_GAP_TOLERANCE = 10

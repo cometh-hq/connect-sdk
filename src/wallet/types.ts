@@ -43,7 +43,8 @@ export enum SupportedNetworks {
   CHIADO = '0x27d8',
   MUSTER_TESTNET = '0x205e79',
   MUSTER = '0xfee',
-  REDSTONE_HOLESKY = '0x4269'
+  REDSTONE_HOLESKY = '0x4269',
+  OPTIMISM_SEPOLIA = '0xaa37dc'
 }
 
 export enum DefaultSponsoredFunctions {
