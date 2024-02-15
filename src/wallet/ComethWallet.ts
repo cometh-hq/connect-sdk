@@ -27,6 +27,7 @@ import {
   ProjectParams,
   RecoveryRequest,
   RelayedTransaction,
+  RelayedTransactionDetails,
   SafeTransactionDataPartial,
   SendTransactionResponse,
   SponsoredTransaction,
@@ -304,6 +305,12 @@ export class ComethWallet {
     }
     const safeTxDataTyped = await this.buildTransaction(safeTxData)
     return await this._signAndSendTransaction(safeTxDataTyped)
+  }
+
+  public async getRelayedTransaction(
+    relayId: string
+  ): Promise<RelayedTransactionDetails> {
+    return await this.API.getRelayedTransaction(relayId)
   }
 
   public async displayModal(
