@@ -20,12 +20,13 @@ import sponsoredService from '../services/sponsoredService'
 import { GasModal } from '../ui'
 import { isMetaTransactionArray } from '../utils/utils'
 import { AUTHAdapter } from './adapters'
-import { WebAuthnSigner } from './signers/WebAuthnSigner'
+import { WebAuthnSigner } from './signers'
 import {
   EnrichedOwner,
   MetaTransactionData,
   ProjectParams,
   RecoveryRequest,
+  RelayedTransaction,
   SafeTransactionDataPartial,
   SendTransactionResponse,
   SponsoredTransaction,
@@ -41,6 +42,7 @@ export interface WalletConfig {
   baseUrl?: string
   transactionTimeout?: number
 }
+
 export class ComethWallet {
   public authAdapter: AUTHAdapter
   readonly chainId: number
@@ -276,7 +278,7 @@ export class ComethWallet {
 
   public async _signAndSendTransaction(
     safeTxDataTyped: SafeTransactionDataPartial
-  ): Promise<string> {
+  ): Promise<RelayedTransaction> {
     const txSignature = await this.signTransaction(safeTxDataTyped)
 
     return await this.API.relayTransaction({
@@ -291,9 +293,7 @@ export class ComethWallet {
   ): Promise<SendTransactionResponse> {
     const safeTxDataTyped = await this.buildTransaction(safeTxData)
 
-    const safeTxHash = await this._signAndSendTransaction(safeTxDataTyped)
-
-    return { safeTxHash }
+    return await this._signAndSendTransaction(safeTxDataTyped)
   }
 
   public async sendBatchTransactions(
@@ -303,10 +303,7 @@ export class ComethWallet {
       throw new Error('Empty array provided, no transaction to send')
     }
     const safeTxDataTyped = await this.buildTransaction(safeTxData)
-
-    const safeTxHash = await this._signAndSendTransaction(safeTxDataTyped)
-
-    return { safeTxHash }
+    return await this._signAndSendTransaction(safeTxDataTyped)
   }
 
   public async displayModal(

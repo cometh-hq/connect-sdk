@@ -6,6 +6,7 @@ import {
   DeviceData,
   NewSignerRequest,
   NewSignerRequestType,
+  RelayedTransaction,
   RelayTransactionType,
   SponsoredTransaction,
   UserNonceType,
@@ -83,7 +84,7 @@ export class API {
     walletAddress,
     safeTxData,
     signatures
-  }: RelayTransactionType): Promise<string> {
+  }: RelayTransactionType): Promise<RelayedTransaction> {
     const body = {
       ...safeTxData,
       nonce: safeTxData?.nonce?.toString(),
@@ -96,7 +97,10 @@ export class API {
       `/wallets/${walletAddress}/relay`,
       body
     )
-    return response.data?.safeTxHash
+    return {
+      safeTxHash: response.data.safeTxHash,
+      relayId: response.data.relayId
+    }
   }
 
   async initWallet({

@@ -12,6 +12,11 @@ export type SponsoredTransaction = {
   targetAddress: string
 }
 
+export type RelayedTransaction = {
+  safeTxHash: string
+  relayId: string
+}
+
 export type WalletInfos = {
   chainId: string
   address: string
@@ -82,6 +87,7 @@ export type RelayTransactionType = {
 
 export type SendTransactionResponse = {
   safeTxHash: string
+  relayId: string
 }
 
 export type TransactionStatus = {
