@@ -7,6 +7,7 @@ import {
   NewSignerRequest,
   NewSignerRequestType,
   RelayedTransaction,
+  RelayedTransactionDetails,
   RelayTransactionType,
   SponsoredTransaction,
   UserNonceType,
@@ -101,6 +102,13 @@ export class API {
       safeTxHash: response.data.safeTxHash,
       relayId: response.data.relayId
     }
+  }
+
+  async getRelayedTransaction(
+    relayId: string
+  ): Promise<RelayedTransactionDetails> {
+    const response = await this.api.get(`/relayed-transactions/${relayId}`)
+    return response.data
   }
 
   async initWallet({
