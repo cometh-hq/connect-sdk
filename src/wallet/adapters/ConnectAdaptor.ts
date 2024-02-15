@@ -221,13 +221,6 @@ export class ConnectAdaptor implements AUTHAdapter {
     )
     if (safeVersion !== '1.3.0') throw new Error('Safe version should be 1.3.0')
 
-    const wallet = await this.getWalletInfos(walletAddress)
-
-    if (wallet) {
-      console.warn('Wallet already imported.')
-      return wallet.initiatorAddress
-    }
-
     const isWebAuthnCompatible = await webAuthnService.isWebAuthnCompatible(
       this.webAuthnOptions
     )
