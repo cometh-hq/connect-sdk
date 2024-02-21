@@ -92,6 +92,22 @@ export class RetrieveWalletFromPasskeyError extends Error {
   }
 }
 
+export class UnauthorizedMethodError extends Error {
+  constructor(methodName: string) {
+    super(`Not authorized method: ${methodName}`)
+  }
+}
+
+/**
+ * Provider Errors
+ **/
+
+export class NoProviderFoundError extends Error {
+  constructor() {
+    super('Missing provider')
+  }
+}
+
 /**
  * Transaction Errors
  **/
@@ -117,6 +133,12 @@ export class EstimateGasError extends Error {
 export class BalanceError extends Error {
   constructor() {
     super('Not enough balance to send this value and pay for gas')
+  }
+}
+
+export class RelayedTransactionError extends Error {
+  constructor() {
+    super('Error during the relay of the transaction')
   }
 }
 

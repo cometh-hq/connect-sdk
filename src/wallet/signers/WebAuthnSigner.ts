@@ -12,7 +12,7 @@ import { EIP712_SAFE_MESSAGE_TYPE, EIP712_SAFE_TX_TYPES } from '../../constants'
 import safeService from '../../services/safeService'
 import webAuthnService from '../../services/webAuthnService'
 import { parseHex } from '../../utils/utils'
-import { TypedDataNotSupportedError } from '../errors'
+import { TypedDataNotSupportedError, UnauthorizedMethodError } from '../errors'
 import { SafeTransactionDataPartial } from '../types'
 
 export class WebAuthnSigner extends Signer {
@@ -64,14 +64,14 @@ export class WebAuthnSigner extends Signer {
   async signTransaction(
     safeTxDataTyped: SafeTransactionDataPartial
   ): Promise<string> {
-    throw new Error('Not authorized method: signTransaction')
+    throw new UnauthorizedMethodError('signTransaction')
   }
 
   async signMessage(messageToSign: string | Bytes): Promise<string> {
-    throw new Error('Not authorized method: signMessage')
+    throw new UnauthorizedMethodError('signMessage')
   }
 
   connect(provider: Provider): Signer {
-    throw new Error('Not authorized method: connect')
+    throw new UnauthorizedMethodError('connect')
   }
 }

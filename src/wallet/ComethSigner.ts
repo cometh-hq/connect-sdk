@@ -9,6 +9,7 @@ import { Deferrable, defineReadOnly, resolveProperties } from 'ethers/lib/utils'
 
 import { ComethProvider } from './ComethProvider'
 import { ComethWallet } from './ComethWallet'
+import { NoProviderFoundError, UnauthorizedMethodError } from './errors'
 
 export class ComethSigner extends Signer {
   constructor(private wallet: ComethWallet, provider: ComethProvider) {
@@ -39,7 +40,7 @@ export class ComethSigner extends Signer {
 
     const transactionResponse = await this.wallet.sendTransaction(safeTx)
 
-    if (!this.provider) throw new Error('missing provider')
+    if (!this.provider) throw new NoProviderFoundError()
 
     return await this.provider.getTransaction(transactionResponse.safeTxHash)
   }
@@ -47,9 +48,9 @@ export class ComethSigner extends Signer {
   signTransaction(
     transaction: Deferrable<TransactionRequest>
   ): Promise<string> {
-    throw new Error('Not authorized method: signTransaction')
+    throw new UnauthorizedMethodError('signTransaction')
   }
   connect(provider: Provider): Signer {
-    throw new Error('Not authorized method: connect')
+    throw new UnauthorizedMethodError('connect')
   }
 }
