@@ -12,6 +12,7 @@ import { EIP712_SAFE_MESSAGE_TYPE, EIP712_SAFE_TX_TYPES } from '../../constants'
 import safeService from '../../services/safeService'
 import webAuthnService from '../../services/webAuthnService'
 import { parseHex } from '../../utils/utils'
+import { TypedDataNotSupportedError } from '../errors'
 import { SafeTransactionDataPartial } from '../types'
 
 export class WebAuthnSigner extends Signer {
@@ -36,7 +37,7 @@ export class WebAuthnSigner extends Signer {
     const IS_SAFE_TX_TYPE = _.isEqual(types, EIP712_SAFE_TX_TYPES)
 
     if (!IS_SAFE_MESSAGE_TYPE && !IS_SAFE_TX_TYPE)
-      throw new Error('types data not supported')
+      throw new TypedDataNotSupportedError()
 
     const data = IS_SAFE_TX_TYPE
       ? _TypedDataEncoder.hash(domain, types, value)

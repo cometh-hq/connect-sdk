@@ -20,6 +20,20 @@ import sponsoredService from '../services/sponsoredService'
 import { GasModal } from '../ui'
 import { isMetaTransactionArray } from '../utils/utils'
 import { AUTHAdapter } from './adapters'
+import {
+  CancelRecoveryError,
+  EmptyBatchTransactionError,
+  GetRecoveryError,
+  NetworkNotSupportedError,
+  NewRecoveryNotSupportedError,
+  NoAdapterFoundError,
+  NoRecoveryRequestFoundError,
+  NoSignerFoundError,
+  ProjectParamsError,
+  TransactionDeniedError,
+  WalletNotConnectedError,
+  WalletNotDeployedError
+} from './errors'
 import { WebAuthnSigner } from './signers/WebAuthnSigner'
 import {
   EnrichedOwner,
@@ -84,18 +98,17 @@ export class ComethWallet {
    */
 
   public async connect(walletAddress?: string): Promise<void> {
-    if (!networks[this.chainId])
-      throw new Error('This network is not supported')
+    if (!networks[this.chainId]) throw new NetworkNotSupportedError()
 
-    if (!this.authAdapter) throw new Error('No EOA adapter found')
+    if (!this.authAdapter) throw new NoAdapterFoundError()
     await this.authAdapter.connect(walletAddress)
 
     this.projectParams = await this.API.getProjectParams()
     this.signer = this.authAdapter.getSigner()
     this.walletAddress = this.authAdapter.getWalletAddress()
 
-    if (!this.signer) throw new Error('No signer found')
-    if (!this.walletAddress) throw new Error('No walletAddress found')
+    if (!this.signer) throw new NoSignerFoundError()
+    if (!this.walletAddress) throw new WalletNotConnectedError()
 
     if (this.signer instanceof Wallet)
       this.BASE_GAS = DEFAULT_BASE_GAS_LOCAL_WALLET
@@ -162,7 +175,7 @@ export class ComethWallet {
   }
 
   public async getOwners(): Promise<string[]> {
-    if (!this.walletInfos) throw new Error('Wallet is not connected')
+    if (!this.walletInfos) throw new WalletNotConnectedError()
 
     const isWalletDeployed = await safeService.isDeployed(
       this.walletInfos.address,
@@ -177,7 +190,7 @@ export class ComethWallet {
   }
 
   public async getEnrichedOwners(): Promise<EnrichedOwner[]> {
-    if (!this.walletInfos) throw new Error('Wallet is not connected')
+    if (!this.walletInfos) throw new WalletNotConnectedError()
 
     const owners = await this.getOwners()
 
@@ -209,7 +222,7 @@ export class ComethWallet {
       messageToSign = hashMessage(messageToSign)
     }
 
-    if (!this.signer) throw new Error('Sign message: missing signer')
+    if (!this.signer) throw new NoSignerFoundError()
 
     return await this.signer._signTypedData(
       {
@@ -224,7 +237,7 @@ export class ComethWallet {
   async signTransaction(
     safeTxData: SafeTransactionDataPartial
   ): Promise<string> {
-    if (!this.signer) throw new Error('Sign message: missing signer')
+    if (!this.signer) throw new NoSignerFoundError()
 
     return await this.signer._signTypedData(
       {
@@ -254,7 +267,7 @@ export class ComethWallet {
   private async _isSponsoredTransaction(
     safeTransactionData: MetaTransactionData[]
   ): Promise<boolean> {
-    if (!this.walletInfos) throw new Error('Wallet is not connected')
+    if (!this.walletInfos) throw new WalletNotConnectedError()
 
     for (let i = 0; i < safeTransactionData.length; i++) {
       const functionSelector = safeService.getFunctionSelector(
@@ -300,7 +313,7 @@ export class ComethWallet {
     safeTxData: MetaTransaction[]
   ): Promise<SendTransactionResponse> {
     if (safeTxData.length === 0) {
-      throw new Error('Empty array provided, no transaction to send')
+      throw new EmptyBatchTransactionError()
     }
     const safeTxDataTyped = await this.buildTransaction(safeTxData)
 
@@ -332,7 +345,7 @@ export class ComethWallet {
         networks[this.chainId].currency
       ))
     ) {
-      throw new Error('Transaction denied')
+      throw new TransactionDeniedError()
     }
   }
 
@@ -364,7 +377,7 @@ export class ComethWallet {
     totalGasCost: BigNumber
     txValue: BigNumber
   }> {
-    if (!this.projectParams) throw new Error('Project params are null')
+    if (!this.projectParams) throw new ProjectParamsError()
 
     const safeTxGas = await simulateTxService.estimateSafeTxGasWithSimulate(
       this.getAddress(),
@@ -412,7 +425,7 @@ export class ComethWallet {
   public async buildTransaction(
     safeTxData: MetaTransaction | MetaTransaction[]
   ): Promise<SafeTransactionDataPartial> {
-    if (!this.projectParams) throw new Error('Project params are null')
+    if (!this.projectParams) throw new ProjectParamsError()
 
     let safeTxDataTyped
     let isSponsoredTransaction: boolean
@@ -465,18 +478,16 @@ export class ComethWallet {
   }
 
   async getRecoveryRequest(): Promise<RecoveryRequest | undefined> {
-    if (!this.walletInfos) throw new Error('Wallet is not connected')
+    if (!this.walletInfos) throw new WalletNotConnectedError()
 
     if (!this.walletInfos.proxyDelayAddress)
-      throw new Error(
-        'This Recovery Request type is not supported with this method, please reach out'
-      )
+      throw new NewRecoveryNotSupportedError()
 
     const isDeployed = await safeService.isDeployed(
       this.walletInfos.address,
       this.provider
     )
-    if (!isDeployed) throw new Error('Wallet is not deployed yet')
+    if (!isDeployed) throw new WalletNotDeployedError()
 
     try {
       const isRecoveryQueueEmpty = await delayModuleService.isQueueEmpty(
@@ -493,20 +504,18 @@ export class ComethWallet {
         )
       }
     } catch {
-      throw new Error('Failed to get recovery request')
+      throw new GetRecoveryError()
     }
   }
 
   async cancelRecoveryRequest(): Promise<SendTransactionResponse> {
-    if (!this.walletInfos) throw new Error('Wallet is not connected')
+    if (!this.walletInfos) throw new WalletNotConnectedError()
 
     if (!this.walletInfos.proxyDelayAddress)
-      throw new Error(
-        'This Recovery Request type is not supported with this method, please reach out'
-      )
+      throw new NewRecoveryNotSupportedError()
 
     const recoveryRequest = await this.getRecoveryRequest()
-    if (!recoveryRequest) throw new Error('No recovery request found')
+    if (!recoveryRequest) throw new NoRecoveryRequestFoundError()
 
     try {
       const tx = await delayModuleService.createSetTxNonceFunction(
@@ -516,7 +525,7 @@ export class ComethWallet {
 
       return await this.sendTransaction(tx)
     } catch {
-      throw new Error('Failed to cancel recovery request')
+      throw new CancelRecoveryError()
     }
   }
 }
