@@ -7,6 +7,7 @@ import { BigNumber } from 'ethers'
 import { parseUnits } from 'ethers/lib/utils'
 
 import stubProvider from '../tests/unit/stubProvider'
+import { BalanceError } from '../wallet/errors'
 import gasService from './gasService'
 
 const WALLET_ADDRESS = '0xecf9D83633dC1DE88400945c0f97B76153a386ec'
@@ -64,9 +65,7 @@ describe('gasService', () => {
           totalGasCost,
           txValue
         )
-      ).rejects.toThrow(
-        new Error('Not enough balance to send this value and pay for gas')
-      )
+      ).rejects.toThrow(new BalanceError())
     })
     it('Given a high gas cost but low txValue, when the wallet balance does not have enough to pay for gas, then throw an error', async () => {
       const totalGasCost = BigNumber.from(800000000000000)
@@ -79,9 +78,7 @@ describe('gasService', () => {
           totalGasCost,
           txValue
         )
-      ).rejects.toThrow(
-        new Error('Not enough balance to send this value and pay for gas')
-      )
+      ).rejects.toThrow(new BalanceError())
     })
   })
 })

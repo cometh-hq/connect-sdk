@@ -13,6 +13,7 @@ import { MultisendInterface } from '../contracts/types/Multisend'
 import { SafeInterface } from '../contracts/types/Safe'
 import { SimulateTxAcessorInterface } from '../contracts/types/SimulateTxAcessor'
 import { isMetaTransactionArray } from '../utils/utils'
+import { EstimateGasError } from '../wallet/errors'
 import safeService from './safeService'
 
 const MultisendContract: MultisendInterface =
@@ -102,7 +103,7 @@ const estimateSafeTxGasWithSimulate = async (
     }
   }
 
-  if (!encodedResponse) throw new Error('Impossible to determine gas...')
+  if (!encodedResponse) throw new EstimateGasError()
 
   const safeTxGas = _decodeSafeTxGas(encodedResponse)
 

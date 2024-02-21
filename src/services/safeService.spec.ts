@@ -3,6 +3,7 @@ import { BigNumber, constants } from 'ethers'
 import { getAddress } from 'ethers/lib/utils'
 
 import { networks } from '../constants'
+import { AddressNotOwnerError } from '../wallet/errors'
 import safeService from './safeService'
 
 const WALLET_ADDRESS = '0x5B76Bb156C4E9Aa322143d0061AFBd856482648D'
@@ -129,7 +130,7 @@ describe('safeService', () => {
 
       await expect(
         safeService.getSafePreviousOwner(walletAddress, ownerToDelete, provider)
-      ).rejects.toThrow(new Error('Address is not an owner of the wallet'))
+      ).rejects.toThrow(new AddressNotOwnerError())
     })
   })
 })
