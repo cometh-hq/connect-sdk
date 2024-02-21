@@ -9,6 +9,7 @@ import { DEFAULT_CONFIRMATION_TIME } from '../constants'
 import safeService from '../services/safeService'
 import { ComethProvider } from './ComethProvider'
 import { ComethWallet } from './ComethWallet'
+import { RelayedTransactionError } from './errors'
 
 export class RelayTransactionResponse implements TransactionResponse {
   hash: string
@@ -115,6 +116,6 @@ export class RelayTransactionResponse implements TransactionResponse {
       return txResponse
     }
 
-    throw new Error('Error in the relayed transaction')
+    throw new RelayedTransactionError()
   }
 }

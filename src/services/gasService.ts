@@ -2,6 +2,7 @@ import { StaticJsonRpcProvider } from '@ethersproject/providers'
 import { BigNumber } from 'ethers'
 
 import { GAS_GAP_TOLERANCE } from '../constants'
+import { BalanceError } from '../wallet/errors'
 
 const getGasPrice = async (
   provider: StaticJsonRpcProvider,
@@ -40,8 +41,7 @@ const verifyHasEnoughBalance = async (
   txValue: BigNumber
 ): Promise<void> => {
   const walletBalance = await provider.getBalance(walletAddress)
-  if (walletBalance.lt(totalGasCost.add(txValue)))
-    throw new Error('Not enough balance to send this value and pay for gas')
+  if (walletBalance.lt(totalGasCost.add(txValue))) throw new BalanceError()
 }
 
 export default {

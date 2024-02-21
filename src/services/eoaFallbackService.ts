@@ -4,6 +4,7 @@ import { Wallet } from 'ethers'
 import { defaultEncryptionSalt, Pbkdf2Iterations } from '../constants'
 import * as cryptolib from '../services/cryptoService'
 import * as utils from '../utils/utils'
+import { NoFallbackSignerError, SignerNotOwnerError } from '../wallet/errors'
 import { fallbackStorageValues } from '../wallet/types'
 import { API } from './API'
 import { getRandomIV } from './randomIvService'
@@ -110,10 +111,7 @@ export const getSigner = async ({
 }): Promise<Wallet> => {
   const signer = await getSignerLocalStorage(walletAddress, encryptionSalt)
 
-  if (!signer)
-    throw new Error(
-      'New Domain detected. You need to add that domain as signer.'
-    )
+  if (!signer) throw new NoFallbackSignerError()
 
   const isOwner = await safeService.isSigner(
     signer.address,
@@ -122,7 +120,7 @@ export const getSigner = async ({
     API
   )
 
-  if (!isOwner) throw new Error('Signer detected is not owner of the wallet')
+  if (!isOwner) throw new SignerNotOwnerError()
 
   return signer
 }
