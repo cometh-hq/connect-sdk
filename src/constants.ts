@@ -17,16 +17,14 @@ export const networks = {
     currency: 'MATIC'
   },
   43114: {
-    RPCUrl:
-      process.env.RPC_URL_AVALANCHE ||
-      'https://avalanche-mainnet.infura.io/v3/5eba3fe58b4646c89a0e3fad285769d4',
+    RPCUrl: process.env.RPC_URL_AVALANCHE || 'https://avalanche.drpc.org',
     networkName: 'Avalanche',
     currency: 'AVAX'
   },
   43113: {
     RPCUrl:
       process.env.RPC_URL_FUJI ||
-      'https://avalanche-fuji.infura.io/v3/5eba3fe58b4646c89a0e3fad285769d4',
+      'https://avalanche-fuji-c-chain-rpc.publicnode.com',
     networkName: 'Fuji',
     currency: 'AVAX'
   },
