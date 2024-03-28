@@ -42,12 +42,15 @@ export enum SupportedNetworks {
   XL_NETWORK = '0xc0c',
   GNOSIS = '0x64',
   CHIADO = '0x27d8',
-  MUSTER_TESTNET = '0x205e79',
   MUSTER = '0xfee',
+  MUSTER_TESTNET = '0x205e79',
   REDSTONE_HOLESKY = '0x4269',
+  OPTIMISM = '0xa',
   OPTIMISM_SEPOLIA = '0xaa37dc',
   ARBITRUM_ONE = '0xa4b1',
-  ARBITRUM_SEPOLIA = '0x66eee'
+  ARBITRUM_SEPOLIA = '0x66eee',
+  BASE = '0x2105',
+  BASE_SEPOLIA = '0x14a34'
 }
 
 export enum DefaultSponsoredFunctions {
