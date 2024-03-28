@@ -6,79 +6,84 @@ export const DEFAULT_RPC_TARGET = 'https://polygon-rpc.com'
 export const networks = {
   // Default network: Polygon
   137: {
-    RPCUrl: process.env.RPC_URL_POLYGON || 'https://polygon-rpc.com',
+    RPCUrl: 'https://polygon-rpc.com',
     networkName: 'Polygon',
     currency: 'MATIC'
   },
   80001: {
-    RPCUrl: process.env.RPC_URL_MUMBAI || 'https://rpc-mumbai.maticvigil.com',
+    RPCUrl: 'https://rpc-mumbai.maticvigil.com',
     networkName: 'Mumbai',
     currency: 'MATIC'
   },
   43114: {
-    RPCUrl: process.env.RPC_URL_AVALANCHE || 'https://avalanche.drpc.org',
+    RPCUrl: 'https://avalanche.drpc.org',
     networkName: 'Avalanche',
     currency: 'AVAX'
   },
   43113: {
-    RPCUrl:
-      process.env.RPC_URL_FUJI ||
-      'https://avalanche-fuji-c-chain-rpc.publicnode.com',
+    RPCUrl: 'https://avalanche-fuji-c-chain-rpc.publicnode.com',
     networkName: 'Fuji',
     currency: 'AVAX'
   },
   3084: {
-    RPCUrl: process.env.RPC_URL_XL_NETWORK || '',
+    RPCUrl: '',
     networkName: 'XL network',
     currency: 'XL'
   },
   100: {
-    RPCUrl: process.env.RPC_URL_GNOSIS || 'https://rpc.gnosischain.com',
+    RPCUrl: 'https://rpc.gnosischain.com',
     networkName: 'Gnosis Chain',
     currency: 'xDai'
   },
   10200: {
     RPCUrl:
-      process.env.RPC_URL_CHIADO ||
       'https://nd-244-554-535.p2pify.com/3e6f7fedad74cbc0637859cf91e7d676',
     networkName: 'Chiado Chain',
     currency: 'xDai'
   },
-  2121337: {
-    RPCUrl:
-      process.env.RPC_URL_MUSTER_TESTNET ||
-      'https://muster-anytrust.alt.technology',
-    networkName: 'Muster Testnet',
-    currency: 'ETH'
-  },
   4078: {
-    RPCUrl: process.env.RPC_URL_MUSTER || 'https://muster.alt.technology/',
+    RPCUrl: 'https://muster.alt.technology/',
     networkName: 'Muster',
     currency: 'ETH'
   },
+  2121337: {
+    RPCUrl: 'https://muster-anytrust.alt.technology',
+    networkName: 'Muster Testnet',
+    currency: 'ETH'
+  },
   17001: {
-    RPCUrl:
-      process.env.RPC_URL_REDSTONE_HOLESKY ||
-      'https://rpc.holesky.redstone.xyz',
+    RPCUrl: 'https://rpc.holesky.redstone.xyz',
     networkName: 'Redstone Holesky',
     currency: 'ETH'
   },
+  10: {
+    RPCUrl: 'https://mainnet.optimism.io',
+    networkName: 'Optimism',
+    currency: 'ETH'
+  },
   11155420: {
-    RPCUrl:
-      process.env.RPC_URL_OPTIMISM_SEPOLIA || 'https://sepolia.optimism.io/',
+    RPCUrl: 'https://sepolia.optimism.io/',
     networkName: 'Optimism sepolia',
     currency: 'ETH'
   },
   42161: {
-    RPCUrl: process.env.RPC_URL_ARBITRUM_ONE || 'https://arbitrum.drpc.org',
+    RPCUrl: 'https://arb1.arbitrum.io/rpc',
     networkName: 'Arbitrum One',
     currency: 'ETH'
   },
   421614: {
-    RPCUrl:
-      process.env.RPC_URL_ARBITRUM_SEPOLIA ||
-      'https://sepolia-rollup.arbitrum.io/rpc',
+    RPCUrl: 'https://sepolia-rollup.arbitrum.io/rpc',
     networkName: 'Arbitrum sepolia',
+    currency: 'ETH'
+  },
+  8453: {
+    RPCUrl: 'https://mainnet.base.org',
+    networkName: 'Base',
+    currency: 'ETH'
+  },
+  84532: {
+    RPCUrl: 'https://sepolia.base.org',
+    networkName: 'Base sepolia',
     currency: 'ETH'
   }
 }
