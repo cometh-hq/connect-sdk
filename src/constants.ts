@@ -7,7 +7,6 @@ export const networks = {
   // Default network: Polygon
   137: {
     RPCUrl: process.env.RPC_URL_POLYGON || 'https://polygon-rpc.com',
-
     networkName: 'Polygon',
     currency: 'MATIC'
   },
@@ -27,6 +26,11 @@ export const networks = {
       'https://avalanche-fuji-c-chain-rpc.publicnode.com',
     networkName: 'Fuji',
     currency: 'AVAX'
+  },
+  3084: {
+    RPCUrl: process.env.RPC_URL_XL_NETWORK || '',
+    networkName: 'XL network',
+    currency: 'XL'
   },
   100: {
     RPCUrl: process.env.RPC_URL_GNOSIS || 'https://rpc.gnosischain.com',
@@ -63,6 +67,18 @@ export const networks = {
     RPCUrl:
       process.env.RPC_URL_OPTIMISM_SEPOLIA || 'https://sepolia.optimism.io/',
     networkName: 'Optimism sepolia',
+    currency: 'ETH'
+  },
+  42161: {
+    RPCUrl: process.env.RPC_URL_ARBITRUM_ONE || 'https://arbitrum.drpc.org',
+    networkName: 'Arbitrum One',
+    currency: 'ETH'
+  },
+  421614: {
+    RPCUrl:
+      process.env.RPC_URL_ARBITRUM_SEPOLIA ||
+      'https://sepolia-rollup.arbitrum.io/rpc',
+    networkName: 'Arbitrum sepolia',
     currency: 'ETH'
   }
 }
