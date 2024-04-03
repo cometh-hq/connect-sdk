@@ -123,19 +123,23 @@ export class RelayTransactionResponse implements TransactionResponse {
     }
 
     if (this.relayId) {
-      const relayedTransaction = await this.wallet.getRelayedTransaction(
-        this.relayId
-      )
-      if (relayedTransaction.status.confirmed) {
-        const txResponse = await getTransactionReceipt(
-          relayedTransaction.status.confirmed.hash
+      try {
+        const relayedTransaction = await this.wallet.getRelayedTransaction(
+          this.relayId
         )
-        this.hash = txResponse.transactionHash
-        this.confirmations = txResponse.confirmations
-        this.from = txResponse.from
-        return txResponse
+        if (relayedTransaction.status.confirmed) {
+          const txResponse = await getTransactionReceipt(
+            relayedTransaction.status.confirmed.hash
+          )
+          this.hash = txResponse.transactionHash
+          this.confirmations = txResponse.confirmations
+          this.from = txResponse.from
+          return txResponse
+        }
+        throw new RelayedTransactionPendingError(this.relayId)
+      } catch (e) {
+        throw new RelayedTransactionPendingError(this.relayId)
       }
-      throw new RelayedTransactionPendingError(this.relayId)
     }
     throw new RelayedTransactionError()
   }
