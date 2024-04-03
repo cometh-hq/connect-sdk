@@ -26,6 +26,12 @@ export class NetworkNotSupportedError extends Error {
   }
 }
 
+export class ProvidedNetworkDifferentThanProjectNetwork extends Error {
+  constructor() {
+    super('The provided network is different than the project network')
+  }
+}
+
 export class ProjectParamsError extends Error {
   constructor() {
     super('Project params are null')

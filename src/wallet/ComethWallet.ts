@@ -30,6 +30,7 @@ import {
   NoRecoveryRequestFoundError,
   NoSignerFoundError,
   ProjectParamsError,
+  ProvidedNetworkDifferentThanProjectNetwork,
   TransactionDeniedError,
   WalletNotConnectedError,
   WalletNotDeployedError
@@ -104,6 +105,9 @@ export class ComethWallet {
     await this.authAdapter.connect(walletAddress)
 
     this.projectParams = await this.API.getProjectParams()
+    if (this.chainId !== +this.projectParams.chainId)
+      throw new ProvidedNetworkDifferentThanProjectNetwork()
+
     this.signer = this.authAdapter.getSigner()
     this.walletAddress = this.authAdapter.getWalletAddress()
 
