@@ -108,7 +108,7 @@ export class API {
     relayId: string
   ): Promise<RelayedTransactionDetails> {
     const response = await this.api.get(`/relayed-transactions/${relayId}`)
-    return response.data
+    return response.data.relayedTransaction
   }
 
   async initWallet({
