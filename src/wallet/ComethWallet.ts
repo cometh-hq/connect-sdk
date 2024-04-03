@@ -41,6 +41,8 @@ import {
   MetaTransactionData,
   ProjectParams,
   RecoveryRequest,
+  RelayedTransaction,
+  RelayedTransactionDetails,
   SafeTransactionDataPartial,
   SendTransactionResponse,
   SponsoredTransaction,
@@ -56,6 +58,7 @@ export interface WalletConfig {
   baseUrl?: string
   transactionTimeout?: number
 }
+
 export class ComethWallet {
   public authAdapter: AUTHAdapter
   readonly chainId: number
@@ -293,7 +296,7 @@ export class ComethWallet {
 
   public async _signAndSendTransaction(
     safeTxDataTyped: SafeTransactionDataPartial
-  ): Promise<string> {
+  ): Promise<RelayedTransaction> {
     const txSignature = await this.signTransaction(safeTxDataTyped)
 
     return await this.API.relayTransaction({
@@ -308,9 +311,7 @@ export class ComethWallet {
   ): Promise<SendTransactionResponse> {
     const safeTxDataTyped = await this.buildTransaction(safeTxData)
 
-    const safeTxHash = await this._signAndSendTransaction(safeTxDataTyped)
-
-    return { safeTxHash }
+    return await this._signAndSendTransaction(safeTxDataTyped)
   }
 
   public async sendBatchTransactions(
@@ -320,10 +321,13 @@ export class ComethWallet {
       throw new EmptyBatchTransactionError()
     }
     const safeTxDataTyped = await this.buildTransaction(safeTxData)
+    return await this._signAndSendTransaction(safeTxDataTyped)
+  }
 
-    const safeTxHash = await this._signAndSendTransaction(safeTxDataTyped)
-
-    return { safeTxHash }
+  public async getRelayedTransaction(
+    relayId: string
+  ): Promise<RelayedTransactionDetails> {
+    return await this.API.getRelayedTransaction(relayId)
   }
 
   public async displayModal(

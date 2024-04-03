@@ -16,7 +16,11 @@ import {
   SAFE_SENTINEL_OWNERS
 } from '../constants'
 import { Safe__factory } from '../contracts/types/factories'
-import { SafeInterface } from '../contracts/types/Safe'
+import {
+  ExecutionFailureEvent,
+  ExecutionSuccessEvent,
+  SafeInterface
+} from '../contracts/types/Safe'
 import { ComethProvider } from '../wallet/ComethProvider'
 import {
   AddressAlreadyOwnerError,
@@ -56,7 +60,7 @@ const getSuccessExecTransactionEvent = async (
   safeTxHash: string,
   walletAddress: string,
   provider: StaticJsonRpcProvider | ComethProvider
-): Promise<any> => {
+): Promise<ExecutionSuccessEvent> => {
   const safeInstance = await Safe__factory.connect(walletAddress, provider)
 
   const transactionEvents = await safeInstance.queryFilter(
@@ -74,7 +78,7 @@ const getFailedExecTransactionEvent = async (
   safeTxHash: string,
   walletAddress: string,
   provider: StaticJsonRpcProvider | ComethProvider
-): Promise<any> => {
+): Promise<ExecutionFailureEvent> => {
   const safeInstance = await Safe__factory.connect(walletAddress, provider)
 
   const transactionEvents = await safeInstance.queryFilter(
