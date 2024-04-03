@@ -420,12 +420,6 @@ export class ConnectAdaptor implements AUTHAdapter {
     walletAddress: string,
     passKeyName?: string
   ): Promise<NewSignerRequestBody> {
-    const isDeployed = await safeService.isDeployed(
-      walletAddress,
-      this.provider
-    )
-    if (!isDeployed) throw new WalletNotDeployedError()
-
     return this.initNewSignerRequest(walletAddress, passKeyName)
   }
 }

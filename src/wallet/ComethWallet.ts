@@ -487,12 +487,6 @@ export class ComethWallet {
     if (!this.walletInfos.proxyDelayAddress)
       throw new NewRecoveryNotSupportedError()
 
-    const isDeployed = await safeService.isDeployed(
-      this.walletInfos.address,
-      this.provider
-    )
-    if (!isDeployed) throw new WalletNotDeployedError()
-
     try {
       const isRecoveryQueueEmpty = await delayModuleService.isQueueEmpty(
         this.walletInfos.proxyDelayAddress,
