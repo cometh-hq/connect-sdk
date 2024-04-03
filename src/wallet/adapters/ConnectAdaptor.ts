@@ -12,6 +12,18 @@ import deviceService from '../../services/deviceService'
 import eoaFallbackService from '../../services/eoaFallbackService'
 import safeService from '../../services/safeService'
 import webAuthnService from '../../services/webAuthnService'
+import {
+  EoaFallbackDisableError,
+  InvalidAddressFormatError,
+  NoFallbackSignerError,
+  NoSignerFoundError,
+  PasskeyCreationError,
+  SafeVersionError,
+  WalletDoesNotExistsError,
+  WalletNotConnectedError,
+  WalletNotDeployedError,
+  WrongSignedMessageError
+} from '../errors'
 import { WebAuthnSigner } from '../signers/WebAuthnSigner'
 import {
   NewSignerRequest,
@@ -84,7 +96,7 @@ export class ConnectAdaptor implements AUTHAdapter {
     isWebAuthnCompatible: boolean
   ): Promise<void> {
     const wallet = await this.getWalletInfos(walletAddress)
-    if (!wallet) throw new Error('Wallet does not exists')
+    if (!wallet) throw new WalletDoesNotExistsError()
 
     if (isWebAuthnCompatible && !this._isFallbackSigner()) {
       const { publicKeyId, signerAddress } = await webAuthnService.getSigner({
@@ -129,8 +141,7 @@ export class ConnectAdaptor implements AUTHAdapter {
           publicKeyY
         })
 
-      if (!walletAddress || !signerAddress)
-        throw new Error('Error in passkey creation')
+      if (!walletAddress || !signerAddress) throw new PasskeyCreationError()
 
       webAuthnService.setWebauthnCredentialsInStorage(
         walletAddress,
@@ -170,8 +181,7 @@ export class ConnectAdaptor implements AUTHAdapter {
   }
 
   _throwErrorWhenEoaFallbackDisabled(): void {
-    if (this.disableEoaFallback)
-      throw new Error('Passkeys are not compatible with your device')
+    if (this.disableEoaFallback) throw new EoaFallbackDisableError()
   }
 
   async retrieveWalletAddressFromSigner(): Promise<string> {
@@ -181,7 +191,7 @@ export class ConnectAdaptor implements AUTHAdapter {
   async getCurrentSigner(): Promise<
     webauthnStorageValues | string | undefined
   > {
-    if (!this.walletAddress) throw new Error('Wallet is not connected')
+    if (!this.walletAddress) throw new WalletNotConnectedError()
 
     if (this._isFallbackSigner()) {
       const localSigner = await eoaFallbackService.getSignerLocalStorage(
@@ -213,20 +223,13 @@ export class ConnectAdaptor implements AUTHAdapter {
     message: string,
     signature: string
   ): Promise<string> {
-    if (message !== importSafeMessage) throw new Error('Wrong message signed')
+    if (message !== importSafeMessage) throw new WrongSignedMessageError()
 
     const safeVersion = await safeService.getSafeVersion(
       walletAddress,
       this.provider
     )
-    if (safeVersion !== '1.3.0') throw new Error('Safe version should be 1.3.0')
-
-    const wallet = await this.getWalletInfos(walletAddress)
-
-    if (wallet) {
-      console.warn('Wallet already imported.')
-      return wallet.initiatorAddress
-    }
+    if (safeVersion !== '1.3.0') throw new SafeVersionError()
 
     const isWebAuthnCompatible = await webAuthnService.isWebAuthnCompatible(
       this.webAuthnOptions
@@ -286,29 +289,29 @@ export class ConnectAdaptor implements AUTHAdapter {
 
   async getWalletInfos(walletAddress: string): Promise<WalletInfos> {
     if (!isAddress(walletAddress)) {
-      throw new Error('Invalid address format')
+      throw new InvalidAddressFormatError()
     }
 
     return await this.API.getWalletInfos(walletAddress)
   }
 
   async logout(): Promise<void> {
-    if (!this.signer) throw new Error('No signer instance found')
+    if (!this.signer) throw new NoSignerFoundError()
     this.signer = undefined
   }
 
   async getAccount(): Promise<string> {
-    if (!this.signer) throw new Error('No signer instance found')
+    if (!this.signer) throw new NoSignerFoundError()
     return this.signer.getAddress()
   }
 
   getSigner(): Wallet | WebAuthnSigner {
-    if (!this.signer) throw new Error('No signer instance found')
+    if (!this.signer) throw new NoSignerFoundError()
     return this.signer
   }
 
   getWalletAddress(): string {
-    if (!this.walletAddress) throw new Error('No wallet instance found')
+    if (!this.walletAddress) throw new WalletNotConnectedError()
     return this.walletAddress
   }
 
@@ -318,10 +321,7 @@ export class ConnectAdaptor implements AUTHAdapter {
   ): Promise<NewSignerRequestBody> {
     const wallet = await this.getWalletInfos(walletAddress)
 
-    if (!wallet)
-      throw new Error(
-        'Wallet does not exist in db. Please verify walletAddress'
-      )
+    if (!wallet) throw new WalletDoesNotExistsError()
 
     const { addNewSignerRequest, localPrivateKey } =
       await this.createSignerObject(walletAddress, passKeyName)
@@ -333,7 +333,7 @@ export class ConnectAdaptor implements AUTHAdapter {
         addNewSignerRequest.signerAddress!
       )
     } else {
-      if (!localPrivateKey) throw new Error('no fallback signer found')
+      if (!localPrivateKey) throw new NoFallbackSignerError()
 
       eoaFallbackService.setSignerLocalStorage(
         walletAddress,

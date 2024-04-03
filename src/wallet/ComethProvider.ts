@@ -8,6 +8,7 @@ import {
 import { DEFAULT_CHAIN_ID } from '../constants'
 import { ComethSigner } from './ComethSigner'
 import { ComethWallet } from './ComethWallet'
+import { UnauthorizedMethodError } from './errors'
 import { RelayTransactionResponse } from './RelayTransactionResponse'
 
 export class ComethProvider extends BaseProvider {
@@ -27,7 +28,7 @@ export class ComethProvider extends BaseProvider {
 
   async perform(method: string, params: any): Promise<any> {
     if (method === 'sendTransaction') {
-      throw new Error('Not authorized method: sendTransaction')
+      throw new UnauthorizedMethodError('sendTransaction')
     }
     return await this.wallet.getProvider().perform(method, params)
   }

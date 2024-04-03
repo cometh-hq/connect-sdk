@@ -12,6 +12,13 @@ import { API } from '../services'
 import * as utils from '../utils/utils'
 import { DeviceData, webAuthnOptions, WebAuthnSigner } from '../wallet'
 import { ComethProvider } from '../wallet/ComethProvider'
+import {
+  NoPasskeySignerFoundInDBError,
+  NoPasskeySignerFoundInDeviceError,
+  PasskeyCreationError,
+  RetrieveWalletFromPasskeyError,
+  SignerNotOwnerError
+} from '../wallet/errors'
 import deviceService from './deviceService'
 import safeService from './safeService'
 
@@ -87,7 +94,7 @@ const createCredential = async (
       publicKeyAlgorithm
     }
   } catch {
-    throw new Error('Error in the passkey creation')
+    throw new PasskeyCreationError()
   }
 }
 
@@ -279,8 +286,7 @@ const getSigner = async ({
     walletAddress
   )
 
-  if (webAuthnSigners.length === 0)
-    throw new Error('No signer found for this walletAddress')
+  if (webAuthnSigners.length === 0) throw new NoPasskeySignerFoundInDBError()
 
   /* Retrieve potentiel WebAuthn credentials in storage */
   const localStorageWebauthnCredentials =
@@ -299,7 +305,7 @@ const getSigner = async ({
       API
     )
 
-    if (!isOwner) throw new Error('Signer found is not owner of the wallet.')
+    if (!isOwner) throw new SignerNotOwnerError()
 
     /* If signer exists in db, instantiate WebAuthn signer  */
     if (registeredWebauthnSigner)
@@ -314,9 +320,7 @@ const getSigner = async ({
   try {
     signatureParams = await signWithWebAuthn('SDK Connection', webAuthnSigners)
   } catch {
-    throw new Error(
-      'No signer was found on your device. You might need to add that domain as signer'
-    )
+    throw new NoPasskeySignerFoundInDeviceError()
   }
 
   const signingWebAuthnSigner = await API.getWebAuthnSignerByPublicKeyId(
@@ -330,7 +334,7 @@ const getSigner = async ({
     API
   )
 
-  if (!isOwner) throw new Error('Signer found is not owner of the wallet.')
+  if (!isOwner) throw new SignerNotOwnerError()
 
   /* Store WebAuthn credentials in storage */
   setWebauthnCredentialsInStorage(
@@ -351,14 +355,13 @@ const retrieveWalletAddressFromSigner = async (API: API): Promise<string> => {
   try {
     ;({ publicKeyId } = await signWithWebAuthn('Retrieve user wallet'))
   } catch {
-    throw new Error('Unable to retrieve wallet address from passkeys')
+    throw new RetrieveWalletFromPasskeyError()
   }
 
   const signingWebAuthnSigner = await API.getWebAuthnSignerByPublicKeyId(
     publicKeyId
   )
-  if (!signingWebAuthnSigner)
-    throw new Error('The signer found is not linked to your wallet')
+  if (!signingWebAuthnSigner) throw new NoPasskeySignerFoundInDBError()
 
   const { walletAddress, signerAddress } = signingWebAuthnSigner
 

@@ -23,6 +23,11 @@ import {
 } from '../contracts/types/Safe'
 import { ComethProvider } from '../wallet/ComethProvider'
 import {
+  AddressAlreadyOwnerError,
+  AddressNotOwnerError,
+  WalletNotDeployedError
+} from '../wallet/errors'
+import {
   MetaTransactionData,
   SafeTransactionDataPartial
 } from '../wallet/types'
@@ -96,7 +101,7 @@ const isSafeOwner = async (
   if ((await isDeployed(walletAddress, provider)) === true) {
     return await safeInstance.isOwner(signerAddress)
   } else {
-    throw new Error('wallet is not deployed')
+    throw new WalletNotDeployedError()
   }
 }
 
@@ -118,7 +123,7 @@ const prepareAddOwnerTx = async (
     const ownerList = await getOwners(walletAddress, provider)
 
     if (ownerList.find((owner) => owner === newOwner))
-      throw new Error('Address is already owner of the smart wallet')
+      throw new AddressAlreadyOwnerError()
   }
 
   const tx = {
@@ -139,7 +144,7 @@ const prepareRemoveOwnerTx = async (
   provider: StaticJsonRpcProvider
 ): Promise<MetaTransaction> => {
   if ((await isDeployed(walletAddress, provider)) === false)
-    throw new Error('Impossible to remove owner: Wallet is not deployed')
+    throw new WalletNotDeployedError()
 
   const prevOwner = await getSafePreviousOwner(walletAddress, owner, provider)
 
@@ -164,7 +169,7 @@ const getSafePreviousOwner = async (
   const ownerList = await getOwners(walletAddress, provider)
   const index = ownerList.findIndex((ownerToFind) => ownerToFind == owner)
 
-  if (index === -1) throw new Error('Address is not an owner of the wallet')
+  if (index === -1) throw new AddressNotOwnerError()
 
   let prevOwner: string
 
@@ -276,7 +281,7 @@ const getSafeVersion = async (
 
     return await safe.VERSION()
   } catch {
-    throw new Error('Please verify that the address is a deployed safe wallet')
+    throw new WalletNotDeployedError()
   }
 }
 
