@@ -426,7 +426,7 @@ export class ConnectAdaptor implements AUTHAdapter {
     if (!walletInfos.recoveryContext)
       throw new Error('Delay context is required')
 
-    let noOngoingRecovery = true
+    let isRecoveryQueueEmpty = true
 
     try {
       const delayAddress = await delayModuleService.getDelayAddress(
@@ -434,7 +434,7 @@ export class ConnectAdaptor implements AUTHAdapter {
         walletInfos.recoveryContext
       )
 
-      noOngoingRecovery = await delayModuleService.isQueueEmpty(
+      isRecoveryQueueEmpty = await delayModuleService.isQueueEmpty(
         delayAddress,
         this.provider
       )
@@ -447,7 +447,7 @@ export class ConnectAdaptor implements AUTHAdapter {
       if (isSafeDeployed) throw Error('Error getting delay address')
     }
 
-    if (!noOngoingRecovery)
+    if (!isRecoveryQueueEmpty)
       throw Error(
         `This walletAddress already has an ongoing recovery request. Cancel or finalize this recovery request before starting a new one`
       )
