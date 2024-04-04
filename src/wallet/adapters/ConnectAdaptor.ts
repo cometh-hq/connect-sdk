@@ -8,6 +8,7 @@ import {
   networks
 } from '../../constants'
 import { API } from '../../services'
+import delayModuleService from '../../services/delayModuleService'
 import deviceService from '../../services/deviceService'
 import eoaFallbackService from '../../services/eoaFallbackService'
 import safeService from '../../services/safeService'
@@ -420,6 +421,36 @@ export class ConnectAdaptor implements AUTHAdapter {
     walletAddress: string,
     passKeyName?: string
   ): Promise<NewSignerRequestBody> {
+    const walletInfos = await this.getWalletInfos(walletAddress)
+
+    if (!walletInfos.recoveryContext)
+      throw new Error('Delay context is required')
+
+    let noOngoingRecovery = true
+
+    try {
+      const delayAddress = await delayModuleService.getDelayAddress(
+        walletAddress,
+        walletInfos.recoveryContext
+      )
+
+      noOngoingRecovery = await delayModuleService.isQueueEmpty(
+        delayAddress,
+        this.provider
+      )
+    } catch {
+      const isSafeDeployed = await safeService.isDeployed(
+        walletAddress,
+        this.provider
+      )
+
+      if (isSafeDeployed) throw Error('Error getting delay address')
+    }
+
+    if (!noOngoingRecovery)
+      throw Error(
+        `This walletAddress already has an ongoing recovery request. Cancel or finalize this recovery request before starting a new one`
+      )
     return this.initNewSignerRequest(walletAddress, passKeyName)
   }
 }
