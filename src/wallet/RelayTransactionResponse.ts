@@ -6,10 +6,17 @@ import { BigNumber } from 'ethers'
 import { AccessList } from 'ethers/lib/utils'
 
 import { DEFAULT_CONFIRMATION_TIME } from '../constants'
+import {
+  ExecutionFailureEvent,
+  ExecutionSuccessEvent
+} from '../contracts/types/Safe'
 import safeService from '../services/safeService'
 import { ComethProvider } from './ComethProvider'
 import { ComethWallet } from './ComethWallet'
-import { RelayedTransactionError } from './errors'
+import {
+  RelayedTransactionError,
+  RelayedTransactionPendingError
+} from './errors'
 
 export class RelayTransactionResponse implements TransactionResponse {
   hash: string
@@ -37,6 +44,7 @@ export class RelayTransactionResponse implements TransactionResponse {
 
   constructor(
     private safeTxHash: string,
+    private relayId: string | undefined,
     private provider: ComethProvider,
     private wallet: ComethWallet
   ) {
@@ -55,17 +63,14 @@ export class RelayTransactionResponse implements TransactionResponse {
     return this.safeTxHash
   }
 
-  public async wait(): Promise<any> {
+  public async wait(): Promise<TransactionReceipt> {
     const startDate = Date.now()
+    const timeoutLimit = new Date(startDate + this.timeout).getTime()
 
-    let txSuccessEvent: any = undefined
-    let txFailureEvent: any = undefined
+    let txSuccessEvent: ExecutionSuccessEvent | undefined = undefined
+    let txFailureEvent: ExecutionFailureEvent | undefined = undefined
 
-    while (
-      !txSuccessEvent &&
-      !txFailureEvent &&
-      new Date(Date.now()) < new Date(startDate + this.timeout)
-    ) {
+    while (!txSuccessEvent && !txFailureEvent && Date.now() < timeoutLimit) {
       await new Promise((resolve) => setTimeout(resolve, 3000))
       txSuccessEvent = await safeService.getSuccessExecTransactionEvent(
         this.safeTxHash,
@@ -79,15 +84,21 @@ export class RelayTransactionResponse implements TransactionResponse {
       )
     }
 
-    if (txSuccessEvent) {
+    const getTransactionReceipt = async (
+      transactionHash: string
+    ): Promise<TransactionReceipt> => {
       let txResponse: TransactionReceipt | null = null
       while (txResponse === null) {
-        txResponse = await this.provider.getTransactionReceipt(
-          txSuccessEvent.transactionHash
-        )
-
+        txResponse = await this.provider.getTransactionReceipt(transactionHash)
         await new Promise((resolve) => setTimeout(resolve, 2000))
       }
+      return txResponse
+    }
+
+    if (txSuccessEvent) {
+      const txResponse = await getTransactionReceipt(
+        txSuccessEvent.transactionHash
+      )
 
       this.hash = txResponse.transactionHash
       this.confirmations = txResponse.confirmations
@@ -98,14 +109,9 @@ export class RelayTransactionResponse implements TransactionResponse {
       return txResponse
     }
     if (txFailureEvent) {
-      let txResponse: TransactionReceipt | null = null
-      while (txResponse === null) {
-        txResponse = await this.provider.getTransactionReceipt(
-          txFailureEvent.transactionHash
-        )
-
-        await new Promise((resolve) => setTimeout(resolve, 2000))
-      }
+      const txResponse = await getTransactionReceipt(
+        txFailureEvent.transactionHash
+      )
 
       this.hash = txResponse.transactionHash
       this.confirmations = txResponse.confirmations
@@ -116,6 +122,25 @@ export class RelayTransactionResponse implements TransactionResponse {
       return txResponse
     }
 
+    if (this.relayId) {
+      try {
+        const relayedTransaction = await this.wallet.getRelayedTransaction(
+          this.relayId
+        )
+        if (relayedTransaction.status.confirmed) {
+          const txResponse = await getTransactionReceipt(
+            relayedTransaction.status.confirmed.hash
+          )
+          this.hash = txResponse.transactionHash
+          this.confirmations = txResponse.confirmations
+          this.from = txResponse.from
+          return txResponse
+        }
+        throw new RelayedTransactionPendingError(this.relayId)
+      } catch (e) {
+        throw new RelayedTransactionPendingError(this.relayId)
+      }
+    }
     throw new RelayedTransactionError()
   }
 }

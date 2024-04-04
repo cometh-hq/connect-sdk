@@ -37,8 +37,11 @@ export class ComethProvider extends BaseProvider {
     return await this.wallet.getProvider().send(method, params)
   }
 
-  async getTransaction(safeTxHash: string): Promise<TransactionResponse> {
-    return new RelayTransactionResponse(safeTxHash, this, this.wallet)
+  async getTransaction(
+    safeTxHash: string,
+    relayId?: string
+  ): Promise<TransactionResponse> {
+    return new RelayTransactionResponse(safeTxHash, relayId, this, this.wallet)
   }
 
   async getTransactionReceipt(

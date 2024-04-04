@@ -1,5 +1,5 @@
 import { StaticJsonRpcProvider } from '@ethersproject/providers'
-import { Contract, utils } from 'ethers'
+import { Contract, ethers, utils } from 'ethers'
 import { MetaTransaction } from 'ethers-multisend'
 
 import delayModuleABI from '../contracts/abis/Delay.json'
@@ -13,7 +13,40 @@ export type DelayContext = {
   recoveryExpiration: number
 }
 
-export const createSetTxNonceFunction = async (
+const getDelayAddress = (
+  safe: string,
+  context: DelayContext
+): Promise<string> => {
+  const cooldown = context.recoveryCooldown
+  const expiration = context.recoveryExpiration
+  const moduleAddress = context.delayModuleAddress
+  const factoryAddress = context.moduleFactoryAddress
+
+  const args = ethers.utils.defaultAbiCoder.encode(
+    ['address', 'address', 'address', 'uint256', 'uint256'],
+    [safe, safe, safe, cooldown, expiration]
+  )
+  const initializer = DelayModule.encodeFunctionData('setUp', [args])
+
+  const code = `0x602d8060093d393df3363d3d373d3d3d363d73${moduleAddress.slice(
+    2
+  )}5af43d82803e903d91602b57fd5bf3`
+
+  const salt = ethers.utils.solidityKeccak256(
+    ['bytes32', 'uint256'],
+    [ethers.utils.keccak256(initializer), safe]
+  )
+
+  return Promise.resolve(
+    ethers.utils.getCreate2Address(
+      factoryAddress,
+      salt,
+      ethers.utils.keccak256(code)
+    )
+  )
+}
+
+const createSetTxNonceFunction = async (
   proxyDelayAddress: string,
   provider: StaticJsonRpcProvider
 ): Promise<MetaTransaction> => {
@@ -35,7 +68,7 @@ export const createSetTxNonceFunction = async (
   }
 }
 
-export const getCurrentRecoveryParams = async (
+const getCurrentRecoveryParams = async (
   delayModuleAddress: string,
   provider: StaticJsonRpcProvider
 ): Promise<{ txCreatedAt: string; txHash: string }> => {
@@ -51,7 +84,7 @@ export const getCurrentRecoveryParams = async (
   return { txCreatedAt, txHash }
 }
 
-export const isQueueEmpty = async (
+const isQueueEmpty = async (
   moduleAddress: string,
   provider: StaticJsonRpcProvider
 ): Promise<boolean> => {
@@ -66,6 +99,7 @@ export const isQueueEmpty = async (
 }
 
 export default {
+  getDelayAddress,
   createSetTxNonceFunction,
   getCurrentRecoveryParams,
   isQueueEmpty

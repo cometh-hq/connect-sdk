@@ -12,6 +12,53 @@ export type SponsoredTransaction = {
   targetAddress: string
 }
 
+export type RelayedTransaction = {
+  safeTxHash: string
+  relayId: string
+}
+
+export type RelayedTransactionStatus = {
+  received: {
+    date: Date
+  }
+  attributed?: {
+    date: Date
+    relayerAddress: string
+  }
+  sent?: {
+    date: Date
+    hash: string
+    gasLimit: string
+    maxPriorityFeePerGas: string
+    maxFeePerGas: string
+    nonce: number
+  }
+  rebroadcasted?: {
+    date: Date
+    hash: string
+    gasLimit: string
+    maxPriorityFeePerGas: string
+    maxFeePerGas: string
+    nonce: number
+  }[]
+  confirmed?: {
+    date: Date
+    hash: string
+    gasUsed: string
+    effectiveGasPrice: string
+    status: number
+  }
+}
+
+export type RelayedTransactionDetails = {
+  id: string
+  to: string
+  data: string
+  projectId?: string
+  isSponsored?: boolean
+  status: RelayedTransactionStatus
+}
+
 export type WalletInfos = {
   chainId: string
   address: string
@@ -88,6 +135,7 @@ export type RelayTransactionType = {
 
 export type SendTransactionResponse = {
   safeTxHash: string
+  relayId: string
 }
 
 export type TransactionStatus = {

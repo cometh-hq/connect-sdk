@@ -42,7 +42,10 @@ export class ComethSigner extends Signer {
 
     if (!this.provider) throw new NoProviderFoundError()
 
-    return await this.provider.getTransaction(transactionResponse.safeTxHash)
+    return await (this.provider as ComethProvider).getTransaction(
+      transactionResponse.safeTxHash,
+      transactionResponse.relayId
+    )
   }
 
   signTransaction(
@@ -50,6 +53,7 @@ export class ComethSigner extends Signer {
   ): Promise<string> {
     throw new UnauthorizedMethodError('signTransaction')
   }
+
   connect(provider: Provider): Signer {
     throw new UnauthorizedMethodError('connect')
   }

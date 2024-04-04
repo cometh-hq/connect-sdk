@@ -1,3 +1,10 @@
+export class RelayedTransactionPendingError extends Error {
+  constructor(public relayId: string) {
+    super(
+      `The transaction has not been confirmed yet on the network, you can track its progress using its relayId(${relayId})`
+    )
+  }
+}
 /**
  * Wallet Errors
  **/
@@ -23,6 +30,12 @@ export class WalletNotDeployedError extends Error {
 export class NetworkNotSupportedError extends Error {
   constructor() {
     super('This network is not supported')
+  }
+}
+
+export class ProvidedNetworkDifferentThanProjectNetwork extends Error {
+  constructor() {
+    super('The provided network is different than the project network')
   }
 }
 

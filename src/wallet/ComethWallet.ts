@@ -30,6 +30,7 @@ import {
   NoRecoveryRequestFoundError,
   NoSignerFoundError,
   ProjectParamsError,
+  ProvidedNetworkDifferentThanProjectNetwork,
   TransactionDeniedError,
   WalletNotConnectedError,
   WalletNotDeployedError
@@ -40,6 +41,8 @@ import {
   MetaTransactionData,
   ProjectParams,
   RecoveryRequest,
+  RelayedTransaction,
+  RelayedTransactionDetails,
   SafeTransactionDataPartial,
   SendTransactionResponse,
   SponsoredTransaction,
@@ -55,6 +58,7 @@ export interface WalletConfig {
   baseUrl?: string
   transactionTimeout?: number
 }
+
 export class ComethWallet {
   public authAdapter: AUTHAdapter
   readonly chainId: number
@@ -104,6 +108,9 @@ export class ComethWallet {
     await this.authAdapter.connect(walletAddress)
 
     this.projectParams = await this.API.getProjectParams()
+    if (this.chainId !== +this.projectParams.chainId)
+      throw new ProvidedNetworkDifferentThanProjectNetwork()
+
     this.signer = this.authAdapter.getSigner()
     this.walletAddress = this.authAdapter.getWalletAddress()
 
@@ -289,7 +296,7 @@ export class ComethWallet {
 
   public async _signAndSendTransaction(
     safeTxDataTyped: SafeTransactionDataPartial
-  ): Promise<string> {
+  ): Promise<RelayedTransaction> {
     const txSignature = await this.signTransaction(safeTxDataTyped)
 
     return await this.API.relayTransaction({
@@ -304,9 +311,7 @@ export class ComethWallet {
   ): Promise<SendTransactionResponse> {
     const safeTxDataTyped = await this.buildTransaction(safeTxData)
 
-    const safeTxHash = await this._signAndSendTransaction(safeTxDataTyped)
-
-    return { safeTxHash }
+    return await this._signAndSendTransaction(safeTxDataTyped)
   }
 
   public async sendBatchTransactions(
@@ -316,10 +321,13 @@ export class ComethWallet {
       throw new EmptyBatchTransactionError()
     }
     const safeTxDataTyped = await this.buildTransaction(safeTxData)
+    return await this._signAndSendTransaction(safeTxDataTyped)
+  }
 
-    const safeTxHash = await this._signAndSendTransaction(safeTxDataTyped)
-
-    return { safeTxHash }
+  public async getRelayedTransaction(
+    relayId: string
+  ): Promise<RelayedTransactionDetails> {
+    return await this.API.getRelayedTransaction(relayId)
   }
 
   public async displayModal(
@@ -482,12 +490,6 @@ export class ComethWallet {
 
     if (!this.walletInfos.proxyDelayAddress)
       throw new NewRecoveryNotSupportedError()
-
-    const isDeployed = await safeService.isDeployed(
-      this.walletInfos.address,
-      this.provider
-    )
-    if (!isDeployed) throw new WalletNotDeployedError()
 
     try {
       const isRecoveryQueueEmpty = await delayModuleService.isQueueEmpty(
