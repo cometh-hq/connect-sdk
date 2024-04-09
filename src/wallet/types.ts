@@ -84,6 +84,7 @@ export type ProjectParams = {
 export enum SupportedNetworks {
   POLYGON = '0x89',
   MUMBAI = '0x13881',
+  AMOY = '0x13882',
   AVALANCHE = '0xa86a',
   FUJI = '0xa869',
   XL_NETWORK = '0xc0c',

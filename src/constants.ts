@@ -15,6 +15,11 @@ export const networks = {
     networkName: 'Mumbai',
     currency: 'MATIC'
   },
+  80002: {
+    RPCUrl: 'https://rpc-amoy.polygon.technology',
+    networkName: 'Amoy',
+    currency: 'MATIC'
+  },
   43114: {
     RPCUrl: 'https://avalanche.drpc.org',
     networkName: 'Avalanche',
