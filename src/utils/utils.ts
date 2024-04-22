@@ -1,17 +1,22 @@
 import { MetaTransaction } from 'ethers-multisend'
 
-export const hexArrayStr = (array): string =>
+export const hexArrayStr = (array: ArrayBuffer): string =>
   new Uint8Array(array).reduce(
     (acc, v) => acc + v.toString(16).padStart(2, '0'),
     '0x'
   )
 
-export const parseHex = (str): Uint8Array =>
-  new Uint8Array(str.match(/[\da-f]{2}/gi).map((h) => parseInt(h, 16)))
+export const parseHex = (str: string): Uint8Array => {
+  const matches = str.match(/[\da-f]{2}/gi)
+  if (matches === null) {
+    return new Uint8Array()
+  }
+  return new Uint8Array(matches.map((h: string) => parseInt(h, 16)))
+}
 
-export const derToRS = (der): any[] => {
+export const derToRS = (der: Uint8Array): Uint8Array[] => {
   let offset = 3
-  let dataOffset
+  let dataOffset: number
 
   if (der[offset] === 0x21) {
     dataOffset = offset + 2
@@ -30,7 +35,7 @@ export const derToRS = (der): any[] => {
   return [r, s]
 }
 
-export const findSequence = (arr, seq): number => {
+export const findSequence = (arr: Uint8Array, seq: Uint8Array): number => {
   for (let i = 0; i < arr.length; ++i) {
     for (let j = 0; j < seq.length; j++) {
       if (arr[i + j] !== seq[j]) {
@@ -45,7 +50,7 @@ export const findSequence = (arr, seq): number => {
 }
 
 export const getChallengeOffset = (
-  clientData: any,
+  clientData: ArrayBuffer,
   challengePrefix: string
 ): number => {
   return (

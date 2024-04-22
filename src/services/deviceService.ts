@@ -3,11 +3,12 @@ import Bowser from 'bowser'
 import { DeviceData } from '../wallet'
 
 const getDeviceData = (): DeviceData => {
-  const result: any = Bowser.getParser(window.navigator.userAgent)
+  const parser = Bowser.getParser(window.navigator.userAgent)
+  const result = parser.getResult()
 
-  const browser = result.parsedResult.browser.name
-  const os = result.parsedResult.os.name
-  const platform = result.parsedResult.platform.type
+  const browser = result.browser.name as string
+  const os = result.os.name as string
+  const platform = result.platform.type as string
 
   return { browser, os, platform }
 }

@@ -32,8 +32,7 @@ import {
   ProjectParamsError,
   ProvidedNetworkDifferentThanProjectNetwork,
   TransactionDeniedError,
-  WalletNotConnectedError,
-  WalletNotDeployedError
+  WalletNotConnectedError
 } from './errors'
 import { WebAuthnSigner } from './signers/WebAuthnSigner'
 import {
