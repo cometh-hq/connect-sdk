@@ -159,6 +159,7 @@ export type WebAuthnSigner = {
   signerAddress: string
   deviceData: DeviceData
   deploymentParams: WebAuthnDeploymentParams
+  creationDate?: Date
 }
 
 export interface webAuthnOptions {
@@ -199,6 +200,7 @@ export type NewSignerRequest = NewSignerRequestBody & {
   projectId: string
   userId: string
   chainId: string
+  creationDate?: Date
 }
 
 export type fallbackStorageValues = {

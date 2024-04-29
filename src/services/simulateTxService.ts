@@ -75,7 +75,7 @@ const estimateSafeTxGasWithSimulate = async (
       transaction.to,
       transaction.value,
       transaction.data,
-      transaction.operation!
+      transaction.operation as number
     ]
   )
 
