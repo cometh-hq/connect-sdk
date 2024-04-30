@@ -210,7 +210,11 @@ export class ComethWallet {
       )
 
       if (webauthSigner) {
-        return { address: owner, deviceData: webauthSigner.deviceData }
+        return {
+          address: owner,
+          deviceData: webauthSigner.deviceData,
+          creationDate: webauthSigner.creationDate
+        }
       } else {
         return { address: owner }
       }
