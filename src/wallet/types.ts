@@ -221,4 +221,5 @@ export type RecoveryRequest = {
 export type EnrichedOwner = {
   address: string
   deviceData?: DeviceData
+  creationDate?: Date
 }
