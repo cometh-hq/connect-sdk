@@ -185,6 +185,12 @@ export class GetRecoveryError extends Error {
   }
 }
 
+export class RecoveryAlreadySetUp extends Error {
+  constructor() {
+    super('You already set up a recovery guardian for that wallet')
+  }
+}
+
 /**
  * Safe specific Errors
  **/

@@ -79,6 +79,8 @@ export type ProjectParams = {
   multisendContractAddress: string
   singletonAddress: string
   simulateTxAcessorAddress: string
+  deploymentManagerAddress: string
+  guardianId: string
 }
 
 export enum SupportedNetworks {

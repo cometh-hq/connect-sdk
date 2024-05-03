@@ -3,14 +3,33 @@ import { Contract, ethers, utils } from 'ethers'
 import { MetaTransaction } from 'ethers-multisend'
 
 import delayModuleABI from '../contracts/abis/Delay.json'
+import delayModuleFactoryABI from '../contracts/abis/DelayFactory.json'
 
 const DelayModule = new utils.Interface(delayModuleABI)
+const DelayModuleFactory = new utils.Interface(delayModuleFactoryABI)
 
 export type DelayContext = {
   delayModuleAddress: string
   moduleFactoryAddress: string
   recoveryCooldown: number
   recoveryExpiration: number
+}
+
+const isDeployed = async ({
+  delayAddress,
+  provider
+}: {
+  delayAddress: string
+  provider: StaticJsonRpcProvider
+}): Promise<boolean> => {
+  const delay = new Contract(delayAddress, delayModuleABI, provider)
+
+  try {
+    await delay.deployed()
+    return true
+  } catch (error) {
+    return false
+  }
 }
 
 const getDelayAddress = (
@@ -98,9 +117,45 @@ const isQueueEmpty = async (
   return txNonce.eq(queueNonce)
 }
 
+const setUpDelayModule = async ({
+  safe,
+  cooldown,
+  expiration
+}: {
+  safe: string
+  cooldown: number
+  expiration: number
+}): Promise<string> => {
+  const setUpArgs = utils.defaultAbiCoder.encode(
+    ['address', 'address', 'address', 'uint256', 'uint256'],
+    [safe, safe, safe, cooldown, expiration]
+  )
+
+  return DelayModule.encodeFunctionData('setUp', [setUpArgs])
+}
+
+const encodeDeployDelayModule = async ({
+  singletonDelayModule,
+  initializer,
+  safe
+}: {
+  singletonDelayModule: string
+  initializer: string
+  safe: string
+}): Promise<string> => {
+  return DelayModuleFactory.encodeFunctionData('deployModule', [
+    singletonDelayModule,
+    initializer,
+    safe
+  ])
+}
+
 export default {
   getDelayAddress,
+  isDeployed,
   createSetTxNonceFunction,
   getCurrentRecoveryParams,
-  isQueueEmpty
+  isQueueEmpty,
+  setUpDelayModule,
+  encodeDeployDelayModule
 }

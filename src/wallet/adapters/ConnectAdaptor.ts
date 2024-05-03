@@ -22,7 +22,6 @@ import {
   SafeVersionError,
   WalletDoesNotExistsError,
   WalletNotConnectedError,
-  WalletNotDeployedError,
   WrongSignedMessageError
 } from '../errors'
 import { WebAuthnSigner } from '../signers/WebAuthnSigner'
