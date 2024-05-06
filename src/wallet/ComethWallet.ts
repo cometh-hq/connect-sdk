@@ -600,14 +600,6 @@ export class ComethWallet {
       }
     ]
 
-    const builtTransaction = await this.buildTransaction(setUpRecoveryTx)
-
-    const txSignature = await this.signTransaction(builtTransaction)
-
-    return await this.API.setUpRecovery({
-      safeTxData: builtTransaction,
-      signatures: txSignature,
-      walletAddress: this.getAddress()
-    })
+    return await this.sendBatchTransactions(setUpRecoveryTx)
   }
 }

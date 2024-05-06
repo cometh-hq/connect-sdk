@@ -99,29 +99,6 @@ export class API {
     }
   }
 
-  async setUpRecovery({
-    walletAddress,
-    safeTxData,
-    signatures
-  }: RelayTransactionType): Promise<RelayedTransaction> {
-    const body = {
-      ...safeTxData,
-      nonce: safeTxData?.nonce?.toString(),
-      baseGas: safeTxData?.baseGas?.toString(),
-      gasPrice: safeTxData?.gasPrice?.toString(),
-      safeTxGas: safeTxData?.safeTxGas?.toString(),
-      signatures
-    }
-    const response = await this.api.post(
-      `/recovery/${walletAddress}/setup`,
-      body
-    )
-    return {
-      safeTxHash: response.data.safeTxHash,
-      relayId: response.data.relayId
-    }
-  }
-
   async getRelayedTransaction(
     relayId: string
   ): Promise<RelayedTransactionDetails> {
