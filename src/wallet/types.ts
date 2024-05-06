@@ -105,7 +105,9 @@ export enum SupportedNetworks {
 
 export enum DefaultSponsoredFunctions {
   ADD_OWNER_FUNCTION_SELECTOR = '0x0d582f13',
-  SET_DELAY_TX_NONCE_SELECTOR = '0x46ba2307'
+  SET_DELAY_TX_NONCE_SELECTOR = '0x46ba2307',
+  DEPLOY_DELAY_MODULE_FUNCTION_SELECTOR = '0xf1ab873c',
+  ENABLE_GUARDIAN_FUNCTION_SELECTOR = '0x610b5925'
 }
 
 export declare enum OperationType {

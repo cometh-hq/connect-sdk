@@ -444,6 +444,8 @@ export class ComethWallet {
     let isSponsoredTransaction: boolean
 
     if (isMetaTransactionArray(safeTxData)) {
+      isSponsoredTransaction = await this._isSponsoredTransaction(safeTxData)
+
       const multisendData = encodeMulti(
         safeTxData,
         this.projectParams.multisendContractAddress
@@ -457,10 +459,6 @@ export class ComethWallet {
           1
         ))
       }
-
-      isSponsoredTransaction = await this._isSponsoredTransaction([
-        safeTxDataTyped
-      ])
     } else {
       safeTxDataTyped = {
         ...(await this._formatTransaction(
@@ -558,6 +556,8 @@ export class ComethWallet {
       this.walletInfos.recoveryContext
     )
 
+    this.walletInfos.proxyDelayAddress = delayAddress
+
     const isDeployed = await delayModuleService.isDeployed({
       delayAddress,
       provider: this.provider
@@ -591,7 +591,7 @@ export class ComethWallet {
       {
         to: delayAddress,
         value: '0',
-        data: await safeService.encodeEnableModule(guardianAddress)
+        data: await delayModuleService.encodeEnableModule(guardianAddress)
       },
       {
         to: walletAddress,
@@ -600,6 +600,14 @@ export class ComethWallet {
       }
     ]
 
-    return await this.sendBatchTransactions(setUpRecoveryTx)
+    const builtTransaction = await this.buildTransaction(setUpRecoveryTx)
+
+    const txSignature = await this.signTransaction(builtTransaction)
+
+    return await this.API.setUpRecovery({
+      safeTxData: builtTransaction,
+      signatures: txSignature,
+      walletAddress: this.getAddress()
+    })
   }
 }

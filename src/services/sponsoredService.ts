@@ -60,6 +60,19 @@ const _isTxSponsorisedByDefault = async (
   )
     return true
 
+  if (
+    functionSelector ===
+      DefaultSponsoredFunctions.ENABLE_GUARDIAN_FUNCTION_SELECTOR &&
+    (targetAddress === proxyDelayAddress || targetAddress === walletAddress)
+  )
+    return true
+
+  if (
+    functionSelector ===
+    DefaultSponsoredFunctions.DEPLOY_DELAY_MODULE_FUNCTION_SELECTOR
+  )
+    return true
+
   return false
 }
 

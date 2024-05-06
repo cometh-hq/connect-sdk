@@ -51,7 +51,7 @@ const estimateSafeTxGasWithSimulate = async (
 ): Promise<BigNumber> => {
   let transaction: MetaTransaction
 
-  if (isMetaTransactionArray(safeTxData) && safeTxData.length !== 1) {
+  if (isMetaTransactionArray(safeTxData)) {
     const multisendData = encodeMultiSendDataForEstimate(safeTxData)
 
     transaction = {

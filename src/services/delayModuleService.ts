@@ -134,6 +134,10 @@ const setUpDelayModule = async ({
   return DelayModule.encodeFunctionData('setUp', [setUpArgs])
 }
 
+const encodeEnableModule = async (address: string): Promise<string> => {
+  return DelayModule.encodeFunctionData('enableModule', [address])
+}
+
 const encodeDeployDelayModule = async ({
   singletonDelayModule,
   initializer,
@@ -157,5 +161,6 @@ export default {
   getCurrentRecoveryParams,
   isQueueEmpty,
   setUpDelayModule,
-  encodeDeployDelayModule
+  encodeDeployDelayModule,
+  encodeEnableModule
 }
