@@ -286,12 +286,15 @@ export class ComethWallet {
         safeTransactionData[i]
       )
 
+      console.log('functionSelector', functionSelector)
+
       const isSponsored = await sponsoredService.isSponsoredAddress(
         functionSelector,
         this.walletInfos.address,
         safeTransactionData[i].to,
         this.sponsoredAddresses,
-        this.walletInfos.proxyDelayAddress
+        this.walletInfos.proxyDelayAddress,
+        this.walletInfos.recoveryContext?.moduleFactoryAddress
       )
 
       if (!isSponsored) return false
