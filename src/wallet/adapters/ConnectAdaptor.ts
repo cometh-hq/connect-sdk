@@ -1,5 +1,5 @@
 import { StaticJsonRpcProvider } from '@ethersproject/providers'
-import { Wallet } from 'ethers'
+import { ethers, Wallet } from 'ethers'
 import { isAddress } from 'ethers/lib/utils'
 
 import {
@@ -22,7 +22,6 @@ import {
   SafeVersionError,
   WalletDoesNotExistsError,
   WalletNotConnectedError,
-  WalletNotDeployedError,
   WrongSignedMessageError
 } from '../errors'
 import { WebAuthnSigner } from '../signers/WebAuthnSigner'
@@ -426,31 +425,45 @@ export class ConnectAdaptor implements AUTHAdapter {
     if (!walletInfos.recoveryContext)
       throw new Error('Delay context is required')
 
-    let isRecoveryQueueEmpty = true
+    const deploymentManagerAddress = await walletInfos.deploymentParams
+      ?.deploymentManagerAddress
 
-    try {
+    const isSafeDeployed = await safeService.isDeployed(
+      walletAddress,
+      this.provider
+    )
+
+    if (isSafeDeployed) {
       const delayAddress = await delayModuleService.getDelayAddress(
         walletAddress,
         walletInfos.recoveryContext
       )
 
-      isRecoveryQueueEmpty = await delayModuleService.isQueueEmpty(
+      const isDelayModuleDeployed = await delayModuleService.isDeployed({
         delayAddress,
-        this.provider
-      )
-    } catch {
-      const isSafeDeployed = await safeService.isDeployed(
-        walletAddress,
-        this.provider
-      )
+        provider: this.provider
+      })
 
-      if (isSafeDeployed) throw Error('Error getting delay address')
+      if (!isDelayModuleDeployed) throw Error('Recovery not setup')
+
+      try {
+        const isRecoveryQueueEmpty = await delayModuleService.isQueueEmpty(
+          delayAddress,
+          this.provider
+        )
+
+        if (!isRecoveryQueueEmpty)
+          throw Error(
+            `This walletAddress already has an ongoing recovery request. Cancel or finalize this recovery request before starting a new one`
+          )
+      } catch {
+        throw Error('Error during recovery request')
+      }
+    } else {
+      if (deploymentManagerAddress === ethers.constants.AddressZero)
+        throw Error('Recovery not set up')
     }
 
-    if (!isRecoveryQueueEmpty)
-      throw Error(
-        `This walletAddress already has an ongoing recovery request. Cancel or finalize this recovery request before starting a new one`
-      )
     return this.initNewSignerRequest(walletAddress, passKeyName)
   }
 }

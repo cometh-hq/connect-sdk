@@ -8,13 +8,15 @@ const isSponsoredAddress = async (
   walletAddress: string,
   targetAddress: string,
   sponsoredAddresses?: SponsoredTransaction[],
-  proxyDelayAddress?: string
+  proxyDelayAddress?: string,
+  delayModuleFactoryAddress?: string
 ): Promise<boolean> => {
   const isTxSponsorisedByDefault = await _isTxSponsorisedByDefault(
     functionSelector,
     walletAddress,
     targetAddress,
-    proxyDelayAddress
+    proxyDelayAddress,
+    delayModuleFactoryAddress
   )
 
   const isContractSponsorisedByProject = await _isContractSponsorisedByProject(
@@ -44,11 +46,14 @@ const _isTxSponsorisedByDefault = async (
   functionSelector: string,
   walletAddress: string,
   targetAddress: string,
-  proxyDelayAddress?: string
+  proxyDelayAddress?: string,
+  delayModuleFactoryAddress?: string
 ): Promise<boolean> => {
   if (
-    functionSelector ===
-      DefaultSponsoredFunctions.ADD_OWNER_FUNCTION_SELECTOR &&
+    (functionSelector ===
+      DefaultSponsoredFunctions.ADD_OWNER_FUNCTION_SELECTOR ||
+      functionSelector ===
+        DefaultSponsoredFunctions.REMOVE_OWNER_FUNCTION_SELECTOR) &&
     targetAddress === walletAddress
   )
     return true
@@ -57,6 +62,20 @@ const _isTxSponsorisedByDefault = async (
     functionSelector ===
       DefaultSponsoredFunctions.SET_DELAY_TX_NONCE_SELECTOR &&
     targetAddress === proxyDelayAddress
+  )
+    return true
+
+  if (
+    functionSelector ===
+      DefaultSponsoredFunctions.ENABLE_GUARDIAN_FUNCTION_SELECTOR &&
+    (targetAddress === proxyDelayAddress || targetAddress === walletAddress)
+  )
+    return true
+
+  if (
+    functionSelector ===
+      DefaultSponsoredFunctions.DEPLOY_DELAY_MODULE_FUNCTION_SELECTOR &&
+    targetAddress === delayModuleFactoryAddress
   )
     return true
 

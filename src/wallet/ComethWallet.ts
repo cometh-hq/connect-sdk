@@ -13,6 +13,7 @@ import {
 } from '../constants'
 import { API } from '../services'
 import delayModuleService from '../services/delayModuleService'
+import deploymentManagerService from '../services/deploymentManagerService'
 import gasService from '../services/gasService'
 import safeService from '../services/safeService'
 import simulateTxService from '../services/simulateTxService'
@@ -31,6 +32,7 @@ import {
   NoSignerFoundError,
   ProjectParamsError,
   ProvidedNetworkDifferentThanProjectNetwork,
+  RecoveryAlreadySetUp,
   TransactionDeniedError,
   WalletNotConnectedError
 } from './errors'
@@ -289,7 +291,8 @@ export class ComethWallet {
         this.walletInfos.address,
         safeTransactionData[i].to,
         this.sponsoredAddresses,
-        this.walletInfos.proxyDelayAddress
+        this.walletInfos.proxyDelayAddress,
+        this.walletInfos.recoveryContext?.moduleFactoryAddress
       )
 
       if (!isSponsored) return false
@@ -442,6 +445,8 @@ export class ComethWallet {
     let isSponsoredTransaction: boolean
 
     if (isMetaTransactionArray(safeTxData)) {
+      isSponsoredTransaction = await this._isSponsoredTransaction(safeTxData)
+
       const multisendData = encodeMulti(
         safeTxData,
         this.projectParams.multisendContractAddress
@@ -455,9 +460,6 @@ export class ComethWallet {
           1
         ))
       }
-      isSponsoredTransaction = await this._isSponsoredTransaction(
-        safeTxDataTyped
-      )
     } else {
       safeTxDataTyped = {
         ...(await this._formatTransaction(
@@ -485,6 +487,7 @@ export class ComethWallet {
       safeTxDataTyped.baseGas = this.BASE_GAS
       safeTxDataTyped.gasPrice = +gasPrice
     }
+
     return safeTxDataTyped
   }
 
@@ -532,5 +535,72 @@ export class ComethWallet {
     } catch {
       throw new CancelRecoveryError()
     }
+  }
+
+  async setUpRecovery(): Promise<SendTransactionResponse> {
+    if (!this.walletInfos || !this.walletInfos.recoveryContext)
+      throw new WalletNotConnectedError()
+
+    if (!this.projectParams) throw new ProjectParamsError()
+
+    const walletAddress = this.walletInfos.address
+    const { guardianId, deploymentManagerAddress } = this.projectParams
+
+    const guardianAddress = await deploymentManagerService.getGuardian({
+      guardianId,
+      deploymentManagerAddress,
+      provider: this.provider
+    })
+
+    const delayAddress = await delayModuleService.getDelayAddress(
+      walletAddress,
+      this.walletInfos.recoveryContext
+    )
+
+    this.walletInfos.proxyDelayAddress = delayAddress
+
+    const isDeployed = await delayModuleService.isDeployed({
+      delayAddress,
+      provider: this.provider
+    })
+
+    if (isDeployed) throw new RecoveryAlreadySetUp()
+
+    const {
+      recoveryCooldown: cooldown,
+      recoveryExpiration: expiration,
+      moduleFactoryAddress,
+      delayModuleAddress: singletonDelayModuleAddress
+    } = this.walletInfos.recoveryContext
+
+    const delayModuleInitializer = await delayModuleService.setUpDelayModule({
+      safe: walletAddress,
+      cooldown,
+      expiration
+    })
+
+    const setUpRecoveryTx = [
+      {
+        to: moduleFactoryAddress,
+        value: '0',
+        data: await delayModuleService.encodeDeployDelayModule({
+          singletonDelayModule: singletonDelayModuleAddress,
+          initializer: delayModuleInitializer,
+          safe: walletAddress
+        })
+      },
+      {
+        to: delayAddress,
+        value: '0',
+        data: await delayModuleService.encodeEnableModule(guardianAddress)
+      },
+      {
+        to: walletAddress,
+        value: '0',
+        data: await safeService.encodeEnableModule(delayAddress)
+      }
+    ]
+
+    return await this.sendBatchTransactions(setUpRecoveryTx)
   }
 }

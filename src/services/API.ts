@@ -6,6 +6,7 @@ import {
   DeviceData,
   NewSignerRequest,
   NewSignerRequestType,
+  ProjectParams,
   RelayedTransaction,
   RelayedTransactionDetails,
   RelayTransactionType,
@@ -23,13 +24,7 @@ export class API {
     this.api.defaults.headers.common['apikey'] = apiKey
   }
 
-  async getProjectParams(): Promise<{
-    chainId: string
-    P256FactoryContractAddress: string
-    multisendContractAddress: string
-    singletonAddress: string
-    simulateTxAcessorAddress: string
-  }> {
+  async getProjectParams(): Promise<ProjectParams> {
     const response = await this.api.get(`/project/params`)
     return response?.data?.projectParams
   }
