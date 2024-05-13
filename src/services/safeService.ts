@@ -285,6 +285,10 @@ const getSafeVersion = async (
   }
 }
 
+const encodeEnableModule = async (address: string): Promise<string> => {
+  return SafeInterface.encodeFunctionData('enableModule', [address])
+}
+
 export default {
   isDeployed,
   getNonce,
@@ -301,5 +305,6 @@ export default {
   isSigner,
   getFunctionSelector,
   encodeMultiSendDataForEstimate,
-  getSafeVersion
+  getSafeVersion,
+  encodeEnableModule
 }
