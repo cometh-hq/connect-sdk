@@ -1,5 +1,5 @@
 import { StaticJsonRpcProvider } from '@ethersproject/providers'
-import { Wallet } from 'ethers'
+import { ethers, Wallet } from 'ethers'
 import { isAddress } from 'ethers/lib/utils'
 
 import {
@@ -425,6 +425,21 @@ export class ConnectAdaptor implements AUTHAdapter {
     if (!walletInfos.recoveryContext)
       throw new Error('Delay context is required')
 
+    const deploymentManagerAddress = await walletInfos.deploymentParams
+      ?.deploymentManagerAddress
+
+    const isSafeDeployed = await safeService.isDeployed(
+      walletAddress,
+      this.provider
+    )
+
+    if (
+      !isSafeDeployed &&
+      deploymentManagerAddress === ethers.constants.AddressZero
+    ) {
+      throw Error('Recovery not set up')
+    }
+
     let isRecoveryQueueEmpty = true
 
     try {
@@ -438,11 +453,6 @@ export class ConnectAdaptor implements AUTHAdapter {
         this.provider
       )
     } catch {
-      const isSafeDeployed = await safeService.isDeployed(
-        walletAddress,
-        this.provider
-      )
-
       if (isSafeDeployed) throw Error('Error getting delay address')
     }
 

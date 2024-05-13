@@ -286,8 +286,6 @@ export class ComethWallet {
         safeTransactionData[i]
       )
 
-      console.log('functionSelector', functionSelector)
-
       const isSponsored = await sponsoredService.isSponsoredAddress(
         functionSelector,
         this.walletInfos.address,
