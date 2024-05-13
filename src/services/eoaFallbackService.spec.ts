@@ -46,7 +46,7 @@ describe('eoaFallbackService', () => {
     })
   })
 
-  /* describe('decryptEoaFallback', () => {
+  describe('decryptEoaFallback', () => {
     const encryptedPrivateKey = utils.base64ToArrayBuffer(
       '93OuZvzQhfsUPuxGnJ4FLIw0P4wrGFw3E0HiaH1rfRqWQFvXoYRREWG00g5FpahVSEfU+xBGnQf/WjkCyq0LFpXtYbjzakyxiqDYsoPdtlU='
     )
@@ -63,7 +63,7 @@ describe('eoaFallbackService', () => {
         '0x58476d0865927d3536ee46ad35d36899e5e362cf0825800f453f6ef7c8547dbe'
       )
     })
-  }) */
+  })
 
   describe('formatStorageValue', () => {
     const encryptedPrivateKey =
