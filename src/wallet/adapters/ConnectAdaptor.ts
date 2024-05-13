@@ -433,33 +433,37 @@ export class ConnectAdaptor implements AUTHAdapter {
       this.provider
     )
 
-    if (
-      !isSafeDeployed &&
-      deploymentManagerAddress === ethers.constants.AddressZero
-    ) {
-      throw Error('Recovery not set up')
-    }
-
-    let isRecoveryQueueEmpty = true
-
-    try {
+    if (isSafeDeployed) {
       const delayAddress = await delayModuleService.getDelayAddress(
         walletAddress,
         walletInfos.recoveryContext
       )
 
-      isRecoveryQueueEmpty = await delayModuleService.isQueueEmpty(
+      const isDelayModuleDeployed = await delayModuleService.isDeployed({
         delayAddress,
-        this.provider
-      )
-    } catch {
-      if (isSafeDeployed) throw Error('Error getting delay address')
+        provider: this.provider
+      })
+
+      if (!isDelayModuleDeployed) throw Error('Recovery not setup')
+
+      try {
+        const isRecoveryQueueEmpty = await delayModuleService.isQueueEmpty(
+          delayAddress,
+          this.provider
+        )
+
+        if (!isRecoveryQueueEmpty)
+          throw Error(
+            `This walletAddress already has an ongoing recovery request. Cancel or finalize this recovery request before starting a new one`
+          )
+      } catch {
+        throw Error('Error during recovery request')
+      }
+    } else {
+      if (deploymentManagerAddress === ethers.constants.AddressZero)
+        throw Error('Recovery not set up')
     }
 
-    if (!isRecoveryQueueEmpty)
-      throw Error(
-        `This walletAddress already has an ongoing recovery request. Cancel or finalize this recovery request before starting a new one`
-      )
     return this.initNewSignerRequest(walletAddress, passKeyName)
   }
 }
