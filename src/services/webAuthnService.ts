@@ -70,10 +70,17 @@ const createCredential = async (
       }
     })
 
-    const attestation = CBOR.decode(
-      webAuthnCredentials?.response?.attestationObject
-    )
+    const attestationObject = webAuthnCredentials?.response?.attestationObject
+
+    let attestation
+    if (attestationObject instanceof ArrayBuffer) {
+      attestation = CBOR.decode(attestationObject)
+    } else {
+      attestation = CBOR.decode(attestationObject.buffer)
+    }
+
     const authData = parseAuthenticatorData(attestation.authData)
+
     const publicKey = CBOR.decode(authData?.credentialPublicKey?.buffer)
     const x = publicKey[-2]
     const y = publicKey[-3]
@@ -93,7 +100,8 @@ const createCredential = async (
       publicKeyId,
       publicKeyAlgorithm
     }
-  } catch {
+  } catch (error) {
+    console.debug(error)
     throw new PasskeyCreationError()
   }
 }
