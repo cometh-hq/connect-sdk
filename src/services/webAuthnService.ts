@@ -50,8 +50,6 @@ const createCredential = async (
     const authenticatorSelection = webAuthnOptions?.authenticatorSelection
     const extensions = webAuthnOptions?.extensions
 
-    console.log({ authenticatorSelection })
-
     const webAuthnCredentials: any = await navigator.credentials.create({
       publicKey: {
         rp: _formatCreatingRpId(),
@@ -60,46 +58,41 @@ const createCredential = async (
           name,
           displayName: name
         },
-        attestation: 'direct',
+        attestation: 'none',
         authenticatorSelection,
         timeout: 30000,
         challenge,
         pubKeyCredParams: [
-          { alg: -7, type: 'public-key' }
-          /*   { alg: -257, type: 'public-key' } */
+          { alg: -7, type: 'public-key' },
+          { alg: -257, type: 'public-key' }
         ],
         extensions
       }
     })
 
-    console.log({ webAuthnCredentials })
+    const attestationObject = webAuthnCredentials?.response?.attestationObject
 
-    const attestation = CBOR.decode(
-      webAuthnCredentials?.response?.attestationObject
-    )
-    console.log({ attestation })
+    let attestation
+    if (attestationObject instanceof ArrayBuffer) {
+      attestation = CBOR.decode(attestationObject)
+    } else {
+      attestation = CBOR.decode(attestationObject.buffer)
+    }
+
     const authData = parseAuthenticatorData(attestation.authData)
-    console.log({ authData })
+
     const publicKey = CBOR.decode(authData?.credentialPublicKey?.buffer)
-    console.log({ publicKey })
     const x = publicKey[-2]
     const y = publicKey[-3]
-    console.log({ x })
     const curve = new EC('p256')
     const point = curve.curve.point(x, y)
-
-    console.log({ point })
 
     const publicKeyAlgorithm =
       webAuthnCredentials.response.getPublicKeyAlgorithm()
 
-    console.log({ publicKeyAlgorithm })
-
     const publicKeyX = `0x${point.getX().toString(16)}`
     const publicKeyY = `0x${point.getY().toString(16)}`
     const publicKeyId = utils.hexArrayStr(webAuthnCredentials.rawId)
-
-    console.log({ publicKeyId })
 
     return {
       publicKeyX,
@@ -107,7 +100,7 @@ const createCredential = async (
       publicKeyId,
       publicKeyAlgorithm
     }
-  } catch {
+  } catch (error) {
     throw new PasskeyCreationError()
   }
 }
