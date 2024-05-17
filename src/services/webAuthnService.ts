@@ -50,6 +50,8 @@ const createCredential = async (
     const authenticatorSelection = webAuthnOptions?.authenticatorSelection
     const extensions = webAuthnOptions?.extensions
 
+    console.log({ authenticatorSelection })
+
     const webAuthnCredentials: any = await navigator.credentials.create({
       publicKey: {
         rp: _formatCreatingRpId(),
@@ -70,22 +72,34 @@ const createCredential = async (
       }
     })
 
+    console.log({ webAuthnCredentials })
+
     const attestation = CBOR.decode(
       webAuthnCredentials?.response?.attestationObject
     )
+    console.log({ attestation })
     const authData = parseAuthenticatorData(attestation.authData)
+    console.log({ authData })
     const publicKey = CBOR.decode(authData?.credentialPublicKey?.buffer)
+    console.log({ publicKey })
     const x = publicKey[-2]
     const y = publicKey[-3]
+    console.log({ x })
     const curve = new EC('p256')
     const point = curve.curve.point(x, y)
+
+    console.log({ point })
 
     const publicKeyAlgorithm =
       webAuthnCredentials.response.getPublicKeyAlgorithm()
 
+    console.log({ publicKeyAlgorithm })
+
     const publicKeyX = `0x${point.getX().toString(16)}`
     const publicKeyY = `0x${point.getY().toString(16)}`
     const publicKeyId = utils.hexArrayStr(webAuthnCredentials.rawId)
+
+    console.log({ publicKeyId })
 
     return {
       publicKeyX,
