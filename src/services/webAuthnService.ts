@@ -101,6 +101,7 @@ const createCredential = async (
       publicKeyAlgorithm
     }
   } catch (error) {
+    console.debug(error)
     throw new PasskeyCreationError()
   }
 }
