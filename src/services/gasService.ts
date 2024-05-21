@@ -1,8 +1,9 @@
 import { StaticJsonRpcProvider } from '@ethersproject/providers'
-import { BigNumber } from 'ethers'
+import { BigNumber, ethers } from 'ethers'
 
 import { GAS_GAP_TOLERANCE } from '../constants'
 import { BalanceError } from '../wallet/errors'
+import { API } from './API'
 
 const getGasPrice = async (
   provider: StaticJsonRpcProvider,
@@ -24,6 +25,24 @@ const getGasPrice = async (
   return gasPrice
 }
 
+const getGasPriceForToken = async (
+  tokenAddress: string,
+  API: API
+): Promise<BigNumber> => {
+  //const gasPriceToken = await API.getGasPriceForToken(tokenAddress)
+
+  //return gasPriceToken
+
+  const response = {
+    gasPriceToken: {
+      type: 'BigNumber',
+      hex: '0x2b9c9c17'
+    }
+  }
+
+  return BigNumber.from(response.gasPriceToken.hex)
+}
+
 const getTotalCost = async (
   safeTxGas: BigNumber,
   baseGas: number,
@@ -38,14 +57,38 @@ const verifyHasEnoughBalance = async (
   provider: StaticJsonRpcProvider,
   walletAddress: string,
   totalGasCost: BigNumber,
-  txValue: BigNumber
+  txValue: BigNumber,
+  gasToken?: string
 ): Promise<void> => {
-  const walletBalance = await provider.getBalance(walletAddress)
+  let walletBalance: BigNumber
+  if (gasToken) {
+    walletBalance = await getBalanceForToken(walletAddress, gasToken, provider)
+  } else {
+    walletBalance = await provider.getBalance(walletAddress)
+  }
+
   if (walletBalance.lt(totalGasCost.add(txValue))) throw new BalanceError()
+}
+
+const getBalanceForToken = async (
+  walletAddress: string,
+  tokenAddress: string,
+  provider: StaticJsonRpcProvider
+): Promise<BigNumber> => {
+  const erc20Abi = ['function balanceOf(address owner) view returns (uint256)']
+  const tokenContract = new ethers.Contract(tokenAddress, erc20Abi, provider)
+  try {
+    const balance = await tokenContract.balanceOf(walletAddress)
+    return balance
+  } catch (error) {
+    throw new Error('Error getting balance for token')
+  }
 }
 
 export default {
   getGasPrice,
+  getGasPriceForToken,
   getTotalCost,
-  verifyHasEnoughBalance
+  verifyHasEnoughBalance,
+  getBalanceForToken
 }

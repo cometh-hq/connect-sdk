@@ -135,3 +135,8 @@ export const DEFAULT_WEBAUTHN_OPTIONS: webAuthnOptions = {
 
 // 60 secondes
 export const DEFAULT_CONFIRMATION_TIME = 60 * 1000
+
+export const supportedTokens = {
+  '0x6ab4E20f36ca48B61ECd66c0450fDf665Fa130be': 'DOLZ',
+  '0x003a932834e914dd4db1ecafb7a8c5927932f7dd': 'TEST'
+}
