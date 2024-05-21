@@ -100,7 +100,7 @@ export class ComethWallet {
     this.REWARD_PERCENTILE = DEFAULT_REWARD_PERCENTILE
     this.uiConfig = uiConfig
     this.transactionTimeout = transactionTimeout
-    this.gasToken = gasToken
+    this.gasToken = gasToken ?? constants.AddressZero
   }
 
   /**
@@ -270,7 +270,7 @@ export class ComethWallet {
         safeTxGas: BigNumber.from(safeTxData.safeTxGas).toString(),
         baseGas: BigNumber.from(safeTxData.baseGas).toString(),
         gasPrice: BigNumber.from(safeTxData.gasPrice).toString(),
-        gasToken: constants.AddressZero,
+        gasToken: safeTxData.gasToken ?? constants.AddressZero,
         refundReceiver: constants.AddressZero,
         nonce: BigNumber.from(
           safeTxData.nonce
@@ -348,7 +348,7 @@ export class ComethWallet {
     let walletBalance: BigNumber
     let currency: string
 
-    if (this.gasToken) {
+    if (this.gasToken && this.gasToken !== constants.AddressZero) {
       walletBalance = await gasService.getBalanceForToken(
         this.getAddress(),
         this.gasToken,
@@ -417,7 +417,7 @@ export class ComethWallet {
 
     let gasPrice: BigNumber
 
-    if (this.gasToken) {
+    if (this.gasToken && this.gasToken !== constants.AddressZero) {
       gasPrice = await gasService.getGasPriceForToken(this.gasToken, this.API)
     } else {
       gasPrice = await gasService.getGasPrice(
@@ -506,7 +506,7 @@ export class ComethWallet {
       safeTxDataTyped.safeTxGas = +safeTxGas
       safeTxDataTyped.baseGas = this.BASE_GAS
       safeTxDataTyped.gasPrice = +gasPrice
-      safeTxDataTyped.gasToken = this.gasToken
+      safeTxDataTyped.gasToken = this.gasToken ?? constants.AddressZero
     }
 
     return safeTxDataTyped

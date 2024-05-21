@@ -61,7 +61,7 @@ const verifyHasEnoughBalance = async (
   gasToken?: string
 ): Promise<void> => {
   let walletBalance: BigNumber
-  if (gasToken) {
+  if (gasToken && gasToken !== ethers.constants.AddressZero) {
     walletBalance = await getBalanceForToken(walletAddress, gasToken, provider)
   } else {
     walletBalance = await provider.getBalance(walletAddress)
