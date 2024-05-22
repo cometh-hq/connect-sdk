@@ -29,18 +29,9 @@ const getGasPriceForToken = async (
   tokenAddress: string,
   API: API
 ): Promise<BigNumber> => {
-  //const gasPriceToken = await API.getGasPriceForToken(tokenAddress)
+  const gasPriceToken = await API.getGasPriceForToken(tokenAddress)
 
-  //return gasPriceToken
-
-  const response = {
-    gasPriceToken: {
-      type: 'BigNumber',
-      hex: '0x2b9c9c17'
-    }
-  }
-
-  return BigNumber.from(response.gasPriceToken.hex)
+  return gasPriceToken
 }
 
 const getTotalCost = async (

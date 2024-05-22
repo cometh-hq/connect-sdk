@@ -353,6 +353,6 @@ export class API {
   async getGasPriceForToken(tokenAddress: string): Promise<BigNumber> {
     const response = await this.api.get(`/gas-price/${tokenAddress}`)
 
-    return response.data.gasPriceToken
+    return BigNumber.from(response.data.gasPriceToken.hex)
   }
 }
