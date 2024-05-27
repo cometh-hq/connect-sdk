@@ -9,8 +9,7 @@ import {
   DEFAULT_REWARD_PERCENTILE,
   EIP712_SAFE_MESSAGE_TYPE,
   EIP712_SAFE_TX_TYPES,
-  networks,
-  supportedTokens
+  networks
 } from '../constants'
 import { API } from '../services'
 import delayModuleService from '../services/delayModuleService'
@@ -19,6 +18,7 @@ import gasService from '../services/gasService'
 import safeService from '../services/safeService'
 import simulateTxService from '../services/simulateTxService'
 import sponsoredService from '../services/sponsoredService'
+import tokenService from '../services/tokenService'
 import { GasModal } from '../ui'
 import { isMetaTransactionArray } from '../utils/utils'
 import { AUTHAdapter } from './adapters'
@@ -354,7 +354,7 @@ export class ComethWallet {
         this.gasToken,
         this.provider
       )
-      currency = supportedTokens[this.gasToken] || 'Units'
+      currency = await tokenService.getTokenName(this.gasToken, this.provider)
     } else {
       walletBalance = await this.provider.getBalance(this.getAddress())
       currency = networks[this.chainId].currency
