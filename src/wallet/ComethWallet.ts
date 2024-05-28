@@ -94,7 +94,7 @@ export class ComethWallet {
     this.chainId = +authAdapter.chainId
     this.API = new API(apiKey, baseUrl)
     this.provider = new StaticJsonRpcProvider(
-      rpcUrl && networks[this.chainId].RPCUrl
+      rpcUrl ? rpcUrl : networks[this.chainId].RPCUrl
     )
     this.BASE_GAS = DEFAULT_BASE_GAS_WEBAUTHN
     this.REWARD_PERCENTILE = DEFAULT_REWARD_PERCENTILE
