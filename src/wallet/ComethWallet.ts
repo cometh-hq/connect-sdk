@@ -1,6 +1,6 @@
 import { JsonRpcSigner, StaticJsonRpcProvider } from '@ethersproject/providers'
 import { BigNumber, Bytes, constants, Wallet } from 'ethers'
-import { formatEther, hashMessage, parseUnits } from 'ethers/lib/utils'
+import { formatUnits, hashMessage } from 'ethers/lib/utils'
 import { encodeMulti, MetaTransaction } from 'ethers-multisend'
 
 import {
@@ -18,6 +18,7 @@ import gasService from '../services/gasService'
 import safeService from '../services/safeService'
 import simulateTxService from '../services/simulateTxService'
 import sponsoredService from '../services/sponsoredService'
+import tokenService from '../services/tokenService'
 import { GasModal } from '../ui'
 import { isMetaTransactionArray } from '../utils/utils'
 import { AUTHAdapter } from './adapters'
@@ -58,6 +59,7 @@ export interface WalletConfig {
   uiConfig?: UIConfig
   baseUrl?: string
   transactionTimeout?: number
+  gasToken?: string
 }
 
 export class ComethWallet {
@@ -75,6 +77,7 @@ export class ComethWallet {
   private projectParams?: ProjectParams
   private walletInfos?: WalletInfos
   private uiConfig: UIConfig
+  private gasToken?: string
 
   constructor({
     authAdapter,
@@ -84,18 +87,20 @@ export class ComethWallet {
     uiConfig = {
       displayValidationModal: true
     },
-    transactionTimeout
+    transactionTimeout,
+    gasToken
   }: WalletConfig) {
     this.authAdapter = authAdapter
     this.chainId = +authAdapter.chainId
     this.API = new API(apiKey, baseUrl)
     this.provider = new StaticJsonRpcProvider(
-      rpcUrl ? rpcUrl : networks[this.chainId].RPCUrl
+      rpcUrl && networks[this.chainId].RPCUrl
     )
     this.BASE_GAS = DEFAULT_BASE_GAS_WEBAUTHN
     this.REWARD_PERCENTILE = DEFAULT_REWARD_PERCENTILE
     this.uiConfig = uiConfig
     this.transactionTimeout = transactionTimeout
+    this.gasToken = gasToken ?? constants.AddressZero
   }
 
   /**
@@ -265,7 +270,7 @@ export class ComethWallet {
         safeTxGas: BigNumber.from(safeTxData.safeTxGas).toString(),
         baseGas: BigNumber.from(safeTxData.baseGas).toString(),
         gasPrice: BigNumber.from(safeTxData.gasPrice).toString(),
-        gasToken: constants.AddressZero,
+        gasToken: safeTxData.gasToken ?? constants.AddressZero,
         refundReceiver: constants.AddressZero,
         nonce: BigNumber.from(
           safeTxData.nonce
@@ -340,23 +345,31 @@ export class ComethWallet {
     totalGasCost: BigNumber,
     txValue: BigNumber
   ): Promise<void> {
-    const walletBalance = await this.provider.getBalance(this.getAddress())
+    let walletBalance: BigNumber
+    let currency: string
+
+    if (this.gasToken && this.gasToken !== constants.AddressZero) {
+      walletBalance = await gasService.getBalanceForToken(
+        this.getAddress(),
+        this.gasToken,
+        this.provider
+      )
+      currency = await tokenService.getTokenName(this.gasToken, this.provider)
+    } else {
+      walletBalance = await this.provider.getBalance(this.getAddress())
+      currency = networks[this.chainId].currency
+    }
 
     const totalCost = totalGasCost.add(txValue)
 
-    const displayedTotalBalance = (+formatEther(
-      parseUnits(walletBalance.toString(), 'wei')
-    )).toFixed(3)
-
-    const displayedTotalCost = (+formatEther(
-      parseUnits(totalCost.toString(), 'wei')
-    )).toFixed(3)
+    const displayedTotalBalance = formatUnits(walletBalance, 18)
+    const displayedTotalCost = formatUnits(totalCost, 18)
 
     if (
       !(await new GasModal().initModal(
         displayedTotalBalance,
         displayedTotalCost,
-        networks[this.chainId].currency
+        currency
       ))
     ) {
       throw new TransactionDeniedError()
@@ -402,10 +415,16 @@ export class ComethWallet {
       this.projectParams.simulateTxAcessorAddress
     )
 
-    const gasPrice = await gasService.getGasPrice(
-      this.provider,
-      this.REWARD_PERCENTILE
-    )
+    let gasPrice: BigNumber
+
+    if (this.gasToken && this.gasToken !== constants.AddressZero) {
+      gasPrice = await gasService.getGasPriceForToken(this.gasToken, this.API)
+    } else {
+      gasPrice = await gasService.getGasPrice(
+        this.provider,
+        this.REWARD_PERCENTILE
+      )
+    }
 
     const totalGasCost = await gasService.getTotalCost(
       safeTxGas,
@@ -432,7 +451,8 @@ export class ComethWallet {
       this.provider,
       this.getAddress(),
       totalGasCost,
-      txValue
+      txValue,
+      this.gasToken
     )
   }
 
@@ -486,6 +506,7 @@ export class ComethWallet {
       safeTxDataTyped.safeTxGas = +safeTxGas
       safeTxDataTyped.baseGas = this.BASE_GAS
       safeTxDataTyped.gasPrice = +gasPrice
+      safeTxDataTyped.gasToken = this.gasToken ?? constants.AddressZero
     }
 
     return safeTxDataTyped
