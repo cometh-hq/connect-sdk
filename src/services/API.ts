@@ -1,4 +1,5 @@
 import axios, { AxiosInstance } from 'axios'
+import { BigNumber } from 'ethers'
 import { SiweMessage } from 'siwe'
 
 import { API_URL } from '../constants'
@@ -343,5 +344,15 @@ export class API {
     const response = await this.api.get(`/new-signer-request/${walletAddress}`)
 
     return response.data.signerRequests
+  }
+
+  /**
+   * Gas Price Section
+   */
+
+  async getGasPriceForToken(tokenAddress: string): Promise<BigNumber> {
+    const response = await this.api.get(`/gas-price/${tokenAddress}`)
+
+    return BigNumber.from(response.data.gasPriceToken.hex)
   }
 }
