@@ -46,6 +46,7 @@ import {
   RelayedTransaction,
   RelayedTransactionDetails,
   SafeTransactionDataPartial,
+  SafeTxToSign,
   SendTransactionResponse,
   SponsoredTransaction,
   UIConfig,
@@ -281,6 +282,53 @@ export class ComethWallet {
     )
   }
 
+  async getAddOwnerTransaction(
+    newSignerAddress: string,
+    externalSafeAddress: string
+  ): Promise<SafeTransactionDataPartial> {
+    const safeTxData = await safeService.prepareAddOwnerTx(
+      externalSafeAddress,
+      newSignerAddress,
+      this.provider
+    )
+
+    const safeTxDataTyped = await this.buildTransaction(safeTxData, true)
+
+    return safeTxDataTyped
+  }
+
+  async getAddOwnerSignature(
+    safeTxDataTyped: SafeTransactionDataPartial,
+    externalSafeAddress: string
+  ): Promise<SafeTxToSign> {
+    return {
+      domain: {
+        chainId: this.chainId,
+        verifyingContract: externalSafeAddress
+      },
+      types: EIP712_SAFE_TX_TYPES,
+      message: {
+        to: safeTxDataTyped.to,
+        value: BigNumber.from(safeTxDataTyped.value).toString(),
+        data: safeTxDataTyped.data,
+        operation: safeTxDataTyped.operation,
+        safeTxGas: BigNumber.from(safeTxDataTyped.safeTxGas).toString(),
+        baseGas: BigNumber.from(safeTxDataTyped.baseGas).toString(),
+        gasPrice: BigNumber.from(safeTxDataTyped.gasPrice).toString(),
+        gasToken: safeTxDataTyped.gasToken ?? constants.AddressZero,
+        refundReceiver: constants.AddressZero,
+        nonce: BigNumber.from(
+          safeTxDataTyped.nonce
+            ? safeTxDataTyped.nonce
+            : await safeService.getNonce(
+                externalSafeAddress,
+                this.getProvider()
+              )
+        ).toString()
+      }
+    }
+  }
+
   private async _isSponsoredTransaction(
     safeTransactionData: MetaTransactionData[]
   ): Promise<boolean> {
@@ -314,6 +362,18 @@ export class ComethWallet {
       safeTxData: safeTxDataTyped,
       signatures: txSignature,
       walletAddress: this.getAddress()
+    })
+  }
+
+  public async relayTransaction(
+    safeTxDataTyped: SafeTransactionDataPartial,
+    txSignature: string,
+    externalSafeAddress: string
+  ): Promise<RelayedTransaction> {
+    return await this.API.relayTransaction({
+      safeTxData: safeTxDataTyped,
+      signatures: txSignature,
+      walletAddress: externalSafeAddress
     })
   }
 
@@ -457,14 +517,14 @@ export class ComethWallet {
   }
 
   public async buildTransaction(
-    safeTxData: MetaTransaction | MetaTransaction[]
+    safeTxData: MetaTransaction | MetaTransaction[],
+    isSafeImport = false
   ): Promise<SafeTransactionDataPartial> {
-    if (!this.projectParams) throw new ProjectParamsError()
-
     let safeTxDataTyped
     let isSponsoredTransaction: boolean
 
-    if (isMetaTransactionArray(safeTxData)) {
+    if (!isSafeImport && isMetaTransactionArray(safeTxData)) {
+      if (!this.projectParams) throw new ProjectParamsError()
       isSponsoredTransaction = await this._isSponsoredTransaction(safeTxData)
 
       const multisendData = encodeMulti(
@@ -481,16 +541,21 @@ export class ComethWallet {
         ))
       }
     } else {
+      const singleTxData = safeTxData as MetaTransaction
       safeTxDataTyped = {
         ...(await this._formatTransaction(
-          safeTxData.to,
-          safeTxData.value,
-          safeTxData.data
+          singleTxData.to,
+          singleTxData.value,
+          singleTxData.data
         ))
       }
-      isSponsoredTransaction = await this._isSponsoredTransaction([
-        safeTxDataTyped
-      ])
+      if (isSafeImport) {
+        isSponsoredTransaction = true
+      } else {
+        isSponsoredTransaction = await this._isSponsoredTransaction([
+          safeTxDataTyped
+        ])
+      }
     }
 
     if (!isSponsoredTransaction) {

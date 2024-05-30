@@ -229,3 +229,23 @@ export type EnrichedOwner = {
   deviceData?: DeviceData
   creationDate?: Date
 }
+
+export type SafeTxToSign = {
+  domain: {
+    chainId: number
+    verifyingContract: string
+  }
+  types: Record<string, any>
+  message: {
+    to: string
+    value: string
+    data: string
+    operation: string | OperationType | undefined
+    safeTxGas: string
+    baseGas: string
+    gasPrice: string
+    gasToken: string | number
+    refundReceiver: string
+    nonce: string
+  }
+}
