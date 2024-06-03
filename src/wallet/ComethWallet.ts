@@ -46,7 +46,7 @@ import {
   RelayedTransaction,
   RelayedTransactionDetails,
   SafeTransactionDataPartial,
-  SafeTxToSign,
+  SafeTx,
   SendTransactionResponse,
   SponsoredTransaction,
   UIConfig,
@@ -62,7 +62,6 @@ export interface WalletConfig {
   transactionTimeout?: number
   gasToken?: string
 }
-
 export class ComethWallet {
   public authAdapter: AUTHAdapter
   readonly chainId: number
@@ -285,22 +284,21 @@ export class ComethWallet {
   async getAddOwnerTransaction(
     newSignerAddress: string,
     externalSafeAddress: string
-  ): Promise<SafeTransactionDataPartial> {
+  ): Promise<SafeTx> {
     const safeTxData = await safeService.prepareAddOwnerTx(
       externalSafeAddress,
       newSignerAddress,
       this.provider
     )
 
-    const safeTxDataTyped = await this.buildTransaction(safeTxData, true)
+    const safeTxDataTyped = {
+      ...(await this._formatTransaction(
+        safeTxData.to,
+        safeTxData.value,
+        safeTxData.data
+      ))
+    }
 
-    return safeTxDataTyped
-  }
-
-  async getAddOwnerSignature(
-    safeTxDataTyped: SafeTransactionDataPartial,
-    externalSafeAddress: string
-  ): Promise<SafeTxToSign> {
     return {
       domain: {
         chainId: this.chainId,
@@ -517,14 +515,14 @@ export class ComethWallet {
   }
 
   public async buildTransaction(
-    safeTxData: MetaTransaction | MetaTransaction[],
-    isSafeImport = false
+    safeTxData: MetaTransaction | MetaTransaction[]
   ): Promise<SafeTransactionDataPartial> {
+    if (!this.projectParams) throw new ProjectParamsError()
+
     let safeTxDataTyped
     let isSponsoredTransaction: boolean
 
-    if (!isSafeImport && isMetaTransactionArray(safeTxData)) {
-      if (!this.projectParams) throw new ProjectParamsError()
+    if (isMetaTransactionArray(safeTxData)) {
       isSponsoredTransaction = await this._isSponsoredTransaction(safeTxData)
 
       const multisendData = encodeMulti(
@@ -541,21 +539,16 @@ export class ComethWallet {
         ))
       }
     } else {
-      const singleTxData = safeTxData as MetaTransaction
       safeTxDataTyped = {
         ...(await this._formatTransaction(
-          singleTxData.to,
-          singleTxData.value,
-          singleTxData.data
+          safeTxData.to,
+          safeTxData.value,
+          safeTxData.data
         ))
       }
-      if (isSafeImport) {
-        isSponsoredTransaction = true
-      } else {
-        isSponsoredTransaction = await this._isSponsoredTransaction([
-          safeTxDataTyped
-        ])
-      }
+      isSponsoredTransaction = await this._isSponsoredTransaction([
+        safeTxDataTyped
+      ])
     }
 
     if (!isSponsoredTransaction) {
