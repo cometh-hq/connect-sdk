@@ -45,6 +45,7 @@ import {
   RecoveryRequest,
   RelayedTransaction,
   RelayedTransactionDetails,
+  RelayedTransactionStatus,
   SafeTransactionDataPartial,
   SafeTx,
   SendTransactionResponse,
@@ -397,6 +398,23 @@ export class ComethWallet {
     relayId: string
   ): Promise<RelayedTransactionDetails> {
     return await this.API.getRelayedTransaction(relayId)
+  }
+
+  public async waitRelayedTransaction(relayId: string): Promise<boolean> {
+    const maxRetries = 30
+    const delay = 2000 // 2 seconds
+
+    for (let retries = 0; retries < maxRetries; retries++) {
+      const relayedTransaction = await this.getRelayedTransaction(relayId)
+      if (
+        relayedTransaction.status.confirmed &&
+        relayedTransaction.status.confirmed.status === 1
+      ) {
+        return true
+      }
+      await new Promise((resolve) => setTimeout(resolve, delay))
+    }
+    return false
   }
 
   public async displayModal(
