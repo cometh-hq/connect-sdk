@@ -26,6 +26,7 @@ import {
 } from '../errors'
 import { WebAuthnSigner } from '../signers/WebAuthnSigner'
 import {
+  DeviceData,
   NewSignerRequest,
   NewSignerRequestBody,
   NewSignerRequestType,
@@ -401,6 +402,24 @@ export class ConnectAdaptor implements AUTHAdapter {
   async getNewSignerRequests(): Promise<NewSignerRequest[] | null> {
     const walletAddress = this.getWalletAddress()
     return await this.API.getNewSignerRequests(walletAddress)
+  }
+
+  async deployNewSignerRequest(
+    deviceData: DeviceData,
+    type: NewSignerRequestType,
+    publicKeyId: string,
+    publicKeyX: string,
+    publicKeyY: string
+  ): Promise<void> {
+    const walletAddress = this.getWalletAddress()
+    return await this.API.deployNewSignerRequest(
+      walletAddress,
+      deviceData,
+      type,
+      publicKeyId,
+      publicKeyX,
+      publicKeyY
+    )
   }
 
   async waitWebAuthnSignerDeployment(publicKeyId: string): Promise<void> {

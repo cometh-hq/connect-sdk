@@ -346,6 +346,25 @@ export class API {
     return response.data.signerRequests
   }
 
+  async deployNewSignerRequest(
+    walletAddress: string,
+    deviceData: DeviceData,
+    type: NewSignerRequestType,
+    publicKeyId: string,
+    publicKeyX: string,
+    publicKeyY: string
+  ): Promise<void> {
+    const body = {
+      walletAddress,
+      deviceData,
+      type,
+      publicKeyId,
+      publicKeyX,
+      publicKeyY
+    }
+    await this.api.post(`/new-signer-request/deploy`, body)
+  }
+
   /**
    * Gas Price Section
    */
