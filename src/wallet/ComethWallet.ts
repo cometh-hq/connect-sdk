@@ -34,6 +34,7 @@ import {
   ProjectParamsError,
   ProvidedNetworkDifferentThanProjectNetwork,
   RecoveryAlreadySetUp,
+  RelayedTransactionPendingError,
   TransactionDeniedError,
   WalletNotConnectedError
 } from './errors'
@@ -400,7 +401,7 @@ export class ComethWallet {
     return await this.API.getRelayedTransaction(relayId)
   }
 
-  public async waitRelayedTransaction(relayId: string): Promise<boolean> {
+  public async waitRelayedTransaction(relayId: string): Promise<string> {
     const maxRetries = 30
     const delay = 2000 // 2 seconds
 
@@ -410,11 +411,11 @@ export class ComethWallet {
         relayedTransaction.status.confirmed &&
         relayedTransaction.status.confirmed.status === 1
       ) {
-        return true
+        return relayedTransaction.status.confirmed.hash
       }
       await new Promise((resolve) => setTimeout(resolve, delay))
     }
-    return false
+    throw new RelayedTransactionPendingError(relayId)
   }
 
   public async displayModal(
