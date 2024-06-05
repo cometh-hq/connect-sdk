@@ -229,3 +229,12 @@ export type EnrichedOwner = {
   deviceData?: DeviceData
   creationDate?: Date
 }
+
+export type SafeTx = {
+  domain: {
+    chainId: number
+    verifyingContract: string
+  }
+  types: Record<string, any>
+  message: SafeTransactionDataPartial
+}

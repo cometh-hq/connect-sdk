@@ -34,6 +34,7 @@ import {
   ProjectParamsError,
   ProvidedNetworkDifferentThanProjectNetwork,
   RecoveryAlreadySetUp,
+  RelayedTransactionPendingError,
   TransactionDeniedError,
   WalletNotConnectedError
 } from './errors'
@@ -45,7 +46,9 @@ import {
   RecoveryRequest,
   RelayedTransaction,
   RelayedTransactionDetails,
+  RelayedTransactionStatus,
   SafeTransactionDataPartial,
+  SafeTx,
   SendTransactionResponse,
   SponsoredTransaction,
   UIConfig,
@@ -61,7 +64,6 @@ export interface WalletConfig {
   transactionTimeout?: number
   gasToken?: string
 }
-
 export class ComethWallet {
   public authAdapter: AUTHAdapter
   readonly chainId: number
@@ -281,6 +283,52 @@ export class ComethWallet {
     )
   }
 
+  async getAddOwnerTransaction(
+    newSignerAddress: string,
+    externalSafeAddress: string
+  ): Promise<SafeTx> {
+    const safeTxData = await safeService.prepareAddOwnerTx(
+      externalSafeAddress,
+      newSignerAddress,
+      this.provider
+    )
+
+    const safeTxDataTyped = {
+      ...(await this._formatTransaction(
+        safeTxData.to,
+        safeTxData.value,
+        safeTxData.data
+      ))
+    }
+
+    return {
+      domain: {
+        chainId: this.chainId,
+        verifyingContract: externalSafeAddress
+      },
+      types: EIP712_SAFE_TX_TYPES,
+      message: {
+        to: safeTxDataTyped.to,
+        value: BigNumber.from(safeTxDataTyped.value).toString(),
+        data: safeTxDataTyped.data,
+        operation: safeTxDataTyped.operation,
+        safeTxGas: BigNumber.from(safeTxDataTyped.safeTxGas).toString(),
+        baseGas: BigNumber.from(safeTxDataTyped.baseGas).toString(),
+        gasPrice: BigNumber.from(safeTxDataTyped.gasPrice).toString(),
+        gasToken: safeTxDataTyped.gasToken ?? constants.AddressZero,
+        refundReceiver: constants.AddressZero,
+        nonce: BigNumber.from(
+          safeTxDataTyped.nonce
+            ? safeTxDataTyped.nonce
+            : await safeService.getNonce(
+                externalSafeAddress,
+                this.getProvider()
+              )
+        ).toString()
+      }
+    }
+  }
+
   private async _isSponsoredTransaction(
     safeTransactionData: MetaTransactionData[]
   ): Promise<boolean> {
@@ -317,6 +365,18 @@ export class ComethWallet {
     })
   }
 
+  public async relayTransaction(
+    safeTxDataTyped: SafeTransactionDataPartial,
+    txSignature: string,
+    externalSafeAddress: string
+  ): Promise<RelayedTransaction> {
+    return await this.API.relayTransaction({
+      safeTxData: safeTxDataTyped,
+      signatures: txSignature,
+      walletAddress: externalSafeAddress
+    })
+  }
+
   public async sendTransaction(
     safeTxData: MetaTransaction
   ): Promise<SendTransactionResponse> {
@@ -339,6 +399,23 @@ export class ComethWallet {
     relayId: string
   ): Promise<RelayedTransactionDetails> {
     return await this.API.getRelayedTransaction(relayId)
+  }
+
+  public async waitRelayedTransaction(relayId: string): Promise<string> {
+    const maxRetries = 30
+    const delay = 2000 // 2 seconds
+
+    for (let retries = 0; retries < maxRetries; retries++) {
+      const relayedTransaction = await this.getRelayedTransaction(relayId)
+      if (
+        relayedTransaction.status.confirmed &&
+        relayedTransaction.status.confirmed.status === 1
+      ) {
+        return relayedTransaction.status.confirmed.hash
+      }
+      await new Promise((resolve) => setTimeout(resolve, delay))
+    }
+    throw new RelayedTransactionPendingError(relayId)
   }
 
   public async displayModal(
