@@ -346,6 +346,24 @@ export class API {
     return response.data.signerRequests
   }
 
+  async deployWebAuthnSignerAfterChecks(
+    walletAddress: string,
+    deviceData: DeviceData,
+    publicKeyId: string,
+    publicKeyX: string,
+    publicKeyY: string
+  ): Promise<string> {
+    const body = {
+      walletAddress,
+      publicKeyId,
+      publicKeyX,
+      publicKeyY,
+      deviceData
+    }
+    const response = await this.api.post(`/webauthn-signer/deploy`, body)
+    return response.data?.signerAddress
+  }
+
   /**
    * Gas Price Section
    */
