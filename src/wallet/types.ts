@@ -184,7 +184,7 @@ export type DeviceData = {
   platform: string
 }
 
-export type webAuthnCredentials = {
+export type WebAuthnCredential = {
   deviceData: DeviceData
   publicKeyId: string
   publicKeyX: string

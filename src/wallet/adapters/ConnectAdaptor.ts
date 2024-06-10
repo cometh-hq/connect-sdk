@@ -32,7 +32,7 @@ import {
   NewSignerRequestType,
   SupportedNetworks,
   WalletInfos,
-  webAuthnCredentials,
+  WebAuthnCredential,
   webAuthnOptions,
   webauthnStorageValues
 } from '../types'
@@ -347,50 +347,39 @@ export class ConnectAdaptor implements AUTHAdapter {
     return addNewSignerRequest
   }
 
-  async initWebAuthnSigner(passKeyName?: string): Promise<{
-    webAuthnSigner: webAuthnCredentials
-  }> {
+  async initWebAuthnSigner(passKeyName?: string): Promise<WebAuthnCredential> {
     const isWebAuthnCompatible = await webAuthnService.isWebAuthnCompatible(
       this.webAuthnOptions
     )
 
     if (isWebAuthnCompatible) {
-      const webAuthnObject = await this.createWebAuthnObject(passKeyName)
+      try {
+        const webAuthnObject = await this.createWebAuthnCredential(passKeyName)
 
-      if (webAuthnObject) {
         const { publicKeyId, publicKeyX, publicKeyY, deviceData } =
           webAuthnObject
 
         return {
-          webAuthnSigner: {
-            deviceData,
-            publicKeyId,
-            publicKeyX,
-            publicKeyY
-          }
+          deviceData,
+          publicKeyId,
+          publicKeyX,
+          publicKeyY
         }
-      } else {
-        throw new Error('Unsupported public key algorithm')
+      } catch (error) {
+        throw new Error(error)
       }
     } else {
       throw new Error('WebAuthn not compatible')
     }
   }
 
-  private async createWebAuthnObject(passKeyName?: string): Promise<
-    | {
-        publicKeyId: string
-        publicKeyX: string
-        publicKeyY: string
-        deviceData: DeviceData
-        signerAddress: string
-      }
-    | undefined
+  private async createWebAuthnCredential(passKeyName?: string): Promise<
+    WebAuthnCredential & {
+      signerAddress: string
+    }
   > {
     const { publicKeyId, publicKeyX, publicKeyY, publicKeyAlgorithm } =
       await webAuthnService.createCredential(this.webAuthnOptions, passKeyName)
-
-    let webAuthnSigner
 
     if (publicKeyAlgorithm === -7) {
       const { signerAddress, deviceData } =
@@ -400,16 +389,16 @@ export class ConnectAdaptor implements AUTHAdapter {
           publicKeyY
         })
 
-      webAuthnSigner = {
+      return {
         publicKeyId,
         publicKeyX,
         publicKeyY,
         deviceData,
         signerAddress
       }
+    } else {
+      throw new Error('Unsupported public key algorithm')
     }
-
-    return webAuthnSigner
   }
 
   private async createSignerObject(
@@ -424,9 +413,9 @@ export class ConnectAdaptor implements AUTHAdapter {
     )
 
     if (isWebAuthnCompatible && !this._isFallbackSigner()) {
-      const webAuthnObject = await this.createWebAuthnObject(passKeyName)
+      try {
+        const webAuthnObject = await this.createWebAuthnCredential(passKeyName)
 
-      if (webAuthnObject) {
         const {
           publicKeyId,
           publicKeyX,
@@ -446,6 +435,8 @@ export class ConnectAdaptor implements AUTHAdapter {
             publicKeyY
           }
         }
+      } catch (error) {
+        console.info(error)
       }
     }
 
