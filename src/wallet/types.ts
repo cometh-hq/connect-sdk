@@ -184,13 +184,20 @@ export type DeviceData = {
   platform: string
 }
 
+export type webAuthnCredentials = {
+  deviceData: DeviceData
+  publicKeyId: string
+  publicKeyX: string
+  publicKeyY: string
+}
+
 export enum NewSignerRequestType {
   WEBAUTHN = 'WEBAUTHN',
   BURNER_WALLET = 'BURNER_WALLET'
 }
 
 export type Signer = {
-  walletAddress?: string
+  walletAddress: string
   signerAddress: string
   deviceData: DeviceData
   publicKeyId?: string

@@ -32,6 +32,7 @@ import {
   NewSignerRequestType,
   SupportedNetworks,
   WalletInfos,
+  webAuthnCredentials,
   webAuthnOptions,
   webauthnStorageValues
 } from '../types'
@@ -347,32 +348,22 @@ export class ConnectAdaptor implements AUTHAdapter {
   }
 
   async initWebAuthnSigner(passKeyName?: string): Promise<{
-    addNewSignerRequest: NewSignerRequestBody
+    webAuthnSigner: webAuthnCredentials
   }> {
     const isWebAuthnCompatible = await webAuthnService.isWebAuthnCompatible(
       this.webAuthnOptions
     )
 
     if (isWebAuthnCompatible) {
-      const { publicKeyId, publicKeyX, publicKeyY, publicKeyAlgorithm } =
-        await webAuthnService.createCredential(
-          this.webAuthnOptions,
-          passKeyName
-        )
+      const webAuthnObject = await this.createWebAuthnObject(passKeyName)
 
-      if (publicKeyAlgorithm === -7) {
-        const { signerAddress, deviceData } =
-          await webAuthnService.getSignerFromCredentials({
-            API: this.API,
-            publicKeyX,
-            publicKeyY
-          })
+      if (webAuthnObject) {
+        const { publicKeyId, publicKeyX, publicKeyY, deviceData } =
+          webAuthnObject
 
         return {
-          addNewSignerRequest: {
-            signerAddress,
+          webAuthnSigner: {
             deviceData,
-            type: NewSignerRequestType.WEBAUTHN,
             publicKeyId,
             publicKeyX,
             publicKeyY
@@ -384,6 +375,41 @@ export class ConnectAdaptor implements AUTHAdapter {
     } else {
       throw new Error('WebAuthn not compatible')
     }
+  }
+
+  private async createWebAuthnObject(passKeyName?: string): Promise<
+    | {
+        publicKeyId: string
+        publicKeyX: string
+        publicKeyY: string
+        deviceData: DeviceData
+        signerAddress: string
+      }
+    | undefined
+  > {
+    const { publicKeyId, publicKeyX, publicKeyY, publicKeyAlgorithm } =
+      await webAuthnService.createCredential(this.webAuthnOptions, passKeyName)
+
+    let webAuthnSigner
+
+    if (publicKeyAlgorithm === -7) {
+      const { signerAddress, deviceData } =
+        await webAuthnService.getSignerFromCredentials({
+          API: this.API,
+          publicKeyX,
+          publicKeyY
+        })
+
+      webAuthnSigner = {
+        publicKeyId,
+        publicKeyX,
+        publicKeyY,
+        deviceData,
+        signerAddress
+      }
+    }
+
+    return webAuthnSigner
   }
 
   private async createSignerObject(
@@ -398,19 +424,16 @@ export class ConnectAdaptor implements AUTHAdapter {
     )
 
     if (isWebAuthnCompatible && !this._isFallbackSigner()) {
-      const { publicKeyId, publicKeyX, publicKeyY, publicKeyAlgorithm } =
-        await webAuthnService.createCredential(
-          this.webAuthnOptions,
-          passKeyName
-        )
+      const webAuthnObject = await this.createWebAuthnObject(passKeyName)
 
-      if (publicKeyAlgorithm === -7) {
-        const { signerAddress, deviceData } =
-          await webAuthnService.getSignerFromCredentials({
-            API: this.API,
-            publicKeyX,
-            publicKeyY
-          })
+      if (webAuthnObject) {
+        const {
+          publicKeyId,
+          publicKeyX,
+          publicKeyY,
+          deviceData,
+          signerAddress
+        } = webAuthnObject
 
         return {
           addNewSignerRequest: {
