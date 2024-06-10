@@ -111,6 +111,12 @@ export class UnauthorizedMethodError extends Error {
   }
 }
 
+export class UnsupportedPKAlgorithmError extends Error {
+  constructor() {
+    super('Unsupported public key algorithm')
+  }
+}
+
 /**
  * Provider Errors
  **/
