@@ -20,6 +20,7 @@ import {
   NoSignerFoundError,
   PasskeyCreationError,
   SafeVersionError,
+  UnsupportedPKAlgorithmError,
   WalletDoesNotExistsError,
   WalletNotConnectedError,
   WrongSignedMessageError
@@ -353,27 +354,22 @@ export class ConnectAdaptor implements AUTHAdapter {
     )
 
     if (isWebAuthnCompatible) {
-      try {
-        const webAuthnObject = await this.createWebAuthnCredential(passKeyName)
+      const webAuthnObject = await this._createWebAuthnCredential(passKeyName)
 
-        const { publicKeyId, publicKeyX, publicKeyY, deviceData } =
-          webAuthnObject
+      const { publicKeyId, publicKeyX, publicKeyY, deviceData } = webAuthnObject
 
-        return {
-          deviceData,
-          publicKeyId,
-          publicKeyX,
-          publicKeyY
-        }
-      } catch (error) {
-        throw new Error(error)
+      return {
+        deviceData,
+        publicKeyId,
+        publicKeyX,
+        publicKeyY
       }
     } else {
       throw new Error('WebAuthn not compatible')
     }
   }
 
-  private async createWebAuthnCredential(passKeyName?: string): Promise<
+  private async _createWebAuthnCredential(passKeyName?: string): Promise<
     WebAuthnCredential & {
       signerAddress: string
     }
@@ -397,7 +393,7 @@ export class ConnectAdaptor implements AUTHAdapter {
         signerAddress
       }
     } else {
-      throw new Error('Unsupported public key algorithm')
+      throw new UnsupportedPKAlgorithmError()
     }
   }
 
@@ -414,7 +410,7 @@ export class ConnectAdaptor implements AUTHAdapter {
 
     if (isWebAuthnCompatible && !this._isFallbackSigner()) {
       try {
-        const webAuthnObject = await this.createWebAuthnCredential(passKeyName)
+        const webAuthnObject = await this._createWebAuthnCredential(passKeyName)
 
         const {
           publicKeyId,
@@ -436,10 +432,21 @@ export class ConnectAdaptor implements AUTHAdapter {
           }
         }
       } catch (error) {
-        console.info(error)
+        if (error instanceof UnsupportedPKAlgorithmError) {
+          console.info(error)
+          return this._createFallbackSigner(walletAddress)
+        } else {
+          throw error
+        }
       }
     }
+    return this._createFallbackSigner(walletAddress)
+  }
 
+  private _createFallbackSigner(walletAddress: string): {
+    addNewSignerRequest: NewSignerRequestBody
+    localPrivateKey: string
+  } {
     this.signer = Wallet.createRandom()
 
     return {
