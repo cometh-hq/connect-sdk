@@ -346,6 +346,46 @@ export class ConnectAdaptor implements AUTHAdapter {
     return addNewSignerRequest
   }
 
+  async initWebAuthnSigner(passKeyName?: string): Promise<{
+    addNewSignerRequest: NewSignerRequestBody
+  }> {
+    const isWebAuthnCompatible = await webAuthnService.isWebAuthnCompatible(
+      this.webAuthnOptions
+    )
+
+    if (isWebAuthnCompatible) {
+      const { publicKeyId, publicKeyX, publicKeyY, publicKeyAlgorithm } =
+        await webAuthnService.createCredential(
+          this.webAuthnOptions,
+          passKeyName
+        )
+
+      if (publicKeyAlgorithm === -7) {
+        const { signerAddress, deviceData } =
+          await webAuthnService.getSignerFromCredentials({
+            API: this.API,
+            publicKeyX,
+            publicKeyY
+          })
+
+        return {
+          addNewSignerRequest: {
+            signerAddress,
+            deviceData,
+            type: NewSignerRequestType.WEBAUTHN,
+            publicKeyId,
+            publicKeyX,
+            publicKeyY
+          }
+        }
+      } else {
+        throw new Error('Unsupported public key algorithm')
+      }
+    } else {
+      throw new Error('WebAuthn not compatible')
+    }
+  }
+
   private async createSignerObject(
     walletAddress: string,
     passKeyName?: string

@@ -190,7 +190,7 @@ export enum NewSignerRequestType {
 }
 
 export type Signer = {
-  walletAddress: string
+  walletAddress?: string
   signerAddress: string
   deviceData: DeviceData
   publicKeyId?: string
