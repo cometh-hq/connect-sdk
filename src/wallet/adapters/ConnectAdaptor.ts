@@ -404,18 +404,16 @@ export class ConnectAdaptor implements AUTHAdapter {
     return await this.API.getNewSignerRequests(walletAddress)
   }
 
-  async deployNewSignerRequest(
+  async deployWebAuthnSigner(
     deviceData: DeviceData,
-    type: NewSignerRequestType,
     publicKeyId: string,
     publicKeyX: string,
     publicKeyY: string
-  ): Promise<void> {
+  ): Promise<string> {
     const walletAddress = this.getWalletAddress()
-    return await this.API.deployNewSignerRequest(
+    return await this.API.deployWebAuthnSignerAfterChecks(
       walletAddress,
       deviceData,
-      type,
       publicKeyId,
       publicKeyX,
       publicKeyY

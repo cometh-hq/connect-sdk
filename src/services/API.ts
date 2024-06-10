@@ -346,23 +346,22 @@ export class API {
     return response.data.signerRequests
   }
 
-  async deployNewSignerRequest(
+  async deployWebAuthnSignerAfterChecks(
     walletAddress: string,
     deviceData: DeviceData,
-    type: NewSignerRequestType,
     publicKeyId: string,
     publicKeyX: string,
     publicKeyY: string
-  ): Promise<void> {
+  ): Promise<string> {
     const body = {
       walletAddress,
-      deviceData,
-      type,
       publicKeyId,
       publicKeyX,
-      publicKeyY
+      publicKeyY,
+      deviceData
     }
-    await this.api.post(`/new-signer-request/deploy`, body)
+    const response = await this.api.post(`/webauthn-signer/deploy`, body)
+    return response.data?.signerAddress
   }
 
   /**
