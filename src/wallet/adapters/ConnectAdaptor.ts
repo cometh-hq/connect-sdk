@@ -440,6 +440,7 @@ export class ConnectAdaptor implements AUTHAdapter {
         }
       }
     }
+    console.info('WebAuthn not compatible')
     return this._createFallbackSigner(walletAddress)
   }
 
