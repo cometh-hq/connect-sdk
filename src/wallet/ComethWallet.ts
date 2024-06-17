@@ -1,6 +1,6 @@
 import { JsonRpcSigner, StaticJsonRpcProvider } from '@ethersproject/providers'
 import { BigNumber, Bytes, constants, Wallet } from 'ethers'
-import { formatEther, hashMessage, parseUnits } from 'ethers/lib/utils'
+import { formatUnits, hashMessage } from 'ethers/lib/utils'
 import { encodeMulti, MetaTransaction } from 'ethers-multisend'
 
 import {
@@ -18,6 +18,7 @@ import gasService from '../services/gasService'
 import safeService from '../services/safeService'
 import simulateTxService from '../services/simulateTxService'
 import sponsoredService from '../services/sponsoredService'
+import tokenService from '../services/tokenService'
 import { GasModal } from '../ui'
 import { isMetaTransactionArray } from '../utils/utils'
 import { AUTHAdapter } from './adapters'
@@ -33,6 +34,7 @@ import {
   ProjectParamsError,
   ProvidedNetworkDifferentThanProjectNetwork,
   RecoveryAlreadySetUp,
+  RelayedTransactionPendingError,
   TransactionDeniedError,
   WalletNotConnectedError
 } from './errors'
@@ -44,7 +46,9 @@ import {
   RecoveryRequest,
   RelayedTransaction,
   RelayedTransactionDetails,
+  RelayedTransactionStatus,
   SafeTransactionDataPartial,
+  SafeTx,
   SendTransactionResponse,
   SponsoredTransaction,
   UIConfig,
@@ -58,8 +62,8 @@ export interface WalletConfig {
   uiConfig?: UIConfig
   baseUrl?: string
   transactionTimeout?: number
+  gasToken?: string
 }
-
 export class ComethWallet {
   public authAdapter: AUTHAdapter
   readonly chainId: number
@@ -75,6 +79,7 @@ export class ComethWallet {
   private projectParams?: ProjectParams
   private walletInfos?: WalletInfos
   private uiConfig: UIConfig
+  private gasToken?: string
 
   constructor({
     authAdapter,
@@ -84,7 +89,8 @@ export class ComethWallet {
     uiConfig = {
       displayValidationModal: true
     },
-    transactionTimeout
+    transactionTimeout,
+    gasToken
   }: WalletConfig) {
     this.authAdapter = authAdapter
     this.chainId = +authAdapter.chainId
@@ -96,6 +102,7 @@ export class ComethWallet {
     this.REWARD_PERCENTILE = DEFAULT_REWARD_PERCENTILE
     this.uiConfig = uiConfig
     this.transactionTimeout = transactionTimeout
+    this.gasToken = gasToken ?? constants.AddressZero
   }
 
   /**
@@ -265,7 +272,7 @@ export class ComethWallet {
         safeTxGas: BigNumber.from(safeTxData.safeTxGas).toString(),
         baseGas: BigNumber.from(safeTxData.baseGas).toString(),
         gasPrice: BigNumber.from(safeTxData.gasPrice).toString(),
-        gasToken: constants.AddressZero,
+        gasToken: safeTxData.gasToken ?? constants.AddressZero,
         refundReceiver: constants.AddressZero,
         nonce: BigNumber.from(
           safeTxData.nonce
@@ -274,6 +281,52 @@ export class ComethWallet {
         ).toString()
       }
     )
+  }
+
+  async getAddOwnerTransaction(
+    newSignerAddress: string,
+    externalSafeAddress: string
+  ): Promise<SafeTx> {
+    const safeTxData = await safeService.prepareAddOwnerTx(
+      externalSafeAddress,
+      newSignerAddress,
+      this.provider
+    )
+
+    const safeTxDataTyped = {
+      ...(await this._formatTransaction(
+        safeTxData.to,
+        safeTxData.value,
+        safeTxData.data
+      ))
+    }
+
+    return {
+      domain: {
+        chainId: this.chainId,
+        verifyingContract: externalSafeAddress
+      },
+      types: EIP712_SAFE_TX_TYPES,
+      message: {
+        to: safeTxDataTyped.to,
+        value: BigNumber.from(safeTxDataTyped.value).toString(),
+        data: safeTxDataTyped.data,
+        operation: safeTxDataTyped.operation,
+        safeTxGas: BigNumber.from(safeTxDataTyped.safeTxGas).toString(),
+        baseGas: BigNumber.from(safeTxDataTyped.baseGas).toString(),
+        gasPrice: BigNumber.from(safeTxDataTyped.gasPrice).toString(),
+        gasToken: safeTxDataTyped.gasToken ?? constants.AddressZero,
+        refundReceiver: constants.AddressZero,
+        nonce: BigNumber.from(
+          safeTxDataTyped.nonce
+            ? safeTxDataTyped.nonce
+            : await safeService.getNonce(
+                externalSafeAddress,
+                this.getProvider()
+              )
+        ).toString()
+      }
+    }
   }
 
   private async _isSponsoredTransaction(
@@ -312,6 +365,18 @@ export class ComethWallet {
     })
   }
 
+  public async relayTransaction(
+    safeTxDataTyped: SafeTransactionDataPartial,
+    txSignature: string,
+    externalSafeAddress: string
+  ): Promise<RelayedTransaction> {
+    return await this.API.relayTransaction({
+      safeTxData: safeTxDataTyped,
+      signatures: txSignature,
+      walletAddress: externalSafeAddress
+    })
+  }
+
   public async sendTransaction(
     safeTxData: MetaTransaction
   ): Promise<SendTransactionResponse> {
@@ -336,27 +401,53 @@ export class ComethWallet {
     return await this.API.getRelayedTransaction(relayId)
   }
 
+  public async waitRelayedTransaction(
+    relayId: string,
+    maxRetries = 30,
+    delay = 2000
+  ): Promise<string> {
+    for (let retries = 0; retries < maxRetries; retries++) {
+      const relayedTransaction = await this.getRelayedTransaction(relayId)
+      if (
+        relayedTransaction.status.confirmed &&
+        relayedTransaction.status.confirmed.status === 1
+      ) {
+        return relayedTransaction.status.confirmed.hash
+      }
+      await new Promise((resolve) => setTimeout(resolve, delay))
+    }
+    throw new RelayedTransactionPendingError(relayId)
+  }
+
   public async displayModal(
     totalGasCost: BigNumber,
     txValue: BigNumber
   ): Promise<void> {
-    const walletBalance = await this.provider.getBalance(this.getAddress())
+    let walletBalance: BigNumber
+    let currency: string
+
+    if (this.gasToken && this.gasToken !== constants.AddressZero) {
+      walletBalance = await gasService.getBalanceForToken(
+        this.getAddress(),
+        this.gasToken,
+        this.provider
+      )
+      currency = await tokenService.getTokenName(this.gasToken, this.provider)
+    } else {
+      walletBalance = await this.provider.getBalance(this.getAddress())
+      currency = networks[this.chainId].currency
+    }
 
     const totalCost = totalGasCost.add(txValue)
 
-    const displayedTotalBalance = (+formatEther(
-      parseUnits(walletBalance.toString(), 'wei')
-    )).toFixed(3)
-
-    const displayedTotalCost = (+formatEther(
-      parseUnits(totalCost.toString(), 'wei')
-    )).toFixed(3)
+    const displayedTotalBalance = formatUnits(walletBalance, 18)
+    const displayedTotalCost = formatUnits(totalCost, 18)
 
     if (
       !(await new GasModal().initModal(
         displayedTotalBalance,
         displayedTotalCost,
-        networks[this.chainId].currency
+        currency
       ))
     ) {
       throw new TransactionDeniedError()
@@ -402,10 +493,16 @@ export class ComethWallet {
       this.projectParams.simulateTxAcessorAddress
     )
 
-    const gasPrice = await gasService.getGasPrice(
-      this.provider,
-      this.REWARD_PERCENTILE
-    )
+    let gasPrice: BigNumber
+
+    if (this.gasToken && this.gasToken !== constants.AddressZero) {
+      gasPrice = await gasService.getGasPriceForToken(this.gasToken, this.API)
+    } else {
+      gasPrice = await gasService.getGasPrice(
+        this.provider,
+        this.REWARD_PERCENTILE
+      )
+    }
 
     const totalGasCost = await gasService.getTotalCost(
       safeTxGas,
@@ -432,7 +529,8 @@ export class ComethWallet {
       this.provider,
       this.getAddress(),
       totalGasCost,
-      txValue
+      txValue,
+      this.gasToken
     )
   }
 
@@ -486,6 +584,7 @@ export class ComethWallet {
       safeTxDataTyped.safeTxGas = +safeTxGas
       safeTxDataTyped.baseGas = this.BASE_GAS
       safeTxDataTyped.gasPrice = +gasPrice
+      safeTxDataTyped.gasToken = this.gasToken ?? constants.AddressZero
     }
 
     return safeTxDataTyped

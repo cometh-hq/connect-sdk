@@ -111,6 +111,20 @@ export class UnauthorizedMethodError extends Error {
   }
 }
 
+export class UnsupportedPKAlgorithmError extends Error {
+  constructor() {
+    super('Unsupported public key algorithm')
+  }
+}
+
+export class NotCompatibleWebAuthnError extends Error {
+  constructor() {
+    super(
+      'WebAuthn is not compatible with the current browser or configuration.'
+    )
+  }
+}
+
 /**
  * Provider Errors
  **/

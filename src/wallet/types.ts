@@ -184,6 +184,13 @@ export type DeviceData = {
   platform: string
 }
 
+export type WebAuthnCredential = {
+  deviceData: DeviceData
+  publicKeyId: string
+  publicKeyX: string
+  publicKeyY: string
+}
+
 export enum NewSignerRequestType {
   WEBAUTHN = 'WEBAUTHN',
   BURNER_WALLET = 'BURNER_WALLET'
@@ -228,4 +235,13 @@ export type EnrichedOwner = {
   address: string
   deviceData?: DeviceData
   creationDate?: Date
+}
+
+export type SafeTx = {
+  domain: {
+    chainId: number
+    verifyingContract: string
+  }
+  types: Record<string, any>
+  message: SafeTransactionDataPartial
 }

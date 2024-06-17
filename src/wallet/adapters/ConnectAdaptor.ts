@@ -18,19 +18,23 @@ import {
   InvalidAddressFormatError,
   NoFallbackSignerError,
   NoSignerFoundError,
+  NotCompatibleWebAuthnError,
   PasskeyCreationError,
   SafeVersionError,
+  UnsupportedPKAlgorithmError,
   WalletDoesNotExistsError,
   WalletNotConnectedError,
   WrongSignedMessageError
 } from '../errors'
 import { WebAuthnSigner } from '../signers/WebAuthnSigner'
 import {
+  DeviceData,
   NewSignerRequest,
   NewSignerRequestBody,
   NewSignerRequestType,
   SupportedNetworks,
   WalletInfos,
+  WebAuthnCredential,
   webAuthnOptions,
   webauthnStorageValues
 } from '../types'
@@ -345,6 +349,55 @@ export class ConnectAdaptor implements AUTHAdapter {
     return addNewSignerRequest
   }
 
+  async initWebAuthnSigner(passKeyName?: string): Promise<WebAuthnCredential> {
+    const isWebAuthnCompatible = await webAuthnService.isWebAuthnCompatible(
+      this.webAuthnOptions
+    )
+
+    if (isWebAuthnCompatible) {
+      const webAuthnObject = await this._createWebAuthnCredential(passKeyName)
+
+      const { publicKeyId, publicKeyX, publicKeyY, deviceData } = webAuthnObject
+
+      return {
+        deviceData,
+        publicKeyId,
+        publicKeyX,
+        publicKeyY
+      }
+    } else {
+      throw new NotCompatibleWebAuthnError()
+    }
+  }
+
+  private async _createWebAuthnCredential(passKeyName?: string): Promise<
+    WebAuthnCredential & {
+      signerAddress: string
+    }
+  > {
+    const { publicKeyId, publicKeyX, publicKeyY, publicKeyAlgorithm } =
+      await webAuthnService.createCredential(this.webAuthnOptions, passKeyName)
+
+    if (publicKeyAlgorithm === -7) {
+      const { signerAddress, deviceData } =
+        await webAuthnService.getSignerFromCredentials({
+          API: this.API,
+          publicKeyX,
+          publicKeyY
+        })
+
+      return {
+        publicKeyId,
+        publicKeyX,
+        publicKeyY,
+        deviceData,
+        signerAddress
+      }
+    } else {
+      throw new UnsupportedPKAlgorithmError()
+    }
+  }
+
   private async createSignerObject(
     walletAddress: string,
     passKeyName?: string
@@ -357,19 +410,16 @@ export class ConnectAdaptor implements AUTHAdapter {
     )
 
     if (isWebAuthnCompatible && !this._isFallbackSigner()) {
-      const { publicKeyId, publicKeyX, publicKeyY, publicKeyAlgorithm } =
-        await webAuthnService.createCredential(
-          this.webAuthnOptions,
-          passKeyName
-        )
+      try {
+        const webAuthnObject = await this._createWebAuthnCredential(passKeyName)
 
-      if (publicKeyAlgorithm === -7) {
-        const { signerAddress, deviceData } =
-          await webAuthnService.getSignerFromCredentials({
-            API: this.API,
-            publicKeyX,
-            publicKeyY
-          })
+        const {
+          publicKeyId,
+          publicKeyX,
+          publicKeyY,
+          deviceData,
+          signerAddress
+        } = webAuthnObject
 
         return {
           addNewSignerRequest: {
@@ -382,9 +432,23 @@ export class ConnectAdaptor implements AUTHAdapter {
             publicKeyY
           }
         }
+      } catch (error) {
+        if (error instanceof UnsupportedPKAlgorithmError) {
+          console.info(error)
+          return this._createFallbackSigner(walletAddress)
+        } else {
+          throw error
+        }
       }
     }
+    console.info('WebAuthn not compatible')
+    return this._createFallbackSigner(walletAddress)
+  }
 
+  private _createFallbackSigner(walletAddress: string): {
+    addNewSignerRequest: NewSignerRequestBody
+    localPrivateKey: string
+  } {
     this.signer = Wallet.createRandom()
 
     return {
@@ -401,6 +465,22 @@ export class ConnectAdaptor implements AUTHAdapter {
   async getNewSignerRequests(): Promise<NewSignerRequest[] | null> {
     const walletAddress = this.getWalletAddress()
     return await this.API.getNewSignerRequests(walletAddress)
+  }
+
+  async deployWebAuthnSigner(
+    deviceData: DeviceData,
+    publicKeyId: string,
+    publicKeyX: string,
+    publicKeyY: string
+  ): Promise<string> {
+    const walletAddress = this.getWalletAddress()
+    return await this.API.deployWebAuthnSignerAfterChecks(
+      walletAddress,
+      deviceData,
+      publicKeyId,
+      publicKeyX,
+      publicKeyY
+    )
   }
 
   async waitWebAuthnSignerDeployment(publicKeyId: string): Promise<void> {
