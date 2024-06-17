@@ -18,6 +18,7 @@ import {
   InvalidAddressFormatError,
   NoFallbackSignerError,
   NoSignerFoundError,
+  NotCompatibleWebAuthnError,
   PasskeyCreationError,
   SafeVersionError,
   UnsupportedPKAlgorithmError,
@@ -365,7 +366,7 @@ export class ConnectAdaptor implements AUTHAdapter {
         publicKeyY
       }
     } else {
-      throw new Error('WebAuthn not compatible')
+      throw new NotCompatibleWebAuthnError()
     }
   }
 

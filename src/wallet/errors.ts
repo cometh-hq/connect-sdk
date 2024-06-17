@@ -117,6 +117,14 @@ export class UnsupportedPKAlgorithmError extends Error {
   }
 }
 
+export class NotCompatibleWebAuthnError extends Error {
+  constructor() {
+    super(
+      'WebAuthn is not compatible with the current browser or configuration.'
+    )
+  }
+}
+
 /**
  * Provider Errors
  **/

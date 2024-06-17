@@ -401,10 +401,11 @@ export class ComethWallet {
     return await this.API.getRelayedTransaction(relayId)
   }
 
-  public async waitRelayedTransaction(relayId: string): Promise<string> {
-    const maxRetries = 30
-    const delay = 2000 // 2 seconds
-
+  public async waitRelayedTransaction(
+    relayId: string,
+    maxRetries = 30,
+    delay = 2000
+  ): Promise<string> {
     for (let retries = 0; retries < maxRetries; retries++) {
       const relayedTransaction = await this.getRelayedTransaction(relayId)
       if (
