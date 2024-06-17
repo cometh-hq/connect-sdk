@@ -186,6 +186,7 @@ export type DeviceData = {
 
 export type WebAuthnCredential = {
   deviceData: DeviceData
+  signerAddress: string
   publicKeyId: string
   publicKeyX: string
   publicKeyY: string
