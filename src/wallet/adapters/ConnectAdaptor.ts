@@ -357,10 +357,12 @@ export class ConnectAdaptor implements AUTHAdapter {
     if (isWebAuthnCompatible) {
       const webAuthnObject = await this._createWebAuthnCredential(passKeyName)
 
-      const { publicKeyId, publicKeyX, publicKeyY, deviceData } = webAuthnObject
+      const { publicKeyId, publicKeyX, publicKeyY, deviceData, signerAddress } =
+        webAuthnObject
 
       return {
         deviceData,
+        signerAddress,
         publicKeyId,
         publicKeyX,
         publicKeyY
@@ -370,11 +372,9 @@ export class ConnectAdaptor implements AUTHAdapter {
     }
   }
 
-  private async _createWebAuthnCredential(passKeyName?: string): Promise<
-    WebAuthnCredential & {
-      signerAddress: string
-    }
-  > {
+  private async _createWebAuthnCredential(
+    passKeyName?: string
+  ): Promise<WebAuthnCredential> {
     const { publicKeyId, publicKeyX, publicKeyY, publicKeyAlgorithm } =
       await webAuthnService.createCredential(this.webAuthnOptions, passKeyName)
 
