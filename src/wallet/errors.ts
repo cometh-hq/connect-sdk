@@ -227,6 +227,12 @@ export class AddressNotOwnerError extends Error {
   }
 }
 
+export class AddressNotGuardianError extends Error {
+  constructor() {
+    super('Address is not a guardian of the wallet')
+  }
+}
+
 /**
  * Utils Errors
  **/
