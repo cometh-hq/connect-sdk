@@ -232,6 +232,11 @@ export type RecoveryRequest = {
   txHash: string
 }
 
+export type RecoveryParamsResponse = {
+  txCreatedAt: string
+  txHash: string
+}
+
 export type EnrichedOwner = {
   address: string
   deviceData?: DeviceData

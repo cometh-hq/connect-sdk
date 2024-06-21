@@ -5,6 +5,7 @@ import { MetaTransaction } from 'ethers-multisend'
 
 import delayModuleABI from '../contracts/abis/Delay.json'
 import delayModuleFactoryABI from '../contracts/abis/DelayFactory.json'
+import { RecoveryParamsResponse } from '../wallet'
 import { AddressNotGuardianError } from '../wallet/errors'
 
 const DelayModule = new utils.Interface(delayModuleABI)
@@ -93,7 +94,7 @@ const createSetTxNonceFunction = async (
 const getCurrentRecoveryParams = async (
   delayModuleAddress: string,
   provider: StaticJsonRpcProvider
-): Promise<{ txCreatedAt: string; txHash: string }> => {
+): Promise<RecoveryParamsResponse> => {
   const contract = new Contract(delayModuleAddress, delayModuleABI, provider)
 
   const txNonce = await contract.txNonce()

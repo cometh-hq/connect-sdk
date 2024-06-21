@@ -43,6 +43,7 @@ import {
   EnrichedOwner,
   MetaTransactionData,
   ProjectParams,
+  RecoveryParamsResponse,
   RecoveryRequest,
   RelayedTransaction,
   RelayedTransactionDetails,
@@ -641,7 +642,7 @@ export class ComethWallet {
 
   async getCurrentRecoveryParams(
     delayModuleAddress: string
-  ): Promise<{ txCreatedAt: string; txHash: string }> {
+  ): Promise<RecoveryParamsResponse> {
     return await delayModuleService.getCurrentRecoveryParams(
       delayModuleAddress,
       this.provider
@@ -663,22 +664,32 @@ export class ComethWallet {
   }
 
   async setupDelayModule(
-    _guardianAddress: string,
-    _expiration?: number,
-    _cooldown?: number
+    guardianAddress: string,
+    expiration?: number,
+    cooldown?: number
   ): Promise<SendTransactionResponse> {
     if (!this.walletInfos || !this.walletInfos.recoveryContext)
       throw new WalletNotConnectedError()
 
     const walletAddress = this.walletInfos.address
 
-    if (_expiration)
-      this.walletInfos.recoveryContext.recoveryExpiration = _expiration
-    if (_cooldown) this.walletInfos.recoveryContext.recoveryCooldown = _cooldown
+    if (!expiration)
+      expiration = this.walletInfos.recoveryContext.recoveryExpiration
+    if (!cooldown) cooldown = this.walletInfos.recoveryContext.recoveryCooldown
+
+    const {
+      moduleFactoryAddress,
+      delayModuleAddress: singletonDelayModuleAddress
+    } = this.walletInfos.recoveryContext
 
     const delayAddress = await delayModuleService.getDelayAddress(
       walletAddress,
-      this.walletInfos.recoveryContext
+      {
+        moduleFactoryAddress,
+        delayModuleAddress: singletonDelayModuleAddress,
+        recoveryCooldown: cooldown,
+        recoveryExpiration: expiration
+      }
     )
 
     this.walletInfos.proxyDelayAddress = delayAddress
@@ -689,13 +700,6 @@ export class ComethWallet {
     })
 
     if (isDeployed) throw new RecoveryAlreadySetUp()
-
-    const {
-      recoveryCooldown: cooldown,
-      recoveryExpiration: expiration,
-      moduleFactoryAddress,
-      delayModuleAddress: singletonDelayModuleAddress
-    } = this.walletInfos.recoveryContext
 
     const delayModuleInitializer = await delayModuleService.setUpDelayModule({
       safe: walletAddress,
@@ -716,7 +720,7 @@ export class ComethWallet {
       {
         to: delayAddress,
         value: '0',
-        data: await delayModuleService.encodeEnableModule(_guardianAddress)
+        data: await delayModuleService.encodeEnableModule(guardianAddress)
       },
       {
         to: walletAddress,
@@ -759,16 +763,30 @@ export class ComethWallet {
   }
 
   async disableGuardian(
-    guardianAddress: string
+    guardianAddress: string,
+    expiration?: number,
+    cooldown?: number
   ): Promise<SendTransactionResponse> {
     if (!this.walletInfos || !this.walletInfos.recoveryContext)
       throw new WalletNotConnectedError()
 
     const walletAddress = this.walletInfos.address
 
+    if (!expiration)
+      expiration = this.walletInfos.recoveryContext.recoveryExpiration
+    if (!cooldown) cooldown = this.walletInfos.recoveryContext.recoveryCooldown
+
+    const { moduleFactoryAddress, delayModuleAddress } =
+      this.walletInfos.recoveryContext
+
     const delayAddress = await delayModuleService.getDelayAddress(
       walletAddress,
-      this.walletInfos.recoveryContext
+      {
+        moduleFactoryAddress,
+        delayModuleAddress,
+        recoveryCooldown: cooldown,
+        recoveryExpiration: expiration
+      }
     )
 
     const prevModuleAddress = await delayModuleService.findPrevModule(
