@@ -331,9 +331,13 @@ export class ComethWallet {
   }
 
   private async _isSponsoredTransaction(
-    safeTransactionData: MetaTransactionData[]
+    safeTransactionData: MetaTransactionData[],
+    delayModuleAddress?: string
   ): Promise<boolean> {
     if (!this.walletInfos) throw new WalletNotConnectedError()
+
+    const effectiveProxyDelayAddress =
+      delayModuleAddress ?? this.walletInfos.proxyDelayAddress
 
     for (let i = 0; i < safeTransactionData.length; i++) {
       const functionSelector = safeService.getFunctionSelector(
@@ -345,7 +349,7 @@ export class ComethWallet {
         this.walletInfos.address,
         safeTransactionData[i].to,
         this.sponsoredAddresses,
-        this.walletInfos.proxyDelayAddress,
+        effectiveProxyDelayAddress,
         this.walletInfos.recoveryContext?.moduleFactoryAddress
       )
 
@@ -379,20 +383,28 @@ export class ComethWallet {
   }
 
   public async sendTransaction(
-    safeTxData: MetaTransaction
+    safeTxData: MetaTransaction,
+    delayModuleAddress?: string
   ): Promise<SendTransactionResponse> {
-    const safeTxDataTyped = await this.buildTransaction(safeTxData)
+    const safeTxDataTyped = await this.buildTransaction(
+      safeTxData,
+      delayModuleAddress
+    )
 
     return await this._signAndSendTransaction(safeTxDataTyped)
   }
 
   public async sendBatchTransactions(
-    safeTxData: MetaTransaction[]
+    safeTxData: MetaTransaction[],
+    delayModuleAddress?: string
   ): Promise<SendTransactionResponse> {
     if (safeTxData.length === 0) {
       throw new EmptyBatchTransactionError()
     }
-    const safeTxDataTyped = await this.buildTransaction(safeTxData)
+    const safeTxDataTyped = await this.buildTransaction(
+      safeTxData,
+      delayModuleAddress
+    )
     return await this._signAndSendTransaction(safeTxDataTyped)
   }
 
@@ -536,7 +548,8 @@ export class ComethWallet {
   }
 
   public async buildTransaction(
-    safeTxData: MetaTransaction | MetaTransaction[]
+    safeTxData: MetaTransaction | MetaTransaction[],
+    delayModuleAddress?: string
   ): Promise<SafeTransactionDataPartial> {
     if (!this.projectParams) throw new ProjectParamsError()
 
@@ -544,7 +557,10 @@ export class ComethWallet {
     let isSponsoredTransaction: boolean
 
     if (isMetaTransactionArray(safeTxData)) {
-      isSponsoredTransaction = await this._isSponsoredTransaction(safeTxData)
+      isSponsoredTransaction = await this._isSponsoredTransaction(
+        safeTxData,
+        delayModuleAddress
+      )
 
       const multisendData = encodeMulti(
         safeTxData,
@@ -567,9 +583,10 @@ export class ComethWallet {
           safeTxData.data
         ))
       }
-      isSponsoredTransaction = await this._isSponsoredTransaction([
-        safeTxDataTyped
-      ])
+      isSponsoredTransaction = await this._isSponsoredTransaction(
+        [safeTxDataTyped],
+        delayModuleAddress
+      )
     }
 
     if (!isSponsoredTransaction) {
@@ -591,15 +608,18 @@ export class ComethWallet {
     return safeTxDataTyped
   }
 
-  async getRecoveryRequest(): Promise<RecoveryRequest | undefined> {
+  async getRecoveryRequest(
+    proxyDelayAddress?: string
+  ): Promise<RecoveryRequest | undefined> {
     if (!this.walletInfos) throw new WalletNotConnectedError()
 
-    if (!this.walletInfos.proxyDelayAddress)
-      throw new NewRecoveryNotSupportedError()
+    const effectiveProxyDelayAddress =
+      proxyDelayAddress ?? this.walletInfos.proxyDelayAddress
+    if (!effectiveProxyDelayAddress) throw new NewRecoveryNotSupportedError()
 
     try {
       const isRecoveryQueueEmpty = await delayModuleService.isQueueEmpty(
-        this.walletInfos.proxyDelayAddress,
+        effectiveProxyDelayAddress,
         this.provider
       )
 
@@ -607,7 +627,7 @@ export class ComethWallet {
         return undefined
       } else {
         return await delayModuleService.getCurrentRecoveryParams(
-          this.walletInfos.proxyDelayAddress,
+          effectiveProxyDelayAddress,
           this.provider
         )
       }
@@ -625,7 +645,9 @@ export class ComethWallet {
       delayModuleAddress ?? this.walletInfos.proxyDelayAddress
     if (!effectiveProxyDelayAddress) throw new NewRecoveryNotSupportedError()
 
-    const recoveryRequest = await this.getRecoveryRequest()
+    const recoveryRequest = await this.getRecoveryRequest(
+      effectiveProxyDelayAddress
+    )
     if (!recoveryRequest) throw new NoRecoveryRequestFoundError()
 
     try {
@@ -634,7 +656,7 @@ export class ComethWallet {
         this.provider
       )
 
-      return await this.sendTransaction(tx)
+      return await this.sendTransaction(tx, effectiveProxyDelayAddress)
     } catch {
       throw new CancelRecoveryError()
     }
@@ -718,14 +740,14 @@ export class ComethWallet {
         })
       },
       {
-        to: delayAddress,
-        value: '0',
-        data: await delayModuleService.encodeEnableModule(guardianAddress)
-      },
-      {
         to: walletAddress,
         value: '0',
         data: await safeService.encodeEnableModule(delayAddress)
+      },
+      {
+        to: delayAddress,
+        value: '0',
+        data: await delayModuleService.encodeEnableModule(guardianAddress)
       }
     ]
 
