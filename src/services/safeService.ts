@@ -289,6 +289,16 @@ const encodeEnableModule = async (address: string): Promise<string> => {
   return SafeInterface.encodeFunctionData('enableModule', [address])
 }
 
+const isModuleEnabled = async (
+  walletAddress: string,
+  provider: StaticJsonRpcProvider,
+  moduleAddress: string
+): Promise<boolean> => {
+  return Safe__factory.connect(walletAddress, provider).isModuleEnabled(
+    moduleAddress
+  )
+}
+
 export default {
   isDeployed,
   getNonce,
@@ -306,5 +316,6 @@ export default {
   getFunctionSelector,
   encodeMultiSendDataForEstimate,
   getSafeVersion,
-  encodeEnableModule
+  encodeEnableModule,
+  isModuleEnabled
 }
