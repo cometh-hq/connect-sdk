@@ -1,16 +1,17 @@
 import { StaticJsonRpcProvider } from '@ethersproject/providers'
 import { Contract, ethers, utils } from 'ethers'
-import { _TypedDataEncoder, getAddress } from 'ethers/lib/utils'
+import { _TypedDataEncoder, getAddress, hexZeroPad } from 'ethers/lib/utils'
 import { MetaTransaction } from 'ethers-multisend'
 
+import { SAFE_SENTINEL_OWNERS } from '../constants'
 import delayModuleABI from '../contracts/abis/Delay.json'
 import delayModuleFactoryABI from '../contracts/abis/DelayFactory.json'
-import { RecoveryParamsResponse } from '../wallet'
 import { AddressNotGuardianError } from '../wallet/errors'
+import { RecoveryParamsResponse } from '../wallet/types'
 
 const DelayModule = new utils.Interface(delayModuleABI)
 const DelayModuleFactory = new utils.Interface(delayModuleFactoryABI)
-const SENTINEL = '0x0000000000000000000000000000000000000001'
+const SENTINEL = hexZeroPad(SAFE_SENTINEL_OWNERS, 20)
 
 export type DelayContext = {
   delayModuleAddress: string

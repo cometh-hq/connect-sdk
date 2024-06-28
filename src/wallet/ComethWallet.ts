@@ -24,6 +24,7 @@ import { isMetaTransactionArray } from '../utils/utils'
 import { AUTHAdapter } from './adapters'
 import {
   CancelRecoveryError,
+  DelayModuleAddressError,
   EmptyBatchTransactionError,
   GetRecoveryError,
   NetworkNotSupportedError,
@@ -613,6 +614,16 @@ export class ComethWallet {
   ): Promise<RecoveryRequest | undefined> {
     if (!this.walletInfos) throw new WalletNotConnectedError()
 
+    if (
+      proxyDelayAddress &&
+      !(await safeService.isModuleEnabled(
+        this.getAddress(),
+        this.provider,
+        proxyDelayAddress
+      ))
+    )
+      throw new DelayModuleAddressError()
+
     const effectiveProxyDelayAddress =
       proxyDelayAddress ?? this.walletInfos.proxyDelayAddress
     if (!effectiveProxyDelayAddress) throw new NewRecoveryNotSupportedError()
@@ -641,6 +652,16 @@ export class ComethWallet {
   ): Promise<SendTransactionResponse> {
     if (!this.walletInfos) throw new WalletNotConnectedError()
 
+    if (
+      delayModuleAddress &&
+      !(await safeService.isModuleEnabled(
+        this.getAddress(),
+        this.provider,
+        delayModuleAddress
+      ))
+    )
+      throw new DelayModuleAddressError()
+
     const effectiveProxyDelayAddress =
       delayModuleAddress ?? this.walletInfos.proxyDelayAddress
     if (!effectiveProxyDelayAddress) throw new NewRecoveryNotSupportedError()
@@ -663,10 +684,26 @@ export class ComethWallet {
   }
 
   async getCurrentRecoveryParams(
-    delayModuleAddress: string
+    delayModuleAddress?: string
   ): Promise<RecoveryParamsResponse> {
+    if (!this.walletInfos) throw new WalletNotConnectedError()
+
+    if (
+      delayModuleAddress &&
+      !(await safeService.isModuleEnabled(
+        this.getAddress(),
+        this.provider,
+        delayModuleAddress
+      ))
+    )
+      throw new DelayModuleAddressError()
+
+    const effectiveProxyDelayAddress =
+      delayModuleAddress ?? this.walletInfos.proxyDelayAddress
+    if (!effectiveProxyDelayAddress) throw new NewRecoveryNotSupportedError()
+
     return await delayModuleService.getCurrentRecoveryParams(
-      delayModuleAddress,
+      effectiveProxyDelayAddress,
       this.provider
     )
   }
@@ -778,6 +815,16 @@ export class ComethWallet {
   }
 
   async getGuardianAddress(delayModuleAddress: string): Promise<string> {
+    if (
+      delayModuleAddress &&
+      !(await safeService.isModuleEnabled(
+        this.getAddress(),
+        this.provider,
+        delayModuleAddress
+      ))
+    )
+      throw new DelayModuleAddressError()
+
     return delayModuleService.getGuardianAddress(
       delayModuleAddress,
       this.provider
@@ -810,6 +857,16 @@ export class ComethWallet {
         recoveryExpiration: expiration
       }
     )
+
+    if (
+      delayAddress &&
+      !(await safeService.isModuleEnabled(
+        this.getAddress(),
+        this.provider,
+        delayAddress
+      ))
+    )
+      throw new DelayModuleAddressError()
 
     const prevModuleAddress = await delayModuleService.findPrevModule(
       delayAddress,
