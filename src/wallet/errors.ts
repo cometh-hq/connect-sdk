@@ -205,6 +205,12 @@ export class RecoveryAlreadySetUp extends Error {
   }
 }
 
+export class DelayModuleAddressError extends Error {
+  constructor() {
+    super('Delay Module address is not enabled on the wallet')
+  }
+}
+
 /**
  * Safe specific Errors
  **/
@@ -224,6 +230,12 @@ export class AddressAlreadyOwnerError extends Error {
 export class AddressNotOwnerError extends Error {
   constructor() {
     super('Address is not an owner of the wallet')
+  }
+}
+
+export class AddressNotGuardianError extends Error {
+  constructor() {
+    super('Address is not a guardian of the wallet')
   }
 }
 
