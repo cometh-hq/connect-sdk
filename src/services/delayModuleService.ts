@@ -1,12 +1,17 @@
 import { StaticJsonRpcProvider } from '@ethersproject/providers'
 import { Contract, ethers, utils } from 'ethers'
+import { _TypedDataEncoder, getAddress, hexZeroPad } from 'ethers/lib/utils'
 import { MetaTransaction } from 'ethers-multisend'
 
+import { SAFE_SENTINEL_OWNERS } from '../constants'
 import delayModuleABI from '../contracts/abis/Delay.json'
 import delayModuleFactoryABI from '../contracts/abis/DelayFactory.json'
+import { AddressNotGuardianError } from '../wallet/errors'
+import { RecoveryParamsResponse } from '../wallet/types'
 
 const DelayModule = new utils.Interface(delayModuleABI)
 const DelayModuleFactory = new utils.Interface(delayModuleFactoryABI)
+const SENTINEL = hexZeroPad(SAFE_SENTINEL_OWNERS, 20)
 
 export type DelayContext = {
   delayModuleAddress: string
@@ -90,7 +95,7 @@ const createSetTxNonceFunction = async (
 const getCurrentRecoveryParams = async (
   delayModuleAddress: string,
   provider: StaticJsonRpcProvider
-): Promise<{ txCreatedAt: string; txHash: string }> => {
+): Promise<RecoveryParamsResponse> => {
   const contract = new Contract(delayModuleAddress, delayModuleABI, provider)
 
   const txNonce = await contract.txNonce()
@@ -138,6 +143,40 @@ const encodeEnableModule = async (address: string): Promise<string> => {
   return DelayModule.encodeFunctionData('enableModule', [address])
 }
 
+const encodeDisableModule = async (
+  prevModuleAddress: string,
+  address: string
+): Promise<string> => {
+  return DelayModule.encodeFunctionData('disableModule', [
+    prevModuleAddress,
+    address
+  ])
+}
+
+const findPrevModule = async (
+  delayAddress: string,
+  targetModule: string,
+  provider: StaticJsonRpcProvider
+): Promise<string> => {
+  const delayContract = new Contract(delayAddress, delayModuleABI, provider)
+  const moduleList = await delayContract.getModulesPaginated(SENTINEL, 1000)
+  const index = moduleList.findIndex(
+    (moduleToFind) => moduleToFind == targetModule
+  )
+
+  if (index === -1) throw new AddressNotGuardianError()
+
+  let prevModule: string
+
+  if (index !== 0) {
+    prevModule = getAddress(moduleList[index - 1])
+  } else {
+    prevModule = getAddress(SENTINEL)
+  }
+
+  return prevModule
+}
+
 const encodeDeployDelayModule = async ({
   singletonDelayModule,
   initializer,
@@ -154,6 +193,17 @@ const encodeDeployDelayModule = async ({
   ])
 }
 
+const getGuardianAddress = async (
+  delayAddress: string,
+  provider: StaticJsonRpcProvider
+): Promise<string> => {
+  const delay = new Contract(delayAddress, delayModuleABI, provider)
+
+  const modulesPaginated = await delay.getModulesPaginated(SENTINEL, 1)
+
+  return modulesPaginated[0][0]
+}
+
 export default {
   getDelayAddress,
   isDeployed,
@@ -162,5 +212,8 @@ export default {
   isQueueEmpty,
   setUpDelayModule,
   encodeDeployDelayModule,
-  encodeEnableModule
+  encodeEnableModule,
+  encodeDisableModule,
+  getGuardianAddress,
+  findPrevModule
 }

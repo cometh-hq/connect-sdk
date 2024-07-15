@@ -186,6 +186,7 @@ export type DeviceData = {
 
 export type WebAuthnCredential = {
   deviceData: DeviceData
+  signerAddress: string
   publicKeyId: string
   publicKeyX: string
   publicKeyY: string
@@ -227,6 +228,11 @@ export type webauthnStorageValues = {
 }
 
 export type RecoveryRequest = {
+  txCreatedAt: string
+  txHash: string
+}
+
+export type RecoveryParamsResponse = {
   txCreatedAt: string
   txHash: string
 }
