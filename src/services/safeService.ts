@@ -25,6 +25,9 @@ import { ComethProvider } from '../wallet/ComethProvider'
 import {
   AddressAlreadyOwnerError,
   AddressNotOwnerError,
+  DelayModuleDoesNotExistError,
+  IsModuleEnabledError,
+  WalletDoesNotExistsError,
   WalletNotDeployedError
 } from '../wallet/errors'
 import {
@@ -294,9 +297,19 @@ const isModuleEnabled = async (
   provider: StaticJsonRpcProvider,
   moduleAddress: string
 ): Promise<boolean> => {
-  return Safe__factory.connect(walletAddress, provider).isModuleEnabled(
-    moduleAddress
-  )
+  if (!walletAddress) throw new WalletDoesNotExistsError()
+  if (!moduleAddress || moduleAddress === '0x')
+    throw new DelayModuleDoesNotExistError()
+  if (!(await isDeployed(walletAddress, provider)))
+    throw new WalletNotDeployedError()
+
+  try {
+    return Safe__factory.connect(walletAddress, provider).isModuleEnabled(
+      moduleAddress
+    )
+  } catch {
+    throw new IsModuleEnabledError()
+  }
 }
 
 export default {

@@ -211,6 +211,18 @@ export class DelayModuleAddressError extends Error {
   }
 }
 
+export class DelayModuleDoesNotExistError extends Error {
+  constructor() {
+    super('Delay Module Address does not exist.')
+  }
+}
+
+export class IsModuleEnabledError extends Error {
+  constructor() {
+    super('Error checking if module is enabled.')
+  }
+}
+
 /**
  * Safe specific Errors
  **/
