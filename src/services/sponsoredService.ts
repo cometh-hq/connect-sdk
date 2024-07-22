@@ -82,7 +82,7 @@ const _isTxSponsorisedByDefault = async (
   if (
     functionSelector ===
       DefaultSponsoredFunctions.DISABLE_GUARDIAN_FUNCTION_SELECTOR &&
-    targetAddress === delayModuleFactoryAddress
+    targetAddress === proxyDelayAddress
   )
     return true
 
