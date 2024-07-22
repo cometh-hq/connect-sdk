@@ -152,7 +152,7 @@ export class ComethWallet {
   }
 
   public getAddress(): string {
-    return this.walletAddress ?? ''
+    return this.walletInfos?.address ?? ''
   }
 
   public async logout(): Promise<void> {
@@ -861,7 +861,7 @@ export class ComethWallet {
     if (
       delayAddress &&
       !(await safeService.isModuleEnabled(
-        this.getAddress(),
+        walletAddress,
         this.provider,
         delayAddress
       ))
