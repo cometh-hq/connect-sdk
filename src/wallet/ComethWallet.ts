@@ -815,10 +815,13 @@ export class ComethWallet {
   }
 
   async getGuardianAddress(delayModuleAddress: string): Promise<string> {
+    if (!this.walletInfos) throw new WalletNotConnectedError()
+    const walletAddress = this.walletInfos.address
+
     if (
       delayModuleAddress &&
       !(await safeService.isModuleEnabled(
-        this.getAddress(),
+        walletAddress,
         this.provider,
         delayModuleAddress
       ))
