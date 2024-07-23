@@ -834,7 +834,7 @@ export class ComethWallet {
     )
       throw new DelayModuleAddressError()
 
-    return delayModuleService.getGuardianAddress(
+    return await delayModuleService.getGuardianAddress(
       delayModuleAddress,
       this.provider
     )
