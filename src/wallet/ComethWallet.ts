@@ -867,6 +867,8 @@ export class ComethWallet {
       }
     )
 
+    this.walletInfos.proxyDelayAddress = delayAddress
+
     if (
       delayAddress &&
       !(await safeService.isModuleEnabled(
