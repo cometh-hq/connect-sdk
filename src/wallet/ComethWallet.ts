@@ -25,6 +25,7 @@ import { AUTHAdapter } from './adapters'
 import {
   CancelRecoveryError,
   DelayModuleAddressError,
+  DisableGuardianError,
   EmptyBatchTransactionError,
   GetRecoveryError,
   NetworkNotSupportedError,
@@ -36,6 +37,7 @@ import {
   ProvidedNetworkDifferentThanProjectNetwork,
   RecoveryAlreadySetUp,
   RelayedTransactionPendingError,
+  SetupDelayModuleError,
   TransactionDeniedError,
   WalletNotConnectedError
 } from './errors'
@@ -760,35 +762,39 @@ export class ComethWallet {
 
     if (isDeployed) throw new RecoveryAlreadySetUp()
 
-    const delayModuleInitializer = await delayModuleService.setUpDelayModule({
-      safe: walletAddress,
-      cooldown,
-      expiration
-    })
+    try {
+      const delayModuleInitializer = await delayModuleService.setUpDelayModule({
+        safe: walletAddress,
+        cooldown,
+        expiration
+      })
 
-    const setUpDelayTx = [
-      {
-        to: moduleFactoryAddress,
-        value: '0',
-        data: await delayModuleService.encodeDeployDelayModule({
-          singletonDelayModule: singletonDelayModuleAddress,
-          initializer: delayModuleInitializer,
-          safe: walletAddress
-        })
-      },
-      {
-        to: walletAddress,
-        value: '0',
-        data: await safeService.encodeEnableModule(delayAddress)
-      },
-      {
-        to: delayAddress,
-        value: '0',
-        data: await delayModuleService.encodeEnableModule(guardianAddress)
-      }
-    ]
+      const setUpDelayTx = [
+        {
+          to: moduleFactoryAddress,
+          value: '0',
+          data: await delayModuleService.encodeDeployDelayModule({
+            singletonDelayModule: singletonDelayModuleAddress,
+            initializer: delayModuleInitializer,
+            safe: walletAddress
+          })
+        },
+        {
+          to: walletAddress,
+          value: '0',
+          data: await safeService.encodeEnableModule(delayAddress)
+        },
+        {
+          to: delayAddress,
+          value: '0',
+          data: await delayModuleService.encodeEnableModule(guardianAddress)
+        }
+      ]
 
-    return await this.sendBatchTransactions(setUpDelayTx)
+      return await this.sendBatchTransactions(setUpDelayTx)
+    } catch {
+      throw new SetupDelayModuleError()
+    }
   }
 
   async getDelayModuleAddressFor(
@@ -815,17 +821,20 @@ export class ComethWallet {
   }
 
   async getGuardianAddress(delayModuleAddress: string): Promise<string> {
+    if (!this.walletInfos) throw new WalletNotConnectedError()
+    const walletAddress = this.walletInfos.address
+
     if (
       delayModuleAddress &&
       !(await safeService.isModuleEnabled(
-        this.getAddress(),
+        walletAddress,
         this.provider,
         delayModuleAddress
       ))
     )
       throw new DelayModuleAddressError()
 
-    return delayModuleService.getGuardianAddress(
+    return await delayModuleService.getGuardianAddress(
       delayModuleAddress,
       this.provider
     )
@@ -858,6 +867,8 @@ export class ComethWallet {
       }
     )
 
+    this.walletInfos.proxyDelayAddress = delayAddress
+
     if (
       delayAddress &&
       !(await safeService.isModuleEnabled(
@@ -878,15 +889,19 @@ export class ComethWallet {
       throw new Error('Previous module not found')
     }
 
-    const disableGuardianTx = {
-      to: delayAddress,
-      value: '0',
-      data: await delayModuleService.encodeDisableModule(
-        prevModuleAddress,
-        guardianAddress
-      )
-    }
+    try {
+      const disableGuardianTx = {
+        to: delayAddress,
+        value: '0',
+        data: await delayModuleService.encodeDisableModule(
+          prevModuleAddress,
+          guardianAddress
+        )
+      }
 
-    return await this.sendTransaction(disableGuardianTx)
+      return await this.sendTransaction(disableGuardianTx)
+    } catch {
+      throw new DisableGuardianError()
+    }
   }
 }
