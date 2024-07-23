@@ -205,9 +205,33 @@ export class RecoveryAlreadySetUp extends Error {
   }
 }
 
+export class SetupDelayModuleError extends Error {
+  constructor() {
+    super('Failed to setup Delay Module')
+  }
+}
+
 export class DelayModuleAddressError extends Error {
   constructor() {
     super('Delay Module address is not enabled on the wallet')
+  }
+}
+
+export class DelayModuleDoesNotExistError extends Error {
+  constructor() {
+    super('Delay Module Address does not exist.')
+  }
+}
+
+export class IsModuleEnabledError extends Error {
+  constructor() {
+    super('Error checking if module is enabled.')
+  }
+}
+
+export class DisableGuardianError extends Error {
+  constructor() {
+    super('Failed to disable Guardian')
   }
 }
 
