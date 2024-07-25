@@ -235,6 +235,18 @@ export class DisableGuardianError extends Error {
   }
 }
 
+export class AddGuardianError extends Error {
+  constructor() {
+    super('Failed to add Guardian')
+  }
+}
+
+export class GuardianAlreadyEnabledError extends Error {
+  constructor() {
+    super('A guardian is already enabled on the Delay Module')
+  }
+}
+
 /**
  * Safe specific Errors
  **/

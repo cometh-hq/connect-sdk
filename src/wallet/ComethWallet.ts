@@ -23,11 +23,13 @@ import { GasModal } from '../ui'
 import { isMetaTransactionArray } from '../utils/utils'
 import { AUTHAdapter } from './adapters'
 import {
+  AddGuardianError,
   CancelRecoveryError,
   DelayModuleAddressError,
   DisableGuardianError,
   EmptyBatchTransactionError,
   GetRecoveryError,
+  GuardianAlreadyEnabledError,
   NetworkNotSupportedError,
   NewRecoveryNotSupportedError,
   NoAdapterFoundError,
@@ -838,6 +840,48 @@ export class ComethWallet {
       delayModuleAddress,
       this.provider
     )
+  }
+
+  async addGuardian(
+    delayModuleAddress: string,
+    guardianAddress: string
+  ): Promise<SendTransactionResponse> {
+    if (!this.walletInfos || !this.walletInfos.recoveryContext)
+      throw new WalletNotConnectedError()
+
+    const walletAddress = this.walletInfos.address
+
+    if (
+      delayModuleAddress &&
+      !(await safeService.isModuleEnabled(
+        walletAddress,
+        this.provider,
+        delayModuleAddress
+      ))
+    )
+      throw new DelayModuleAddressError()
+
+    if (
+      await delayModuleService.getGuardianAddress(
+        delayModuleAddress,
+        this.provider
+      )
+    )
+      throw new GuardianAlreadyEnabledError()
+
+    this.walletInfos.proxyDelayAddress = delayModuleAddress
+
+    try {
+      const addGuardianTx = {
+        to: delayModuleAddress,
+        value: '0',
+        data: await delayModuleService.encodeEnableModule(guardianAddress)
+      }
+
+      return await this.sendTransaction(addGuardianTx)
+    } catch {
+      throw new AddGuardianError()
+    }
   }
 
   async disableGuardian(
