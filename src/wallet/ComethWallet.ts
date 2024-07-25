@@ -1,6 +1,6 @@
 import { JsonRpcSigner, StaticJsonRpcProvider } from '@ethersproject/providers'
 import { BigNumber, Bytes, constants, Wallet } from 'ethers'
-import { formatUnits, hashMessage } from 'ethers/lib/utils'
+import { formatUnits, hashMessage, isAddress } from 'ethers/lib/utils'
 import { encodeMulti, MetaTransaction } from 'ethers-multisend'
 
 import {
@@ -30,6 +30,7 @@ import {
   EmptyBatchTransactionError,
   GetRecoveryError,
   GuardianAlreadyEnabledError,
+  InvalidAddressFormatError,
   NetworkNotSupportedError,
   NewRecoveryNotSupportedError,
   NoAdapterFoundError,
@@ -851,6 +852,10 @@ export class ComethWallet {
 
     const walletAddress = this.walletInfos.address
 
+    if (!isAddress(guardianAddress)) {
+      throw new InvalidAddressFormatError()
+    }
+
     if (
       delayModuleAddress &&
       !(await safeService.isModuleEnabled(
@@ -911,8 +916,6 @@ export class ComethWallet {
       }
     )
 
-    this.walletInfos.proxyDelayAddress = delayAddress
-
     if (
       delayAddress &&
       !(await safeService.isModuleEnabled(
@@ -922,6 +925,8 @@ export class ComethWallet {
       ))
     )
       throw new DelayModuleAddressError()
+
+    this.walletInfos.proxyDelayAddress = delayAddress
 
     const prevModuleAddress = await delayModuleService.findPrevModule(
       delayAddress,
