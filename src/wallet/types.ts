@@ -82,6 +82,10 @@ export type ProjectParams = {
   simulateTxAcessorAddress: string
   deploymentManagerAddress: string
   guardianId: string
+  moduleFactoryAddress: string
+  delayModuleAddress: string
+  recoveryCooldown: number
+  recoveryExpiration: number
 }
 
 export enum SupportedNetworks {
