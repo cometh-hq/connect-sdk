@@ -1,6 +1,6 @@
 {
   "name": "@cometh/connect-sdk",
-  "version": "1.2.27",
+  "version": "1.2.28",
   "main": "dist/index.js",
   "types": "dist/index.d.ts",
   "description": "SDK Cometh Connect",
