@@ -247,6 +247,14 @@ export class GuardianAlreadyEnabledError extends Error {
   }
 }
 
+export class NoRecoveryContextParamsError extends Error {
+  constructor() {
+    super(
+      'You need to set expiration, cooldown, moduleFactoryAddress and delayModuleAddress parameters'
+    )
+  }
+}
+
 /**
  * Safe specific Errors
  **/
