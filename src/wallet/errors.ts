@@ -237,7 +237,7 @@ export class DisableGuardianError extends Error {
 
 export class AddGuardianError extends Error {
   constructor() {
-    super('Failed to add Guardian')
+    super('Failed to add Guardian ')
   }
 }
 
