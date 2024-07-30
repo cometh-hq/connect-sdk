@@ -57,6 +57,12 @@ export class NoAdapterFoundError extends Error {
   }
 }
 
+export class WrongRPCUrlError extends Error {
+  constructor() {
+    super('The provided RPC URL does not match the expected chain ID')
+  }
+}
+
 /**
  * Adaptor Errors
  **/

@@ -42,7 +42,8 @@ import {
   RelayedTransactionPendingError,
   SetupDelayModuleError,
   TransactionDeniedError,
-  WalletNotConnectedError
+  WalletNotConnectedError,
+  WrongRPCUrlError
 } from './errors'
 import { WebAuthnSigner } from './signers/WebAuthnSigner'
 import {
@@ -118,6 +119,10 @@ export class ComethWallet {
 
   public async connect(walletAddress?: string): Promise<void> {
     if (!networks[this.chainId]) throw new NetworkNotSupportedError()
+
+    const chainIdHex = await this.provider.send('eth_chainId', [])
+    const chainId = parseInt(chainIdHex, 16)
+    if (this.chainId !== chainId) throw new WrongRPCUrlError()
 
     if (!this.authAdapter) throw new NoAdapterFoundError()
     await this.authAdapter.connect(walletAddress)
