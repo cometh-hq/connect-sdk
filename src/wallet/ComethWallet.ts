@@ -805,7 +805,7 @@ export class ComethWallet {
       ]
 
       return await this.sendBatchTransactions(setUpDelayTx, delayAddress)
-    } catch (error) {
+    } catch {
       throw new SetupDelayModuleError()
     }
   }
