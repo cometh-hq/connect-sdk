@@ -121,17 +121,15 @@ export class ComethWallet {
   public async connect(walletAddress?: string): Promise<void> {
     if (!networks[this.chainId]) throw new NetworkNotSupportedError()
 
-    if (this.provider !== networks[this.chainId].RPCUrl) {
-      try {
-        const chainIdHex = await this.provider.send('eth_chainId', [])
-        const chainId = parseInt(chainIdHex, 16)
-        if (this.chainId !== chainId) throw new WrongRPCUrlError()
-      } catch (error) {
-        if (!(error instanceof WrongRPCUrlError)) {
-          throw new RPCUrlNotReachableError()
-        }
-        throw error
+    try {
+      const chainIdHex = await this.provider.send('eth_chainId', [])
+      const chainId = parseInt(chainIdHex, 16)
+      if (this.chainId !== chainId) throw new WrongRPCUrlError()
+    } catch (error) {
+      if (!(error instanceof WrongRPCUrlError)) {
+        throw new RPCUrlNotReachableError()
       }
+      throw error
     }
 
     if (!this.authAdapter) throw new NoAdapterFoundError()
