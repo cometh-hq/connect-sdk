@@ -57,6 +57,18 @@ export class NoAdapterFoundError extends Error {
   }
 }
 
+export class WrongRPCUrlError extends Error {
+  constructor() {
+    super('The provided RPC URL does not match the expected chain ID')
+  }
+}
+
+export class RPCUrlNotReachableError extends Error {
+  constructor() {
+    super('An error occured while reaching the provided RPC URL')
+  }
+}
+
 /**
  * Adaptor Errors
  **/
@@ -232,6 +244,18 @@ export class IsModuleEnabledError extends Error {
 export class DisableGuardianError extends Error {
   constructor() {
     super('Failed to disable Guardian')
+  }
+}
+
+export class AddGuardianError extends Error {
+  constructor() {
+    super('Failed to add Guardian ')
+  }
+}
+
+export class GuardianAlreadyEnabledError extends Error {
+  constructor() {
+    super('A guardian is already enabled on the Delay Module')
   }
 }
 

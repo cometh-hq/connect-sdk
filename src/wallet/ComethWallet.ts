@@ -1,6 +1,6 @@
 import { JsonRpcSigner, StaticJsonRpcProvider } from '@ethersproject/providers'
 import { BigNumber, Bytes, constants, Wallet } from 'ethers'
-import { formatUnits, hashMessage } from 'ethers/lib/utils'
+import { formatUnits, hashMessage, isAddress } from 'ethers/lib/utils'
 import { encodeMulti, MetaTransaction } from 'ethers-multisend'
 
 import {
@@ -23,11 +23,14 @@ import { GasModal } from '../ui'
 import { isMetaTransactionArray } from '../utils/utils'
 import { AUTHAdapter } from './adapters'
 import {
+  AddGuardianError,
   CancelRecoveryError,
   DelayModuleAddressError,
   DisableGuardianError,
   EmptyBatchTransactionError,
   GetRecoveryError,
+  GuardianAlreadyEnabledError,
+  InvalidAddressFormatError,
   NetworkNotSupportedError,
   NewRecoveryNotSupportedError,
   NoAdapterFoundError,
@@ -37,9 +40,11 @@ import {
   ProvidedNetworkDifferentThanProjectNetwork,
   RecoveryAlreadySetUp,
   RelayedTransactionPendingError,
+  RPCUrlNotReachableError,
   SetupDelayModuleError,
   TransactionDeniedError,
-  WalletNotConnectedError
+  WalletNotConnectedError,
+  WrongRPCUrlError
 } from './errors'
 import { WebAuthnSigner } from './signers/WebAuthnSigner'
 import {
@@ -115,6 +120,17 @@ export class ComethWallet {
 
   public async connect(walletAddress?: string): Promise<void> {
     if (!networks[this.chainId]) throw new NetworkNotSupportedError()
+
+    try {
+      const chainIdHex = await this.provider.send('eth_chainId', [])
+      const chainId = parseInt(chainIdHex, 16)
+      if (this.chainId !== chainId) throw new WrongRPCUrlError()
+    } catch (error) {
+      if (!(error instanceof WrongRPCUrlError)) {
+        throw new RPCUrlNotReachableError()
+      }
+      throw error
+    }
 
     if (!this.authAdapter) throw new NoAdapterFoundError()
     await this.authAdapter.connect(walletAddress)
@@ -338,6 +354,7 @@ export class ComethWallet {
     delayModuleAddress?: string
   ): Promise<boolean> {
     if (!this.walletInfos) throw new WalletNotConnectedError()
+    if (!this.projectParams) throw new ProjectParamsError()
 
     const effectiveProxyDelayAddress =
       delayModuleAddress ?? this.walletInfos.proxyDelayAddress
@@ -353,7 +370,7 @@ export class ComethWallet {
         safeTransactionData[i].to,
         this.sponsoredAddresses,
         effectiveProxyDelayAddress,
-        this.walletInfos.recoveryContext?.moduleFactoryAddress
+        this.projectParams.moduleFactoryAddress
       )
 
       if (!isSponsored) return false
@@ -729,25 +746,21 @@ export class ComethWallet {
     expiration?: number,
     cooldown?: number
   ): Promise<SendTransactionResponse> {
-    if (!this.walletInfos || !this.walletInfos.recoveryContext)
-      throw new WalletNotConnectedError()
+    if (!this.walletInfos) throw new WalletNotConnectedError()
+    if (!this.projectParams) throw new ProjectParamsError()
 
     const walletAddress = this.walletInfos.address
 
-    if (!expiration)
-      expiration = this.walletInfos.recoveryContext.recoveryExpiration
-    if (!cooldown) cooldown = this.walletInfos.recoveryContext.recoveryCooldown
+    expiration ??= this.projectParams.recoveryExpiration
+    cooldown ??= this.projectParams.recoveryCooldown
 
-    const {
-      moduleFactoryAddress,
-      delayModuleAddress: singletonDelayModuleAddress
-    } = this.walletInfos.recoveryContext
+    const { delayModuleAddress, moduleFactoryAddress } = this.projectParams
 
     const delayAddress = await delayModuleService.getDelayAddress(
       walletAddress,
       {
         moduleFactoryAddress,
-        delayModuleAddress: singletonDelayModuleAddress,
+        delayModuleAddress,
         recoveryCooldown: cooldown,
         recoveryExpiration: expiration
       }
@@ -774,7 +787,7 @@ export class ComethWallet {
           to: moduleFactoryAddress,
           value: '0',
           data: await delayModuleService.encodeDeployDelayModule({
-            singletonDelayModule: singletonDelayModuleAddress,
+            singletonDelayModule: delayModuleAddress,
             initializer: delayModuleInitializer,
             safe: walletAddress
           })
@@ -791,7 +804,7 @@ export class ComethWallet {
         }
       ]
 
-      return await this.sendBatchTransactions(setUpDelayTx)
+      return await this.sendBatchTransactions(setUpDelayTx, delayAddress)
     } catch {
       throw new SetupDelayModuleError()
     }
@@ -801,17 +814,18 @@ export class ComethWallet {
     expiration: number,
     cooldown: number
   ): Promise<string> {
-    if (!this.walletInfos || !this.walletInfos.recoveryContext)
-      throw new WalletNotConnectedError()
+    if (!this.walletInfos) throw new WalletNotConnectedError()
+    if (!this.projectParams) throw new ProjectParamsError()
+
+    const { delayModuleAddress, moduleFactoryAddress } = this.projectParams
 
     const walletAddress = this.walletInfos.address
 
     const delayAddress = await delayModuleService.getDelayAddress(
       walletAddress,
       {
-        moduleFactoryAddress:
-          this.walletInfos.recoveryContext.moduleFactoryAddress,
-        delayModuleAddress: this.walletInfos.recoveryContext.delayModuleAddress,
+        moduleFactoryAddress,
+        delayModuleAddress,
         recoveryCooldown: cooldown,
         recoveryExpiration: expiration
       }
@@ -840,22 +854,65 @@ export class ComethWallet {
     )
   }
 
+  async addGuardian(
+    delayModuleAddress: string,
+    guardianAddress: string
+  ): Promise<SendTransactionResponse> {
+    if (!this.walletInfos) throw new WalletNotConnectedError()
+
+    const walletAddress = this.walletInfos.address
+
+    if (!isAddress(guardianAddress)) {
+      throw new InvalidAddressFormatError()
+    }
+
+    if (
+      delayModuleAddress &&
+      !(await safeService.isModuleEnabled(
+        walletAddress,
+        this.provider,
+        delayModuleAddress
+      ))
+    )
+      throw new DelayModuleAddressError()
+
+    if (
+      await delayModuleService.getGuardianAddress(
+        delayModuleAddress,
+        this.provider
+      )
+    )
+      throw new GuardianAlreadyEnabledError()
+
+    this.walletInfos.proxyDelayAddress = delayModuleAddress
+
+    try {
+      const addGuardianTx = {
+        to: delayModuleAddress,
+        value: '0',
+        data: await delayModuleService.encodeEnableModule(guardianAddress)
+      }
+
+      return await this.sendTransaction(addGuardianTx, delayModuleAddress)
+    } catch {
+      throw new AddGuardianError()
+    }
+  }
+
   async disableGuardian(
     guardianAddress: string,
     expiration?: number,
     cooldown?: number
   ): Promise<SendTransactionResponse> {
-    if (!this.walletInfos || !this.walletInfos.recoveryContext)
-      throw new WalletNotConnectedError()
+    if (!this.walletInfos) throw new WalletNotConnectedError()
+    if (!this.projectParams) throw new ProjectParamsError()
 
     const walletAddress = this.walletInfos.address
 
-    if (!expiration)
-      expiration = this.walletInfos.recoveryContext.recoveryExpiration
-    if (!cooldown) cooldown = this.walletInfos.recoveryContext.recoveryCooldown
+    expiration ??= this.projectParams.recoveryExpiration
+    cooldown ??= this.projectParams.recoveryCooldown
 
-    const { moduleFactoryAddress, delayModuleAddress } =
-      this.walletInfos.recoveryContext
+    const { delayModuleAddress, moduleFactoryAddress } = this.projectParams
 
     const delayAddress = await delayModuleService.getDelayAddress(
       walletAddress,
@@ -867,8 +924,6 @@ export class ComethWallet {
       }
     )
 
-    this.walletInfos.proxyDelayAddress = delayAddress
-
     if (
       delayAddress &&
       !(await safeService.isModuleEnabled(
@@ -878,6 +933,8 @@ export class ComethWallet {
       ))
     )
       throw new DelayModuleAddressError()
+
+    this.walletInfos.proxyDelayAddress = delayAddress
 
     const prevModuleAddress = await delayModuleService.findPrevModule(
       delayAddress,
@@ -899,7 +956,7 @@ export class ComethWallet {
         )
       }
 
-      return await this.sendTransaction(disableGuardianTx)
+      return await this.sendTransaction(disableGuardianTx, delayAddress)
     } catch {
       throw new DisableGuardianError()
     }
