@@ -63,6 +63,12 @@ export class WrongRPCUrlError extends Error {
   }
 }
 
+export class RPCUrlNotReachableError extends Error {
+  constructor() {
+    super('An error occured while reaching the provided RPC URL')
+  }
+}
+
 /**
  * Adaptor Errors
  **/
