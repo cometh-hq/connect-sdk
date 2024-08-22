@@ -185,7 +185,7 @@ const getSafePreviousOwner = async (
   return prevOwner
 }
 
-const formatWebAuthnSignatureForSafe = (
+const formatToSafeContractSignature = (
   signerAddress: string,
   signature: string
 ): string => {
@@ -322,7 +322,7 @@ export default {
   prepareAddOwnerTx,
   getSafePreviousOwner,
   prepareRemoveOwnerTx,
-  formatWebAuthnSignatureForSafe,
+  formatToSafeContractSignature,
   getSafeTransactionHash,
   getTransactionsTotalValue,
   isSigner,

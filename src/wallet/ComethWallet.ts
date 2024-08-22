@@ -1,6 +1,12 @@
 import { JsonRpcSigner, StaticJsonRpcProvider } from '@ethersproject/providers'
-import { BigNumber, Bytes, constants, Wallet } from 'ethers'
-import { formatUnits, hashMessage, isAddress } from 'ethers/lib/utils'
+import { BigNumber, Bytes, constants, ethers, Wallet } from 'ethers'
+import {
+  _TypedDataEncoder,
+  arrayify,
+  formatUnits,
+  hashMessage,
+  isAddress
+} from 'ethers/lib/utils'
 import { encodeMulti, MetaTransaction } from 'ethers-multisend'
 
 import {
@@ -55,7 +61,6 @@ import {
   RecoveryRequest,
   RelayedTransaction,
   RelayedTransactionDetails,
-  RelayedTransactionStatus,
   SafeTransactionDataPartial,
   SafeTx,
   SendTransactionResponse,
@@ -274,9 +279,27 @@ export class ComethWallet {
   }
 
   async signTransaction(
-    safeTxData: SafeTransactionDataPartial
+    safeTxData: SafeTransactionDataPartial,
+    parentSafeAddress?: string
   ): Promise<string> {
     if (!this.signer) throw new NoSignerFoundError()
+
+    if (parentSafeAddress) {
+      const preImageSafeTransactionHash = _TypedDataEncoder.encode(
+        { verifyingContract: parentSafeAddress, chainId: this.chainId },
+        EIP712_SAFE_TX_TYPES,
+        safeTxData
+      )
+
+      const signature = await this.signMessage(
+        arrayify(preImageSafeTransactionHash)
+      )
+
+      return safeService.formatToSafeContractSignature(
+        this.getAddress(),
+        signature
+      )
+    }
 
     return await this.signer._signTypedData(
       {
