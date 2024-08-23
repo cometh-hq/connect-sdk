@@ -55,7 +55,7 @@ export class WebAuthnSigner extends Signer {
       publicKeyCredential
     )
 
-    return safeService.formatWebAuthnSignatureForSafe(
+    return safeService.formatToSafeContractSignature(
       this.signerAddress,
       encodedSignature
     )
