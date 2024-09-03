@@ -56,6 +56,7 @@ const verifyHasEnoughBalance = async (
     walletBalance = await getBalanceForToken(walletAddress, gasToken, provider)
   } else {
     walletBalance = await provider.getBalance(walletAddress)
+    console.log('walletBalance', { walletBalance })
   }
 
   if (walletBalance.lt(totalGasCost.add(txValue))) throw new BalanceError()

@@ -294,8 +294,6 @@ const getSigner = async ({
     walletAddress
   )
 
-  console.info('signers in DB', webAuthnSigners)
-
   if (webAuthnSigners.length === 0) throw new NoPasskeySignerFoundInDBError()
 
   /* Retrieve potentiel WebAuthn credentials in storage */
@@ -333,15 +331,8 @@ const getSigner = async ({
     throw new NoPasskeySignerFoundInDeviceError()
   }
 
-  console.info('recovered signature params: ', signatureParams)
-
   const signingWebAuthnSigner = await API.getWebAuthnSignerByPublicKeyId(
     signatureParams.publicKeyId
-  )
-
-  console.info(
-    'soft recovered signer Address: ',
-    signingWebAuthnSigner.signerAddress
   )
 
   const isOwner = await safeService.isSigner(
