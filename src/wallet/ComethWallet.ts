@@ -633,14 +633,9 @@ export class ComethWallet {
     }
 
     if (!isSponsoredTransaction) {
-      const { safeTxGas, gasPrice, totalGasCost, txValue } =
-        await this.estimateTxGasAndValue(safeTxData)
-
-      await this.verifyHasEnoughBalance(totalGasCost, txValue)
-
-      if (this.uiConfig.displayValidationModal) {
-        await this.displayModal(totalGasCost, txValue)
-      }
+      const { safeTxGas, gasPrice } = await this.estimateTxGasAndValue(
+        safeTxData
+      )
 
       safeTxDataTyped.safeTxGas = +safeTxGas
       safeTxDataTyped.baseGas = this.BASE_GAS

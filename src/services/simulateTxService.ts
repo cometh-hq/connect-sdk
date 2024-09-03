@@ -107,6 +107,10 @@ const estimateSafeTxGasWithSimulate = async (
 
   const safeTxGas = _decodeSafeTxGas(encodedResponse)
 
+  if (isMetaTransactionArray(safeTxData) && !isSafeDeployed) {
+    if (+safeTxGas < 35000) return BigNumber.from(35000)
+  }
+
   return BigNumber.from(_addExtraGasForSafety(safeTxGas))
 }
 
