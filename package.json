@@ -61,8 +61,8 @@
   "dependencies": {
     "@alembic/ui": "^1.5.4",
     "@babel/traverse": "^7.23.4",
-    "@ethersproject/abstract-provider": "^5.7.0",
-    "@ethersproject/abstract-signer": "^5.7.0",
+    "@ethersproject/abstract-provider": "^5.8.0",
+    "@ethersproject/abstract-signer": "^5.8.0",
     "@ethersproject/providers": "^5.7.2",
     "@simplewebauthn/server": "^7.2.0",
     "@types/babel__core": "^7.20.0",
