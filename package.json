@@ -79,5 +79,10 @@
     "react-dom": "^18.0.0",
     "siwe": "^1.1.6",
     "uuid": "^9.0.0"
+  },
+  "resolutions": {
+    "form-data": "^4.0.4",
+    "cross-spawn": "7.0.5",
+    "elliptic": "^6.6.1"
   }
 }

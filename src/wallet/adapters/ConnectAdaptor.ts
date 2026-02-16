@@ -502,6 +502,8 @@ export class ConnectAdaptor implements AUTHAdapter {
   ): Promise<NewSignerRequestBody> {
     const walletInfos = await this.getWalletInfos(walletAddress)
 
+    if (!walletInfos) throw new WalletDoesNotExistsError()
+
     if (!walletInfos.recoveryContext)
       throw new Error('Delay context is required')
 

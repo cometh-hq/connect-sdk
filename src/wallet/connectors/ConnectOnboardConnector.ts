@@ -1,4 +1,9 @@
-import { WalletInit, WalletInterface, WalletModule } from '@web3-onboard/common'
+import {
+  ProviderAccounts,
+  WalletInit,
+  WalletInterface,
+  WalletModule
+} from '@web3-onboard/common'
 
 import { AUTHAdapter } from '../adapters'
 import { ComethProvider } from '../ComethProvider'
@@ -46,7 +51,7 @@ export function ConnectOnboardConnector({
         const provider = createEIP1193Provider(instanceProvider, {
           eth_requestAccounts: async () => {
             const address = instance.getAddress()
-            return [address]
+            return [address] as ProviderAccounts
           },
           eth_chainId: async () => {
             return `0x${instance.chainId.toString(16)}`
@@ -56,7 +61,7 @@ export function ConnectOnboardConnector({
             return balance?.toString() ?? '0'
           },
           eth_accounts: async () => {
-            return instanceProvider.eth_accounts()
+            return instanceProvider.eth_accounts() as ProviderAccounts
           }
         })
 
